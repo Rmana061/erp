@@ -1,0 +1,497 @@
+/* unified-base.css */
+
+/* 管理端變數 */
+body.admin-mode {
+  --primary-color: #4caf50;
+  --primary-hover-color: #218838;
+  --background-color: #f5f5f5;
+  --text-color: #333;
+  --text-light: #666;
+  --border-color: #ddd;
+  --error-color: #dc3545;
+  --success-color: #28a745;
+  --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --border-radius: 4px;
+  --transition: all 0.3s ease;
+  --form-bg-color: #e1f5fe;
+}
+
+/* 客戶端變數 */
+body.customer-mode {
+  --primary-color: #6248ca;
+  --primary-hover-color: #513aa8;
+  --background-color: #f5f5f5;
+  --text-color: #333;
+  --text-light: #666;
+  --border-color: #ddd;
+  --error-color: #dc3545;
+  --success-color: #6248ca;
+  --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --border-radius: 4px;
+  --transition: all 0.3s ease;
+  --form-bg-color: #f0ebff;
+}
+
+/* 基礎布局 */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100%;
+}
+
+.container {
+  display: flex;
+  height: 100vh;
+  width: 99%;
+  overflow: hidden;
+  position: fixed;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 200px;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 頁面結構 */
+.header {
+  padding: 10px 20px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 15px;
+}
+
+/* 管理端特定樣式 */
+body.admin-mode .header {
+  background-color: var(--success-color);
+}
+
+/* 客戶端特定樣式 */
+body.customer-mode .header {
+  background-color: var(--primary-color);
+}
+
+.content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  overflow: hidden;
+}
+
+/* 通用表格樣式 */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+th {
+  background-color: var(--background-color);
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+tr:hover {
+  background-color: var(--background-color);
+}
+
+/* 通用按鈕樣式 */
+.action-button, .btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 14px;
+  transition: var(--transition);
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.action-button:hover, .btn:hover {
+  background-color: var(--primary-hover-color);
+}
+
+.action-button.cancel, .btn-danger {
+  background-color: var(--error-color);
+}
+
+.export-btn {
+  padding: 8px 15px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.table-button {
+  padding: 8px 15px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: var(--transition);
+}
+
+.table-button.edit {
+  background-color: var(--primary-color);
+  margin-right: 10px;
+}
+
+.table-button.edit:hover {
+  background-color: var(--primary-hover-color);
+}
+
+.table-button.delete {
+  background-color: var(--error-color);
+  margin-right: 10px;
+}
+
+.table-button.delete:hover {
+  background-color: #c82333;
+}
+
+/* 通用表單樣式 */
+.form-container {
+  background-color: var(--form-bg-color);
+  padding: 20px;
+  border-radius: var(--border-radius);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.form-group {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.form-group label {
+  width: 120px;
+  text-align: right;
+  margin-right: 10px;
+  padding-top: 5px;
+  flex-shrink: 0;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 14px;
+}
+
+/* 通用搜索框樣式 */
+.search-input {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  min-width: 200px;
+}
+
+/* 通用狀態標籤樣式 */
+.status {
+  padding: 4px 8px;
+  border-radius: var(--border-radius);
+  font-size: 12px;
+  font-weight: bold;
+  display: inline-block;
+}
+
+.status-pending {
+  background-color: #ffd700;
+  color: #000;
+}
+
+.status-approved {
+  background-color: var(--success-color);
+  color: white;
+}
+
+.status-rejected {
+  background-color: var(--error-color);
+  color: white;
+}
+
+/* 側邊欄樣式 */
+.sidebar {
+  width: 200px;
+  padding: 20px 0;
+  color: white;
+  height: 100vh;
+  font-family: 'Arial', sans-serif;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background: var(--primary-color);
+}
+
+.menu {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-item {
+  padding: 15px 20px;
+  cursor: pointer;
+  transition: var(--transition);
+  color: white;
+  text-decoration: none;
+}
+
+.menu-item:hover, 
+.menu-item.active {
+  background-color: var(--primary-hover-color);
+}
+
+.bookmark-text {
+  font-size: 12px;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 2px;
+}
+
+.bookmark-toggle {
+  background: var(--primary-color);
+  display: none;
+  position: fixed;
+  top: 40%;
+  left: 0;
+  transform: translateY(-50%);
+  z-index: 1000;
+  border: none;
+  cursor: pointer;
+  padding: 15px 10px;
+  border-radius: 0 8px 8px 0;
+  box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+  color: white;
+  transition: var(--transition);
+  flex-direction: column;
+  align-items: center;
+  width: 20px;
+}
+
+/* 登入頁面樣式 */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: var(--background-color);
+}
+
+.login-box {
+  background-color: white;
+  padding: 30px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-header h2 {
+  color: var(--text-color);
+  margin: 0;
+  font-size: 24px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-button {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 12px;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-top: 10px;
+}
+
+.login-button:hover {
+  background-color: var(--primary-hover-color);
+}
+
+/* 響應式設計 */
+@media screen and (max-width: 768px) {
+  .main-content {
+    margin: 0 auto;
+    padding-right: 10px;
+  }
+
+  .content-wrapper {
+    padding: 10px;
+  }
+
+  .form-group {
+    flex-direction: column;
+  }
+
+  .form-group label {
+    width: 100%;
+    text-align: left;
+    margin-bottom: 5px;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .action-button,
+  .btn {
+    width: 100%;
+  }
+
+  .sidebar {
+    left: -200px;
+  }
+
+  .sidebar.active {
+    left: 0;
+  }
+}
+
+/* 滾動條樣式 */
+.scrollable-content::-webkit-scrollbar,
+.table-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollable-content::-webkit-scrollbar-track,
+.table-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 3px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover,
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-hover-color);
+}
+
+/* 產品管理樣式 */
+.search-container {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.search-select {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: white;
+}
+
+.product-thumbnail {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.pagination button {
+  padding: 5px 10px;
+  border: 1px solid var(--border-color);
+  background-color: white;
+  cursor: pointer;
+  border-radius: var(--border-radius);
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.large-image {
+  max-width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+.close-button {
+  position: absolute;
+  top: -30px;
+  right: 0;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  align-items: center;
+} 
