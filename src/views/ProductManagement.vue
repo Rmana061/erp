@@ -2,7 +2,10 @@
 <template>
   <body class="admin-mode">
   <div class="container">
-    <SideBar menu-type="admin" />
+    <button class="bookmark-toggle" @click="toggleSidebar">
+      <span class="bookmark-text">選單</span>
+    </button>
+    <SideBar menu-type="admin" :class="{ active: isSidebarActive }" />
     <div class="main-content">
       <div class="header">
         <span>Hi Sales01</span>
@@ -14,7 +17,7 @@
           <div class="action-buttons">
             <button class="action-button" @click="navigateTo('AddProduct')">+ 新增產品</button>
             <button class="action-button" @click="batchDelete">- 批量刪除</button>
-            <button class="action-button export-btn" @click="exportReport">↓ 報表匯出</button>
+            <button class="action-button" @click="exportReport">↓ 報表匯出</button>
             <div class="search-container">
               <input type="text" v-model="searchQuery" placeholder="搜尋產品..." class="search-input" />
               <select v-model="searchType" class="search-select">
@@ -109,7 +112,8 @@ export default {
       selectedImage: '',
       currentPage: 1,
       itemsPerPage: 10,
-      allSelected: false
+      allSelected: false,
+      isSidebarActive: false,
     };
   },
   computed: {
@@ -281,7 +285,10 @@ export default {
       if (newPage >= 1 && newPage <= this.totalPages) {
         this.currentPage = newPage;
       }
-    }
+    },
+    toggleSidebar() {
+      this.isSidebarActive = !this.isSidebarActive;
+    },
   },
   mounted() {
     this.updateCurrentTime();
@@ -291,7 +298,7 @@ export default {
   },
   beforeUnmount() {
     clearInterval(this.timeInterval);
-  }
+  },
 };
 </script>
 

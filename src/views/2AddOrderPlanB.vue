@@ -10,105 +10,106 @@
       </div>
       
       <div class="content-wrapper">
-        <div class="page-header">
-          <h2>新增訂單</h2>
-          <p class="order-number">訂單號：{{ generatedOrderNumber }}</p>
-        </div>
+        <div class="scrollable-content">
+          <div class="page-header">
+            <h2>新增訂單</h2>
+            <p class="order-number">訂單號：{{ generatedOrderNumber }}</p>
+          </div>
 
-        <div class="order-form">
-          <div class="form-group" v-for="(product, index) in orderProducts" :key="index">
-            <div class="input-group">
-              <div class="product-header">
-                <label :for="'product' + (index + 1)">品項 {{ index + 1 }}</label>
-                <button v-if="index > 0" class="remove-btn" @click="removeProduct(index)">移除</button>
-              </div>
-              <div class="product-select">
-                <select 
-                  :id="'product' + (index + 1)" 
-                  v-model="product.product_id"
-                  @change="handleProductChange(index)">
-                  <option value="">請選擇產品</option>
-                  <option v-for="item in availableProducts" 
-                          :key="item.id" 
-                          :value="item.id">
-                    {{ item.name }}
-                  </option>
-                </select>
-              </div>
-              <div class="quantity-input">
-                <div class="quantity-control">
-                  <input 
-                    type="number" 
-                    v-model.number="product.quantity"
-                    :min="selectedProduct(product.product_id)?.min_order_qty || 1"
-                    :max="selectedProduct(product.product_id)?.max_order_qty || 9999"
-                    @input="validateQuantity(index)">
-                  <span class="unit">{{ selectedProduct(product.product_id)?.unit || 'kg' }}</span>
+          <div class="order-form">
+            <div class="form-group" v-for="(product, index) in orderProducts" :key="index">
+              <div class="input-group">
+                <div class="product-header">
+                  <button v-if="index > 0" class="remove-btn" @click="removeProduct(index)">移除</button>
                 </div>
-                <div class="quantity-hint" v-if="selectedProduct(product.product_id)">
-                  最小訂購量: {{ selectedProduct(product.product_id).min_order_qty }}
-                  最大訂購量: {{ selectedProduct(product.product_id).max_order_qty }}
+                <div class="product-select">
+                  <select 
+                    :id="'product' + (index + 1)" 
+                    v-model="product.product_id"
+                    @change="handleProductChange(index)">
+                    <option value="">請選擇產品</option>
+                    <option v-for="item in availableProducts" 
+                            :key="item.id" 
+                            :value="item.id">
+                      {{ item.name }}
+                    </option>
+                  </select>
                 </div>
-              </div>
-              <div class="date-input">
-                <label :for="'shipping-date' + index">出貨日期：</label>
-                <input 
-                  type="date" 
-                  :id="'shipping-date' + index"
-                  v-model="product.shipping_date"
-                  :min="minDate"
-                  :max="maxDate"
-                  required>
-              </div>
-              <div class="remark-input">
-                <label :for="'remark' + index">備註：</label>
-                <textarea 
-                  :id="'remark' + index"
-                  v-model="product.remark"
-                  rows="2"
-                  placeholder="請輸入備註（選填）"
-                  maxlength="200">
-                </textarea>
-                <div class="char-count">{{ product.remark.length }}/200</div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="add-product">
-            <button @click="addProduct" :disabled="orderProducts.length >= 10">
-              + 新增品項
-            </button>
-            <span class="hint" v-if="orderProducts.length >= 10">
-              最多可新增 10 個品項
-            </span>
-          </div>
-          
-          <div class="order-summary" v-if="hasProducts">
-            <h3>訂單摘要</h3>
-            <div class="summary-items">
-              <div v-for="(product, index) in orderProducts" :key="index">
-                <template v-if="product.product_id">
-                  {{ selectedProduct(product.product_id)?.name }} - 
-                  {{ product.quantity }} {{ selectedProduct(product.product_id)?.unit || 'kg' }}
-                  <div class="summary-detail">
-                    出貨日期：{{ product.shipping_date || '未設定' }}
-                    <div v-if="product.remark" class="summary-remark">
-                      備註：{{ product.remark }}
-                    </div>
+                <div class="quantity-input">
+                  <div class="quantity-control">
+                    <input 
+                      type="number" 
+                      v-model.number="product.quantity"
+                      :min="selectedProduct(product.product_id)?.min_order_qty || 1"
+                      :max="selectedProduct(product.product_id)?.max_order_qty || 9999"
+                      @input="validateQuantity(index)">
+                    <span class="unit">{{ selectedProduct(product.product_id)?.unit || 'kg' }}</span>
                   </div>
-                </template>
+                  <div class="quantity-hint" v-if="selectedProduct(product.product_id)">
+                    最小訂購量: {{ selectedProduct(product.product_id).min_order_qty }}
+                    最大訂購量: {{ selectedProduct(product.product_id).max_order_qty }}
+                  </div>
+                </div>
+                <div class="date-input">
+                  <label :for="'shipping-date' + index">出貨日期：</label>
+                  <input 
+                    type="date" 
+                    :id="'shipping-date' + index"
+                    v-model="product.shipping_date"
+                    :min="minDate"
+                    :max="maxDate"
+                    required>
+                </div>
+                <div class="remark-input">
+                  <label :for="'remark' + index">備註：</label>
+                  <textarea 
+                    :id="'remark' + index"
+                    v-model="product.remark"
+                    rows="2"
+                    placeholder="請輸入備註（選填）"
+                    maxlength="200">
+                  </textarea>
+                  <div class="char-count">{{ product.remark.length }}/200</div>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <div class="button-group">
-            <button 
-              class="submit-btn" 
-              @click="submitOrder"
-              :disabled="!isFormValid">
-              提交訂單
-            </button>
-            <button class="cancel-btn" @click="cancelOrder">取消</button>
+            
+            <div class="add-product">
+              <button @click="addProduct" :disabled="orderProducts.length >= 10">
+                + 新增品項
+              </button>
+              <span class="hint" v-if="orderProducts.length >= 10">
+                最多可新增 10 個品項
+              </span>
+            </div>
+            
+            <div class="order-summary" v-if="hasProducts">
+              <h3>訂單摘要</h3>
+              <div class="summary-items">
+                <div v-for="(product, index) in orderProducts" :key="index">
+                  <template v-if="product.product_id">
+                    {{ selectedProduct(product.product_id)?.name }} - 
+                    {{ product.quantity }} {{ selectedProduct(product.product_id)?.unit || 'kg' }}
+                    <div class="summary-detail">
+                      出貨日期：{{ product.shipping_date || '未設定' }}
+                      <div v-if="product.remark" class="summary-remark">
+                        備註：{{ product.remark }}
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+            
+            <div class="button-group">
+              <button 
+                class="submit-btn" 
+                @click="submitOrder"
+                :disabled="!isFormValid">
+                提交訂單
+              </button>
+              <button class="cancel-btn" @click="cancelOrder">取消</button>
+            </div>
           </div>
         </div>
       </div>

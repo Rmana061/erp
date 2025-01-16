@@ -151,8 +151,21 @@ const router = createRouter({
 
 // 修改路由守衛
 router.beforeEach((to, from, next) => {
+  // 根據路由設置標題
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    // 檢查管理員登入狀態
+    document.title = '管理者系統';
+  } else if (to.matched.some(record => record.meta.requiresCustomerAuth)) {
+    document.title = '客戶系統';
+  } else if (to.path === '/admin-login') {
+    document.title = '管理者系統';
+  } else if (to.path === '/customer-login') {
+    document.title = '客戶系統';
+  } else {
+    document.title = 'ERP系統';
+  }
+
+  // 檢查登入狀態
+  if (to.matched.some(record => record.meta.requiresAuth)) {
     const isAuthenticated = sessionStorage.getItem('isAuthenticated');
     if (!isAuthenticated) {
       next({
@@ -163,7 +176,6 @@ router.beforeEach((to, from, next) => {
       next();
     }
   } else if (to.matched.some(record => record.meta.requiresCustomerAuth)) {
-    // 檢查客戶登入狀態
     const isCustomerAuthenticated = sessionStorage.getItem('isCustomerAuthenticated');
     if (!isCustomerAuthenticated) {
       next({

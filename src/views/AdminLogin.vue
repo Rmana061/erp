@@ -32,6 +32,14 @@ export default {
       password: ''
     };
   },
+  mounted() {
+    document.title = '管理者系統';
+  },
+  beforeUnmount() {
+    if (this.timeInterval) {
+      clearInterval(this.timeInterval);
+    }
+  },
   methods: {
     async handleLogin() {
       try {

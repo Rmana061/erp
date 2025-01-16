@@ -4,121 +4,91 @@
   <div class="container">
     <SideBar menu-type="admin" />
     <div class="main-content">
-      <div class="header">
-        <span>Hi Sales01</span>
-        <span>{{ currentTime }}</span>
-      </div>
-      
-      <h2>{{ isEditing ? '編輯產品' : '新增產品' }}</h2>
-      <form @submit.prevent="submitProduct">
-        <div class="form-container">
-          <div class="form-group">
-            <label>產品名稱：</label>
-            <div class="input-container">
-              <input type="text" placeholder="（管理員自填）" v-model="product.name">
+      <div class="content-wrapper">
+        <div class="scrollable-content">
+          <div class="form-container">
+            <h2>{{ isEdit ? '編輯產品' : '新增產品' }}</h2>
+            <div class="form-group">
+              <label>產品名稱：</label>
+              <input v-model="product.name" type="text" placeholder="請輸入產品名稱">
             </div>
-          </div>
-          <div class="form-group">
-            <label>產品描述：</label>
-            <div class="input-container">
-              <textarea rows="3" placeholder="（管理員自填）" v-model="product.description"></textarea>
+            <div class="form-group">
+              <label>產品描述：</label>
+              <textarea v-model="product.description" placeholder="請輸入產品描述"></textarea>
             </div>
-          </div>
-          <div class="form-group">
-            <label>產品圖片：</label>
-            <div class="input-container">
-              <input 
-                type="file" 
-                accept="image/*" 
-                @change="handleImageUpload" 
-                ref="imageInput"
-              >
-              <div v-if="product.image_url" class="preview-container">
-                <img 
-                  :src="product.image_url" 
-                  class="image-preview" 
-                  alt="產品圖片預覽"
-                >
-                <span class="file-name">{{ getFileName(product.image_url) }}</span>
-              </div>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>產品DM：</label>
-            <div class="input-container">
-              <input 
-                type="file" 
-                accept=".pdf,.doc,.docx" 
-                @change="handleDocumentUpload"
-                ref="documentInput"
-              >
-              <div v-if="product.dm_url" class="preview-container">
-                <span class="file-name">
-                  目前文件: {{ getFileName(product.dm_url) }}
-                  <a 
-                    v-if="product.dm_url" 
-                    :href="getFullUrl(product.dm_url)" 
-                    target="_blank" 
-                    class="view-file"
-                  >
-                    查看文件
-                  </a>
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>最小下單數量：</label>
-            <div class="input-container">
-              <input type="number" placeholder="（自填）" v-model.number="product.min_order_qty">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>最大下單數量：</label>
-            <div class="input-container">
-              <input type="number" placeholder="（自填）" v-model.number="product.max_order_qty">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>產品單位：</label>
-            <div class="input-container">
-              <input type="text" placeholder="（例：件、台）" v-model="product.product_unit">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>出貨時間：</label>
-            <div class="input-container">
-              <input 
-                type="text" 
-                placeholder="（例：3天請輸入3）" 
-                v-model="product.shipping_time"
-                @input="handleShippingTimeChange"
-                :disabled="product.special_date">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>特殊日期：</label>
-            <div class="input-container checkbox-container">
-              <label class="checkbox-label">
+            <div class="form-group">
+              <label>產品圖片：</label>
+              <div class="input-container">
                 <input 
-                  type="checkbox" 
-                  v-model="product.special_date" 
-                  class="custom-checkbox"
-                  @change="handleSpecialDateChange">
-                <span class="checkmark"></span>
-              </label>
+                  type="file" 
+                  accept="image/*" 
+                  @change="handleImageUpload" 
+                  ref="imageInput"
+                >
+                <div v-if="product.image_url" class="preview-container">
+                  <img 
+                    :src="product.image_url" 
+                    class="image-preview" 
+                    alt="產品圖片預覽"
+                  >
+                  <span class="file-name">{{ getFileName(product.image_url) }}</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div class="button-group">
-            <button type="submit" class="action-button">
-              {{ isEditing ? '保存修改' : '新增產品' }}
-            </button>
-            <button type="button" class="action-button cancel" @click="cancel">
-              取消
-            </button>
+            <div class="form-group">
+              <label>產品DM：</label>
+              <div class="input-container">
+                <input 
+                  type="file" 
+                  accept=".pdf,.doc,.docx" 
+                  @change="handleDocumentUpload"
+                  ref="documentInput"
+                >
+                <div v-if="product.dm_url" class="preview-container">
+                  <span class="file-name">
+                    目前文件: {{ getFileName(product.dm_url) }}
+                    <a 
+                      v-if="product.dm_url" 
+                      :href="getFullUrl(product.dm_url)" 
+                      target="_blank" 
+                      class="view-file"
+                    >
+                      查看文件
+                    </a>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>最小下單數量：</label>
+              <input v-model="product.min_order" type="number" placeholder="請輸入最小下單數量">
+            </div>
+            <div class="form-group">
+              <label>最大下單數量：</label>
+              <input v-model="product.max_order" type="number" placeholder="請輸入最大下單數量">
+            </div>
+            <div class="form-group">
+              <label>產品單位：</label>
+              <input v-model="product.unit" type="text" placeholder="請輸入產品單位">
+            </div>
+            <div class="form-group">
+              <label>出貨時間：</label>
+              <input v-model="product.shipping_time" type="number" placeholder="請輸入出貨時間">
+            </div>
+            <div class="form-group">
+              <label>特殊日期：</label>
+              <div class="custom-checkbox">
+                <input type="checkbox" v-model="product.special_date">
+                <span class="checkmark"></span>
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button class="action-button" @click="saveProduct">保存</button>
+              <button class="action-button cancel" @click="cancel">取消</button>
+            </div>
           </div>
         </div>
-      </form>
+      </div>
     </div>
   </div>
   </body>

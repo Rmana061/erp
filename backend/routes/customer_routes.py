@@ -98,14 +98,17 @@ def add_customer():
         cursor.execute("""
             INSERT INTO customers (
                 username, password, company_name, contact_name, 
-                phone, email, address, status, created_at, updated_at
+                phone, email, address, line_account, viewable_products, remark,
+                status, created_at, updated_at
             ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, 'active', NOW(), NOW()
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                'active', NOW(), NOW()
             ) RETURNING id
         """, (
             data['username'], hashed_password, data['company_name'],
             data['contact_person'], data['phone'], data['email'],
-            data['address']
+            data['address'], data.get('line_account', ''),
+            data.get('viewable_products', ''), data.get('remark', '')
         ))
         
         new_id = cursor.fetchone()[0]
