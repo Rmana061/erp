@@ -5,7 +5,7 @@
     <SideBar menu-type="admin" />
     <div class="main-content">
       <div class="header">
-        <span>Hi Sales01</span>
+        <span>Hi {{ adminName }}您好,</span>
         <span>{{ currentTime }}</span>
       </div>
       
@@ -26,10 +26,12 @@
 </template>
 
 <script>
+import { adminMixin } from '../mixins/adminMixin';
 import SideBar from '../components/SideBar.vue';
 
 export default {
   name: 'NotificationSetting',
+  mixins: [adminMixin],
   components: {
     SideBar
   },

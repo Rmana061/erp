@@ -4,6 +4,10 @@
   <div class="container">
     <SideBar menu-type="admin" />
     <div class="main-content">
+      <div class="header">
+        <span>Hi {{ adminName }}您好,</span>
+        <span>{{ currentTime }}</span>
+      </div>
       <div class="content-wrapper">
         <div class="scrollable-content">
           <div class="form-container">
@@ -77,10 +81,10 @@
             </div>
             <div class="form-group">
               <label>特殊日期：</label>
-              <div class="custom-checkbox">
+              <label class="custom-checkbox">
                 <input type="checkbox" v-model="product.special_date">
                 <span class="checkmark"></span>
-              </div>
+              </label>
             </div>
             <div class="action-buttons">
               <button class="action-button" @click="saveProduct">保存</button>
@@ -97,9 +101,11 @@
 <script>
 import axios from 'axios';
 import SideBar from '../components/SideBar.vue';
+import { adminMixin } from '../mixins/adminMixin';
 
 export default {
   name: 'AddProduct',
+  mixins: [adminMixin],
   components: {
     SideBar
   },
@@ -330,5 +336,58 @@ export default {
 <style>
 @import '../assets/styles/unified-base.css';
 
-/* 所有其他樣式已移至 unified-base */
+.custom-checkbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 5px 0;
+  user-select: none;
+}
+
+.custom-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.custom-checkbox .checkmark {
+  position: relative;
+  height: 18px;
+  width: 18px;
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 3px;
+  margin-right: 8px;
+}
+
+.custom-checkbox:hover input ~ .checkmark {
+  border-color: #40b883;
+}
+
+.custom-checkbox input:checked ~ .checkmark {
+  background-color: #40b883;
+  border-color: #40b883;
+}
+
+.custom-checkbox .checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 5px;
+  top: 1px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.custom-checkbox input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* 其他样式保持不变 */
 </style>

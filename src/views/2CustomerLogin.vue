@@ -45,16 +45,23 @@ export default {
           }
         });
 
-        if (response.data.message === 'Login successful') {
-          // 設置登入狀態
+        if (response.data.status === 'success') {
+          // 保存用户信息到 localStorage
+          localStorage.setItem('customer_id', response.data.data.customer_id);
+          localStorage.setItem('username', response.data.data.username);
+          
+          // 保存公司信息到 sessionStorage
+          sessionStorage.setItem('userInfo', JSON.stringify(response.data.data));
           sessionStorage.setItem('isCustomerAuthenticated', 'true');
-          sessionStorage.setItem('customerId', response.data.customer_id);
+          
           // 登入成功後導向客戶首頁
           this.$router.push('/customer-homepage');
+        } else {
+          alert(response.data.message || '登入失敗');
         }
       } catch (error) {
         console.error('Login error:', error);
-        alert('登入失敗：帳號或密碼錯誤');
+        alert(error.response?.data?.error || '登入失敗：帳號或密碼錯誤');
       }
     },
     toggleMenu() {

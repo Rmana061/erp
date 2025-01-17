@@ -551,6 +551,7 @@ tr:hover {
 }
 
 .action-buttons {
+  justify-content: center;
   display: flex;
   gap: 10px;
   margin-bottom: 20px;
@@ -560,7 +561,7 @@ tr:hover {
 /* 產品列表樣式 */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   padding: 20px;
 }

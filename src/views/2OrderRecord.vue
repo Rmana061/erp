@@ -6,7 +6,7 @@
     
     <div class="main-content">
       <div class="header">
-        <span>Hi A公司您好,</span>
+        <span>Hi {{ companyName }}您好,</span>
         <span>{{ currentTime }}</span>
       </div>
       
@@ -49,14 +49,16 @@
 
 <script>
 import { timeMixin } from '../mixins/timeMixin';
+import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
+import axios from 'axios';
 
 export default {
   name: 'OrderRecord',
   components: {
     SideBar
   },
-  mixins: [timeMixin],
+  mixins: [timeMixin, companyMixin],
   mounted() {
     document.title = '客戶系統';
   },

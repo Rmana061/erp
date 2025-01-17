@@ -5,7 +5,7 @@
     <SideBar menu-type="customer" />
     <div class="main-content">
       <div class="header">
-        <span>Hi A公司您好,</span>
+        <span>Hi {{ companyName }}您好,</span>
         <span id="current-time">{{ currentTime }}</span>
       </div>
       
@@ -120,14 +120,16 @@
 
 <script>
 import { timeMixin } from '../mixins/timeMixin';
+import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
+import axios from 'axios';
 
 export default {
   name: 'AddOrderPlanB',
   components: {
     SideBar
   },
-  mixins: [timeMixin],
+  mixins: [timeMixin, companyMixin],
   data() {
     return {
       orderProducts: [{
@@ -141,7 +143,8 @@ export default {
         { id: 2, name: '硫酸', min_order_qty: 10, max_order_qty: 200, unit: 'kg' },
         { id: 3, name: '鹽酸', min_order_qty: 8, max_order_qty: 150, unit: 'kg' }
       ],
-      generatedOrderNumber: this.generateOrderNumber()
+      generatedOrderNumber: this.generateOrderNumber(),
+      currentTime: ''
     };
   },
   computed: {
@@ -241,7 +244,55 @@ export default {
       if (confirm('確定要取消訂單嗎？已填寫的內容將會遺失。')) {
         this.$router.push('/order-system');
       }
+    },
+    async fetchCompanyInfo() {
+      try {
+        // 检查本地存储中是否有 customer_id
+        const customerId = localStorage.getItem('customer_id');
+        if (!customerId) {
+          console.log('No customer_id found in localStorage');
+          this.$router.push('/customer-login');
+          return;
+        }
+
+        // 尝试从 sessionStorage 获取用户信息缓存
+        const cachedUserInfo = sessionStorage.getItem('userInfo');
+        if (cachedUserInfo) {
+          const userInfo = JSON.parse(cachedUserInfo);
+          if (userInfo && userInfo.company_name) {
+            this.companyName = userInfo.company_name;
+            return;
+          }
+        }
+
+        // 如果没有缓存，则调用 API
+        const response = await axios.get('http://localhost:5000/api/customer/info', {
+          withCredentials: true  // 确保发送 cookies
+        });
+        
+        if (response.data.status === 'success') {
+          this.companyName = response.data.data.company_name;
+          sessionStorage.setItem('userInfo', JSON.stringify(response.data.data));
+        } else {
+          throw new Error(response.data.message || '获取用户信息失败');
+        }
+      } catch (error) {
+        console.error('Error fetching company info:', error);
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('customer_id'); // 清除失效的登录状态
+          sessionStorage.removeItem('userInfo');
+          alert('登入已過期，請重新登入');
+          this.$router.push('/customer-login');
+          return;
+        }
+        this.companyName = '客戶';
+      }
     }
+  },
+  created() {
+    this.updateCurrentTime();
+    setInterval(this.updateCurrentTime, 60000);
+    this.fetchCompanyInfo();
   }
 };
 </script>

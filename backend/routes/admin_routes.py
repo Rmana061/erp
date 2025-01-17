@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from backend.config.database import get_db_connection
 from backend.utils.password_utils import hash_password
 import datetime
@@ -294,4 +294,42 @@ def delete_admin():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500 
+        }), 500
+
+@admin_bp.route('/admin/info', methods=['GET'])
+def get_admin_info():
+    try:
+        admin_id = session.get('admin_id')
+        if not admin_id:
+            return jsonify({"status": "error", "message": "未登入或登入已過期"}), 401
+
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        
+        cursor.execute("""
+            SELECT id, admin_account, admin_name, staff_no, permission_level_id
+            FROM administrators 
+            WHERE id = %s AND status = 'active'
+        """, (admin_id,))
+        
+        admin_data = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not admin_data:
+            return jsonify({"status": "error", "message": "找不到管理員資訊"}), 404
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "id": admin_data['id'],
+                "admin_account": admin_data['admin_account'],
+                "admin_name": admin_data['admin_name'],
+                "staff_no": admin_data['staff_no'],
+                "permission_level_id": admin_data['permission_level_id']
+            }
+        })
+
+    except Exception as e:
+        print(f"Error in get_admin_info: {str(e)}")
+        return jsonify({"status": "error", "message": "獲取管理員資訊失敗"}), 500 

@@ -6,7 +6,7 @@
     
     <div class="main-content">
       <div class="header">
-        <span>Hi A公司您好,</span>
+        <span>Hi {{ companyName }}您好,</span>
         <span>{{ currentTime }}</span>
       </div>
       
@@ -40,14 +40,16 @@
 
 <script>
 import { timeMixin } from '../mixins/timeMixin';
+import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
+import axios from 'axios';
 
 export default {
   name: 'AccountSettings',
   components: {
     SideBar
   },
-  mixins: [timeMixin],
+  mixins: [timeMixin, companyMixin],
   methods: {
     bindAccount() {
       alert('綁定帳號功能');

@@ -1,74 +1,92 @@
 <!-- 管理者登入 -->
 <template>
   <body class="admin-mode">
+  <div class="container">
     <div class="login-container">
       <div class="login-box">
-        <h2>管理者登入</h2>
-        <form @submit.prevent="handleLogin">
-          <div class="input-group">
-            <label>帳號：</label>
-            <input type="text" v-model="username" required>
+        <h2>管理者系統</h2>
+        <form class="login-form" @submit.prevent="submitForm">
+          <div class="form-group">
+            <label for="account">帳號</label>
+            <input 
+              type="text" 
+              id="account"
+              v-model="loginForm.account"
+              required>
           </div>
-          <div class="input-group">
-            <label>密碼：</label>
-            <input type="password" v-model="password" required>
+          <div class="form-group">
+            <label for="password">密碼</label>
+            <input 
+              type="password" 
+              id="password"
+              v-model="loginForm.password"
+              required>
           </div>
           <button type="submit" class="login-button">登入</button>
         </form>
       </div>
     </div>
+  </div>
   </body>
 </template>
 
 <script>
 import axios from 'axios';
 
-
 export default {
   name: 'AdminLogin',
   data() {
     return {
-      username: '',
-      password: ''
+      loginForm: {
+        account: '',
+        password: ''
+      }
     };
   },
-  mounted() {
-    document.title = '管理者系統';
-  },
-  beforeUnmount() {
-    if (this.timeInterval) {
-      clearInterval(this.timeInterval);
-    }
-  },
   methods: {
-    async handleLogin() {
+    async submitForm() {
       try {
-        const response = await axios.post('http://127.0.0.1:5000/api/login', {
-          username: this.username,
-          password: this.password
-        }, {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
+        const response = await axios.post(
+          'http://127.0.0.1:5000/api/admin-login',
+          {
+            admin_account: this.loginForm.account,
+            admin_password: this.loginForm.password
+          },
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
           }
-        });
+        );
 
-        if (response.data.message === 'Login successful') {
-          // 設置登入狀態
+        if (response.data.status === 'success') {
+          // 保存登录信息
+          localStorage.setItem('admin_id', response.data.data.id);
+          sessionStorage.setItem('adminInfo', JSON.stringify({
+            id: response.data.data.id,
+            admin_account: response.data.data.admin_account,
+            admin_name: response.data.data.admin_name,
+            staff_no: response.data.data.staff_no,
+            permission_level_id: response.data.data.permission_level_id
+          }));
           sessionStorage.setItem('isAuthenticated', 'true');
-          // 登入成功後導向今日訂單頁面
-          this.$router.push('/today-orders');
+
+          // 使用 Vue Router 进行导航
+          this.$router.push({ name: 'TodayOrders' });
+        } else {
+          alert(response.data.message || '登入失敗');
         }
       } catch (error) {
-        console.error('Login error:', error);
-        alert('登入失敗：帳號或密碼錯誤');
+        console.log('Login error:', error);
+        alert(error.response?.data?.message || '登入失敗，請稍後再試');
       }
     }
   }
 };
 </script>
 
-<style>
+<style scoped>
 @import '../assets/styles/unified-base.css';
 
 /* 所有其他樣式已移至 unified-base */

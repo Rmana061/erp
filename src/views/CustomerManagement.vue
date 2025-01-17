@@ -5,7 +5,7 @@
     <SideBar menu-type="admin" />
     <div class="main-content">
       <div class="header">
-        <span>Hi Sales01</span>
+        <span>Hi {{ adminName }}您好,</span>
         <span>{{ currentTime }}</span>
       </div>
       <div class="content-wrapper">
@@ -61,9 +61,11 @@
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 import SideBar from '../components/SideBar.vue';
+import { adminMixin } from '../mixins/adminMixin';
 
 export default {
   name: 'CustomerManagement',
+  mixins: [adminMixin],
   components: {
     SideBar
   },

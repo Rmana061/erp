@@ -5,19 +5,24 @@
     <SideBar menu-type="admin" />
     <div class="main-content">
       <div class="header">
-        <span>Hi Sales01</span>
+        <span>Hi {{ adminName }}您好,</span>
         <span>{{ currentTime }}</span>
       </div>
+      
       <div class="content-wrapper">
-        <div class="scrollable-content">
+        <div class="page-header">
           <h2>今日訂單</h2>
-          <button class="export-btn" @click="exportToExcel">📊 報表匯出</button>
-          
+          <button class="export-btn" @click="exportOrders">
+            <i class="fas fa-file-export"></i> 報表匯出
+          </button>
+        </div>
+
+        <div class="scrollable-content">
           <div class="table-container">
-            <table id="orderTable">
+            <table>
               <thead>
                 <tr>
-                  <th></th>
+                  <th>序號</th>
                   <th>日期</th>
                   <th>客戶</th>
                   <th>品項</th>
@@ -35,14 +40,31 @@
                   <td>{{ order.item }}</td>
                   <td>{{ order.quantity }}</td>
                   <td>{{ order.orderNumber }}</td>
-                  <td>{{ order.notes }}</td>
-                  <td><span :class="statusClass(order.status)">{{ order.statusText }}</span></td>
+                  <td>{{ order.note }}</td>
+                  <td>
+                    <div class="status-buttons">
+                      <button 
+                        class="approve-btn" 
+                        @click="approveOrder(order.id)"
+                        :disabled="order.status === 'approved'">
+                        核准
+                      </button>
+                      <button 
+                        class="reject-btn" 
+                        @click="rejectOrder(order.id)"
+                        :disabled="order.status === 'rejected'">
+                        駁回
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
-          
-          <p>結果會透過LINE發送</p>
+        </div>
+        
+        <div class="notification">
+          結果會透過LINE發送
         </div>
       </div>
     </div>
@@ -51,68 +73,94 @@
 </template>
 
 <script>
+import { timeMixin } from '../mixins/timeMixin';
+import { adminMixin } from '../mixins/adminMixin';
 import SideBar from '../components/SideBar.vue';
+import axios from 'axios';
 
 export default {
   name: 'TodayOrders',
   components: {
     SideBar
   },
+  mixins: [timeMixin, adminMixin],
   data() {
     return {
-      currentTime: '',
       orders: [
-        { date: '08/15', customer: 'A公司', item: '漂白水', quantity: 10, orderNumber: 'T240815001', notes: '', status: 'pending', statusText: '待審核' },
-        { date: '08/15', customer: 'A公司', item: '硫酸', quantity: 5, orderNumber: 'T240815002', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/15', customer: 'B公司', item: '鹽酸', quantity: 5, orderNumber: 'T240815003', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/15', customer: 'C公司', item: '硫酸', quantity: 5, orderNumber: 'T240815004', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/15', customer: 'D公司', item: '漂白水', quantity: 20, orderNumber: 'T240815005', notes: '', status: 'rejected', statusText: 'X' },
+        {
+          id: 1,
+          date: '08/15',
+          customer: 'A公司',
+          item: '漂白水',
+          quantity: '10',
+          orderNumber: 'T240815001',
+          note: '',
+          status: 'pending'
+        },
+        {
+          id: 2,
+          date: '08/15',
+          customer: 'A公司',
+          item: '硫酸',
+          quantity: '5',
+          orderNumber: 'T240815002',
+          note: '',
+          status: 'pending'
+        },
+        {
+          id: 3,
+          date: '08/15',
+          customer: 'B公司',
+          item: '鹽酸',
+          quantity: '5',
+          orderNumber: 'T240815003',
+          note: '',
+          status: 'pending'
+        },
+        {
+          id: 4,
+          date: '08/15',
+          customer: 'C公司',
+          item: '硫酸',
+          quantity: '5',
+          orderNumber: 'T240815004',
+          note: '',
+          status: 'pending'
+        },
+        {
+          id: 5,
+          date: '08/15',
+          customer: 'D公司',
+          item: '漂白水',
+          quantity: '20',
+          orderNumber: 'T240815005',
+          note: '',
+          status: 'pending'
+        }
       ]
     };
   },
   methods: {
-    updateCurrentTime() {
-      const now = new Date();
-      const options = { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit', 
-        weekday: 'long', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false 
-      };
-      this.currentTime = now.toLocaleString('zh-TW', options)
-        .replace(/\//g, '/')
-        .replace('星期', ' 星期')
-        .replace(/(\d+):(\d+)/, '$1:$2');
+    exportOrders() {
+      alert('匯出功能尚未實現');
     },
-    statusClass(status) {
-      switch(status) {
-        case 'pending':
-          return 'status status-pending';
-        case 'approved':
-          return 'status status-approved';
-        case 'rejected':
-          return 'status status-rejected';
+    approveOrder(orderId) {
+      const order = this.orders.find(o => o.id === orderId);
+      if (order) {
+        order.status = 'approved';
       }
     },
-    exportToExcel() {
-      alert('報表匯出功能尚未實現');
+    rejectOrder(orderId) {
+      const order = this.orders.find(o => o.id === orderId);
+      if (order) {
+        order.status = 'rejected';
+      }
     }
-  },
-  mounted() {
-    this.updateCurrentTime();
-    this.timeInterval = setInterval(this.updateCurrentTime, 60000);
-    document.title = '管理者系統';
-  },
-  beforeUnmount() {
-    clearInterval(this.timeInterval);
   }
 };
 </script>
 
-<style>
+<style scoped>
 @import '../assets/styles/unified-base.css';
 
 /* 所有其他樣式已移至 unified-base */

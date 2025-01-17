@@ -4,69 +4,67 @@
   <div class="container">
     <SideBar menu-type="admin" />
     <div class="main-content">
-      <div class="content-wrapper">
-        <div class="scrollable-content">
-          <div class="header">
-            <span>Hi Sales01</span>
-            <span>{{ currentTime }}</span>
-          </div>
-          
-          <h2>{{ isEditing ? '編輯客戶' : '新增客戶' }}</h2>
-          <form @submit.prevent="submitCustomer">
-            <div class="form-container">
-              <div class="form-group">
-                <label>公司名稱：</label>
-                <input type="text" v-model="newCustomer.companyName" placeholder="（管理員自填）">
-              </div>
-              <div class="form-group">
-                <label>帳號：</label>
-                <input type="text" v-model="newCustomer.account" placeholder="（管理員自填）">
-              </div>
-              <div class="form-group">
-                <label>密碼：</label>
-                <input type="password" v-model="newCustomer.password" placeholder="（管理員自填）">
-              </div>
-              <div class="form-group">
-                <label>可購產品：</label>
-                <div class="checkbox-group">
-                  <label v-for="(product, index) in products" :key="index" class="custom-checkbox">
-                    <input type="checkbox" v-model="newCustomer.selectedProducts" :value="product.value">
-                    <span class="checkmark"></span>
-                    {{ product.name }}
-                  </label>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>LINE帳號綁定：</label>
-                <input type="text" v-model="newCustomer.lineAccount" placeholder="">
-              </div>
-              <div class="form-group">
-                <label>聯絡人：</label>
-                <input type="text" v-model="newCustomer.contactPerson" placeholder="請輸入聯絡人姓名">
-              </div>
-              <div class="form-group">
-                <label>電話：</label>
-                <input type="tel" v-model="newCustomer.phone" placeholder="請輸入聯絡電話">
-              </div>
-              <div class="form-group">
-                <label>Email：</label>
-                <input type="email" v-model="newCustomer.email" placeholder="請輸入電子郵件地址">
-              </div>
-              <div class="form-group">
-                <label>地址：</label>
-                <input type="text" v-model="newCustomer.address" placeholder="請輸入完整地址">
-              </div>
-              <div class="form-group">
-                <label>備註：</label>
-                <textarea v-model="newCustomer.notes" placeholder="請輸入其他相關備註"></textarea>
-              </div>
-              <div class="button-group">
-                <button type="submit" class="submit-btn">確認</button>
-                <button type="button" class="cancel-btn" @click="$router.go(-1)">取消</button>
+      <div class="header">
+        <span>Hi {{ adminName }}您好,</span>
+        <span>{{ currentTime }}</span>
+      </div>
+      
+      <h2>{{ isEditing ? '編輯客戶' : '新增客戶' }}</h2>
+      <div class="scrollable-content">
+        <form @submit.prevent="submitCustomer">
+          <div class="form-container">
+            <div class="form-group">
+              <label>公司名稱：</label>
+              <input type="text" v-model="newCustomer.companyName" placeholder="（管理員自填）">
+            </div>
+            <div class="form-group">
+              <label>帳號：</label>
+              <input type="text" v-model="newCustomer.account" placeholder="（管理員自填）">
+            </div>
+            <div class="form-group">
+              <label>密碼：</label>
+              <input type="password" v-model="newCustomer.password" placeholder="（管理員自填）">
+            </div>
+            <div class="form-group">
+              <label>可購產品：</label>
+              <div class="checkbox-group">
+                <label v-for="(product, index) in products" :key="index" class="custom-checkbox">
+                  <input type="checkbox" v-model="newCustomer.selectedProducts" :value="product.value">
+                  <span class="checkmark"></span>
+                  <span>{{ product.name }}</span>
+                </label>
               </div>
             </div>
-          </form>
-        </div>
+            <div class="form-group">
+              <label>LINE帳號綁定：</label>
+              <input type="text" v-model="newCustomer.lineAccount" placeholder="">
+            </div>
+            <div class="form-group">
+              <label>聯絡人：</label>
+              <input type="text" v-model="newCustomer.contactPerson" placeholder="請輸入聯絡人姓名">
+            </div>
+            <div class="form-group">
+              <label>電話：</label>
+              <input type="tel" v-model="newCustomer.phone" placeholder="請輸入聯絡電話">
+            </div>
+            <div class="form-group">
+              <label>Email：</label>
+              <input type="email" v-model="newCustomer.email" placeholder="請輸入電子郵件地址">
+            </div>
+            <div class="form-group">
+              <label>地址：</label>
+              <input type="text" v-model="newCustomer.address" placeholder="請輸入完整地址">
+            </div>
+            <div class="form-group">
+              <label>備註：</label>
+              <textarea v-model="newCustomer.notes" placeholder="請輸入其他相關備註"></textarea>
+            </div>
+            <div class="button-group">
+              <button type="submit" class="submit-btn">確認</button>
+              <button type="button" class="cancel-btn" @click="$router.go(-1)">取消</button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -76,9 +74,11 @@
 <script>
 import axios from 'axios';
 import SideBar from '../components/SideBar.vue';
+import { adminMixin } from '../mixins/adminMixin';
 
 export default {
   name: 'AddCustomer',
+  mixins: [adminMixin],
   components: {
     SideBar
   },
@@ -205,11 +205,12 @@ export default {
       }
     }
   },
-  created() {
+  mounted() {
     this.updateCurrentTime();
     setInterval(this.updateCurrentTime, 60000);
     document.title = '管理者系統';
     this.fetchProducts();
+    this.fetchAdminInfo();
   },
   watch: {
     $route() {
@@ -222,5 +223,64 @@ export default {
 <style>
 @import '../assets/styles/unified-base.css';
 
-/* 所有其他樣式已移至 unified-base */
+/* 表单容器样式 */
+.form-container {
+  background-color: #f5fffa;
+  padding: 20px;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.form-group {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.form-group label {
+  width: 120px;
+  text-align: right;
+  margin-right: 10px;
+  padding-top: 8px;
+}
+
+.form-group input,
+.form-group textarea {
+  width: calc(100% - 135px);
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  width: calc(100% - 135px);
+  gap: 5px;
+}
+
+.checkbox-group .custom-checkbox {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.checkbox-group .custom-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+}
+
+.checkbox-group .custom-checkbox .checkmark {
+  margin-right: 8px;
+}
+
+.button-group {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.button-group button {
+  margin: 0 10px;
+  padding: 8px 20px;
+}
 </style>

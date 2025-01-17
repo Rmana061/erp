@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from backend.config.database import get_db_connection
 from backend.utils.password_utils import hash_password
 import datetime
@@ -292,6 +292,62 @@ def delete_customer():
         
     except Exception as e:
         print(f"Error in delete_customer: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@customer_bp.route('/customer/info', methods=['GET'])
+def get_customer_info():
+    try:
+        # 从 session 中获取用户 ID
+        customer_id = session.get('customer_id')
+        if not customer_id:
+            return jsonify({
+                "status": "error",
+                "message": "未登入或登入已過期"
+            }), 401
+
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed"}), 500
+
+        cursor = conn.cursor()
+        
+        # 查询客户信息
+        cursor.execute("""
+            SELECT id, username, company_name, contact_name, 
+                   phone, email, address, line_account, viewable_products
+            FROM customers 
+            WHERE id = %s AND status = 'active'
+        """, (customer_id,))
+        
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({
+                "status": "error",
+                "message": "找不到客戶資料"
+            }), 404
+
+        # 构建返回数据
+        columns = ['id', 'username', 'company_name', 'contact_name', 
+                  'phone', 'email', 'address', 'line_account', 'viewable_products']
+        customer_data = dict(zip(columns, result))
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "data": customer_data
+        })
+
+    except Exception as e:
+        print(f"Error in get_customer_info: {str(e)}")
         if 'cursor' in locals():
             cursor.close()
         if 'conn' in locals():

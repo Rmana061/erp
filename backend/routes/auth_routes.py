@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from backend.config.database import get_db_connection
 from backend.utils.password_utils import verify_password
 
@@ -57,7 +57,7 @@ def customer_login():
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT id, username, password 
+            SELECT id, username, password, company_name 
             FROM customers 
             WHERE username = %s 
             AND status = 'active'
@@ -73,9 +73,19 @@ def customer_login():
         cursor.close()
         conn.close()
         
+        # 设置 session
+        session['customer_id'] = customer[0]
+        session['username'] = customer[1]
+        session['company_name'] = customer[3]
+        
         response = jsonify({
-            "message": "Login successful",
-            "customer_id": customer[0]
+            "status": "success",
+            "message": "登入成功",
+            "data": {
+                "customer_id": customer[0],
+                "username": customer[1],
+                "company_name": customer[3]
+            }
         })
         
         return response
@@ -87,3 +97,83 @@ def customer_login():
         if 'conn' in locals():
             conn.close()
         return jsonify({"error": str(e)}), 500 
+
+@auth_bp.route('/admin-login', methods=['POST'])
+def admin_login():
+    try:
+        data = request.json
+        if not data or 'admin_account' not in data or 'admin_password' not in data:
+            return jsonify({
+                "status": "error",
+                "message": "缺少必要的登入資訊"
+            }), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # 查询管理员信息
+        cursor.execute("""
+            SELECT id, admin_account, admin_name, admin_password, staff_no, permission_level_id
+            FROM administrators 
+            WHERE admin_account = %s AND status = 'active'
+        """, (data['admin_account'],))
+        
+        admin = cursor.fetchone()
+        
+        if admin is None:
+            cursor.close()
+            conn.close()
+            return jsonify({
+                "status": "error",
+                "message": "帳號或密碼錯誤"
+            }), 401
+
+        # 将查询结果转换为字典
+        admin_data = {
+            'id': admin[0],
+            'admin_account': admin[1],
+            'admin_name': admin[2],
+            'admin_password': admin[3],
+            'staff_no': admin[4],
+            'permission_level_id': admin[5]
+        }
+
+        # 验证密码
+        if not verify_password(data['admin_password'], admin_data['admin_password']):
+            cursor.close()
+            conn.close()
+            return jsonify({
+                "status": "error",
+                "message": "帳號或密碼錯誤"
+            }), 401
+
+        cursor.close()
+        conn.close()
+
+        # 设置 session
+        session['admin_id'] = admin_data['id']
+        session['admin_account'] = admin_data['admin_account']
+        
+        # 返回管理员信息
+        return jsonify({
+            "status": "success",
+            "message": "登入成功",
+            "data": {
+                "id": admin_data['id'],
+                "admin_account": admin_data['admin_account'],
+                "admin_name": admin_data['admin_name'],
+                "staff_no": admin_data['staff_no'],
+                "permission_level_id": admin_data['permission_level_id']
+            }
+        })
+
+    except Exception as e:
+        print(f"Error in admin_login: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            "status": "error",
+            "message": "登入失敗，請稍後再試"
+        }), 500 

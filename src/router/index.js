@@ -7,37 +7,17 @@ import CustomerManagement from '../views/CustomerManagement.vue';
 import NotificationSetting from '../views/NotificationSetting.vue';
 import ProductManagement from '../views/ProductManagement.vue';
 import TodayOrders from '../views/TodayOrders.vue';
-import CustomerHomepage from '../views/2CustomerHomepage.vue';  // 更新後的檔名
-import AccountSettings from '../views/2AccountSettings.vue';    // 更新後的檔名
+import CustomerHomepage from '../views/2CustomerHomepage.vue';  
+import AccountSettings from '../views/2AccountSettings.vue';    
 import AddPersonnel from '../views/AddPersonnel.vue';
 import AddCustomer from '../views/AddCustomer.vue';
 import AddProduct from '../views/AddProduct.vue';
-import AddOrderPlanB from '../views/2AddOrderPlanB.vue';        // 更新後的檔名
-import ProductList from '../views/2ProductList.vue';            // 更新後的檔名
-import OrderSystem from '../views/2OrderSystem.vue';            // 更新後的檔名
-import OrderRecord from '../views/2OrderRecord.vue';            // 更新後的檔名
+import AddOrderPlanB from '../views/2AddOrderPlanB.vue';        
+import ProductList from '../views/2ProductList.vue';            
+import OrderSystem from '../views/2OrderSystem.vue';            
+import OrderRecord from '../views/2OrderRecord.vue';            
 import AdminLogin from '../views/AdminLogin.vue';
 import CustomerLogin from '../views/2CustomerLogin.vue';
-
-const routes = [
-  { path: '/admin', component: Admin, name: 'Admin' },
-  { path: '/all-orders', component: AllOrders, name: 'AllOrders' },
-  { path: '/customer-management', component: CustomerManagement, name: 'CustomerManagement' },
-  { path: '/notification-setting', component: NotificationSetting, name: 'NotificationSetting' },
-  { path: '/product-management', component: ProductManagement, name: 'ProductManagement' },
-  { path: '/today-orders', component: TodayOrders, name: 'TodayOrders' },
-  { path: '/customer-homepage', component: CustomerHomepage, name: 'CustomerHomepage' },
-  { path: '/account-settings', component: AccountSettings, name: 'AccountSettings' },
-  { path: '/add-personnel', component: AddPersonnel, name: 'AddPersonnel' },
-  { path: '/add-customer', component: AddCustomer, name: 'AddCustomer' },
-  { path: '/add-product', component: AddProduct, name: 'AddProduct' },
-  { path: '/add-order-plan-b', component: AddOrderPlanB, name: 'AddOrderPlanB' },
-  { path: '/product-list', component: ProductList, name: 'ProductList' },
-  { path: '/order-system', component: OrderSystem, name: 'OrderSystem' },
-  { path: '/order-record', component: OrderRecord, name: 'OrderRecord' },
-  { path: '/admin-login', component: AdminLogin, name: 'AdminLogin' },
-  { path: '/customer-login', component: CustomerLogin, name: 'CustomerLogin' }
-];
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

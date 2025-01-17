@@ -5,7 +5,7 @@
     <SideBar menu-type="customer" />
       <div class="main-content">
         <div class="header">
-          <span>Hi {{ username }}</span>
+          <span>Hi {{ companyName }}您好,</span>
           <span>{{ currentTime }}</span>
         </div>
 
@@ -70,6 +70,7 @@
 
 <script>
 import { timeMixin } from '../mixins/timeMixin';
+import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
 
@@ -78,7 +79,7 @@ export default {
   components: {
     SideBar
   },
-  mixins: [timeMixin],
+  mixins: [timeMixin, companyMixin],
   data() {
     return {
       username: 'Customer',
