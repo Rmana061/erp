@@ -356,3 +356,56 @@ def get_customer_info():
             "status": "error",
             "message": str(e)
         }), 500 
+
+@customer_bp.route('/customer/<int:customer_id>/info', methods=['GET'])
+def get_customer_detail(customer_id):
+    try:
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed"}), 500
+            
+        cursor = conn.cursor()
+        
+        # 查询客户信息
+        cursor.execute("""
+            SELECT id, username, company_name, contact_name, 
+                   phone, email, address, line_account, viewable_products, remark
+            FROM customers 
+            WHERE id = %s AND status = 'active'
+        """, (customer_id,))
+        
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({
+                "status": "error",
+                "message": "找不到客戶資料"
+            }), 404
+
+        # 构建返回数据
+        columns = ['id', 'username', 'company_name', 'contact_name', 
+                  'phone', 'email', 'address', 'line_account', 'viewable_products', 'remark']
+        customer_data = dict(zip(columns, result))
+        
+        # 将 contact_name 映射为 contact_person
+        if 'contact_name' in customer_data:
+            customer_data['contact_person'] = customer_data['contact_name']
+            del customer_data['contact_name']
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "data": customer_data
+        })
+
+    except Exception as e:
+        print(f"Error in get_customer_detail: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500 

@@ -86,6 +86,7 @@ export default {
     return {
       isMenuOpen: false,
       currentTime: '',
+      isEditing: false,
       newCustomer: {
         companyName: '',
         account: '',
@@ -98,8 +99,20 @@ export default {
         address: '',
         notes: ''
       },
-      products: []
+      products: [],
+      editingId: null
     };
+  },
+  created() {
+    // 检查是否是编辑模式
+    const query = this.$route.query;
+    if (query.mode === 'edit') {
+      this.isEditing = true;
+      this.editingId = query.id;
+      // 从数据库获取客户详细信息
+      this.fetchCustomerDetails(query.id);
+    }
+    this.fetchProducts(); // 获取产品列表
   },
   methods: {
     toggleMenu() {
@@ -116,12 +129,16 @@ export default {
         const requiredFields = {
           companyName: '公司名稱',
           account: '帳號',
-          password: '密碼',
           contactPerson: '聯絡人',
           phone: '電話',
           email: 'Email',
           address: '地址'
         };
+
+        // 如果不是编辑模式，添加密码验证
+        if (!this.isEditing) {
+          requiredFields.password = '密碼';
+        }
 
         for (const [field, label] of Object.entries(requiredFields)) {
           if (!this.newCustomer[field]) {
@@ -133,7 +150,6 @@ export default {
         // 准备发送到后端的数据
         const customerData = {
           username: this.newCustomer.account,
-          password: this.newCustomer.password,
           company_name: this.newCustomer.companyName,
           contact_person: this.newCustomer.contactPerson,
           phone: this.newCustomer.phone,
@@ -141,23 +157,33 @@ export default {
           address: this.newCustomer.address,
           line_account: this.newCustomer.lineAccount,
           viewable_products: this.newCustomer.selectedProducts.length > 0 ? this.newCustomer.selectedProducts.join(',') : '',
-          remark: this.newCustomer.notes || ''  // 确保备注字段不为 null
+          remark: this.newCustomer.notes || ''
         };
 
-        console.log('Sending customer data:', customerData); // 用于调试
+        // 如果不是编辑模式或有填写新密码，则添加密码字段
+        if (!this.isEditing || this.newCustomer.password) {
+          customerData.password = this.newCustomer.password;
+        }
 
-        // 发送请求到后端
-        const response = await axios.post('http://localhost:5000/api/customer/add', customerData);
+        let response;
+        if (this.isEditing) {
+          // 编辑现有客户
+          customerData.id = this.editingId;
+          response = await axios.put('http://localhost:5000/api/customer/update', customerData);
+        } else {
+          // 新增客户
+          response = await axios.post('http://localhost:5000/api/customer/add', customerData);
+        }
 
         if (response.data.status === 'success') {
-          alert('客戶新增成功');
+          alert(this.isEditing ? '客戶更新成功' : '客戶新增成功');
           this.$router.push('/customer-management');
         } else {
-          throw new Error(response.data.message || '新增失敗');
+          throw new Error(response.data.message || '操作失敗');
         }
       } catch (error) {
         console.error('Error submitting customer:', error);
-        alert(error.response?.data?.message || '新增失敗，請稍後再試');
+        alert(error.response?.data?.message || '操作失敗，請稍後再試');
       }
     },
     updateCurrentTime() {
@@ -203,14 +229,41 @@ export default {
       } catch (error) {
         console.error('Error fetching products:', error);
       }
+    },
+    async fetchCustomerDetails(customerId) {
+      try {
+        const response = await axios.get(`http://localhost:5000/api/customer/${customerId}/info`, {
+          withCredentials: true
+        });
+        
+        if (response.data.status === 'success') {
+          const customerData = response.data.data;
+          // 填充表单数据
+          this.newCustomer = {
+            companyName: customerData.company_name || '',
+            account: customerData.username || '',
+            password: '', // 密码不回填
+            selectedProducts: customerData.viewable_products ? customerData.viewable_products.split(',') : [],
+            lineAccount: customerData.line_account || '',
+            contactPerson: customerData.contact_person || '',
+            phone: customerData.phone || '',
+            email: customerData.email || '',
+            address: customerData.address || '',
+            notes: customerData.remark || ''
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching customer details:', error);
+        alert('獲取客戶資料失敗');
+      }
     }
   },
-  mounted() {
+  async mounted() {
     this.updateCurrentTime();
     setInterval(this.updateCurrentTime, 60000);
     document.title = '管理者系統';
-    this.fetchProducts();
-    this.fetchAdminInfo();
+    await this.fetchAdminInfo();
+    await this.fetchProducts();
   },
   watch: {
     $route() {

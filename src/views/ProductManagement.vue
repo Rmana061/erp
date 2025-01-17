@@ -13,19 +13,19 @@
       </div>
       <div class="content-wrapper">
         <div class="scrollable-content">
-          <h2>產品管理</h2>
-          <div class="action-buttons">
-            <button class="action-button" @click="navigateTo('AddProduct')">+ 新增產品</button>
+      <h2>產品管理</h2>
+      <div class="action-buttons">
+        <button class="action-button" @click="navigateTo('AddProduct')">+ 新增產品</button>
             <button class="action-button" @click="batchDelete">- 批量刪除</button>
             <button class="action-button" @click="exportReport">↓ 報表匯出</button>
             <div class="search-container">
-              <input type="text" v-model="searchQuery" placeholder="搜尋產品..." class="search-input" />
+        <input type="text" v-model="searchQuery" placeholder="搜尋產品..." class="search-input" />
               <select v-model="searchType" class="search-select">
                 <option value="name">產品名稱</option>
                 <option value="description">產品描述</option>
               </select>
             </div>
-          </div>
+      </div>
 
           <div class="table-container">
             <table>
@@ -46,10 +46,10 @@
                 <tr v-for="product in filteredProducts" :key="product.id">
                   <td><input type="checkbox" v-model="product.selected"></td>
                   <td>
-                    <img 
-                      :src="product.image_url" 
+            <img 
+              :src="product.image_url" 
                       class="product-thumbnail"
-                      @click="showLargeImage(product.image_url)"
+              @click="showLargeImage(product.image_url)"
                       alt="產品圖片"
                     >
                   </td>
@@ -62,33 +62,33 @@
                   <td>
                     <button class="table-button edit" @click="editProduct(product)">編輯</button>
                     <button class="table-button delete" @click="deleteProduct(product)">刪除</button>
-                    <a v-if="product.dm_url" 
-                       :href="product.dm_url" 
-                       target="_blank" 
+                <a v-if="product.dm_url" 
+                   :href="product.dm_url" 
+                   target="_blank" 
                        class="table-button">查看 DM</a>
                   </td>
                 </tr>
               </tbody>
             </table>
-          </div>
+              </div>
 
           <div class="pagination">
             <button @click="changePage(-1)" :disabled="currentPage === 1">上一頁</button>
             <span>{{ currentPage }} / {{ totalPages }}</span>
             <button @click="changePage(1)" :disabled="currentPage === totalPages">下一頁</button>
           </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
   <!-- 圖片預覽模態框 -->
   <div v-if="showModal" class="modal" @click="closeModal">
-    <div class="modal-content">
-      <span class="close-button" @click.stop="closeModal">&times;</span>
-      <img :src="selectedImage" alt="放大圖片" class="large-image">
+      <div class="modal-content">
+        <span class="close-button" @click.stop="closeModal">&times;</span>
+        <img :src="selectedImage" alt="放大圖片" class="large-image">
+      </div>
     </div>
-  </div>
   </body>
 </template>
 
@@ -180,19 +180,19 @@ export default {
       if (confirm(`確定要刪除選中的 ${selectedProducts.length} 個產品嗎？`)) {
         try {
           await Promise.all(selectedProducts.map(product => 
-            axios.delete(`http://127.0.0.1:5000/api/products/${product.id}`, {
-              withCredentials: true,
-              headers: {
-                "Content-Type": "application/json",
-              },
-            })
+          axios.delete(`http://127.0.0.1:5000/api/products/${product.id}`, {
+            withCredentials: true,
+            headers: {
+              "Content-Type": "application/json",
+            },
+          })
           ));
-          
-          alert("產品已成功刪除");
-          this.fetchProducts();
+
+            alert("產品已成功刪除");
+            this.fetchProducts();
         } catch (error) {
-          console.error("Error deleting products:", error);
-          alert("刪除產品時發生錯誤：" + error.message);
+            console.error("Error deleting products:", error);
+            alert("刪除產品時發生錯誤：" + error.message);
         }
       }
     },
@@ -235,7 +235,7 @@ export default {
         "建立時間",
         "更新時間",
       ];
-      
+
       const data = [
         headers,
         ...this.products.map(product => [
@@ -253,7 +253,7 @@ export default {
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(data);
-      
+
       XLSX.utils.book_append_sheet(wb, ws, "產品清單");
       XLSX.writeFile(wb, "產品資料.xlsx");
     },
@@ -286,7 +286,7 @@ export default {
       const newPage = this.currentPage + direction;
       if (newPage >= 1 && newPage <= this.totalPages) {
         this.currentPage = newPage;
-      }
+    }
     },
     toggleSidebar() {
       this.isSidebarActive = !this.isSidebarActive;
