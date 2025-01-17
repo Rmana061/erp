@@ -56,9 +56,14 @@
                     type="date" 
                     :id="'shipping-date' + index"
                     v-model="product.shipping_date"
-                    :min="minDate"
+                    :min="getMinShippingDate(product.product_id)"
                     :max="maxDate"
+                    @change="validateShippingDate(index)"
                     required>
+                  <div class="shipping-hint" v-if="product.product_id && selectedProduct(product.product_id)">
+                    <div>最早出貨日期：{{ getMinShippingDate(product.product_id) }}</div>
+                    <div class="shipping-time">（出貨時間：{{ selectedProduct(product.product_id).shipping_time || 0 }}天）</div>
+                  </div>
                 </div>
                 <div class="remark-input">
                   <label :for="'remark' + index">備註：</label>
@@ -181,11 +186,27 @@ export default {
     selectedProduct(productId) {
       return this.availableProducts.find(p => p.id === productId);
     },
+    getMinShippingDate(productId) {
+      const product = this.selectedProduct(productId);
+      if (!product) {
+        return this.minDate;
+      }
+
+      const today = new Date();
+      const minDate = new Date(today);
+      minDate.setDate(today.getDate() + (parseInt(product.shipping_time) || 0));
+      return minDate.toISOString().split('T')[0];
+    },
     handleProductChange(index) {
       const product = this.orderProducts[index];
       const selectedProduct = this.selectedProduct(product.product_id);
       if (selectedProduct) {
+        // 设置最小订购量
         product.quantity = selectedProduct.min_order_qty;
+        
+        // 设置最早可选日期
+        const minShippingDate = this.getMinShippingDate(product.product_id);
+        product.shipping_date = minShippingDate;
       }
     },
     validateQuantity(index) {
@@ -197,6 +218,15 @@ export default {
         product.quantity = selectedProduct.min_order_qty;
       } else if (product.quantity > selectedProduct.max_order_qty) {
         product.quantity = selectedProduct.max_order_qty;
+      }
+    },
+    validateShippingDate(index) {
+      const product = this.orderProducts[index];
+      const minDate = this.getMinShippingDate(product.product_id);
+      
+      if (product.shipping_date && product.shipping_date < minDate) {
+        alert(`根據產品出貨時間，最早可選擇的出貨日期為 ${minDate}`);
+        product.shipping_date = minDate;
       }
     },
     addProduct() {
@@ -311,14 +341,19 @@ export default {
         console.log('Products response:', response.data);
 
         if (response.data.status === 'success') {
-          this.availableProducts = response.data.data.map(product => ({
-            id: product.id,
-            name: product.name,
-            min_order_qty: product.min_order_qty || 1,
-            max_order_qty: product.max_order_qty || 9999,
-            unit: product.product_unit || 'kg'
-          }));
-          console.log('Available products:', this.availableProducts);
+          console.log('Raw product data:', response.data.data);
+          this.availableProducts = response.data.data.map(product => {
+            console.log(`Processing product ${product.id}:`, product);
+            return {
+              id: product.id,
+              name: product.name,
+              min_order_qty: product.min_order_qty || 1,
+              max_order_qty: product.max_order_qty || 9999,
+              unit: product.product_unit || 'kg',
+              shipping_time: product.shipping_time || 0
+            };
+          });
+          console.log('Processed available products:', this.availableProducts);
         }
       } catch (error) {
         console.error('Error fetching products:', error);

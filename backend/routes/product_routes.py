@@ -332,7 +332,7 @@ def get_viewable_products():
         # 查询产品信息，包括所有需要的字段
         cursor.execute(f"""
             SELECT id, name, description, min_order_qty, max_order_qty, 
-                   product_unit as unit, status
+                   product_unit as unit, shipping_time, status
             FROM products 
             WHERE id IN ({placeholders})
             AND status = 'active'
