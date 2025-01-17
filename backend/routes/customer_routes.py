@@ -195,7 +195,10 @@ def update_customer():
             'contact_person': 'contact_name',
             'phone': 'phone',
             'email': 'email',
-            'address': 'address'
+            'address': 'address',
+            'line_account': 'line_account',
+            'viewable_products': 'viewable_products',
+            'remark': 'remark'
         }
         
         for key, field in field_mapping.items():

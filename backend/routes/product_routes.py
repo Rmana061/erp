@@ -305,4 +305,58 @@ def upload_document():
 
 @product_bp.route('/uploads/<path:filename>')
 def uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename) 
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+@product_bp.route('/products/viewable', methods=['GET'])
+def get_viewable_products():
+    try:
+        product_ids = request.args.get('ids', '')
+        if not product_ids:
+            return jsonify({
+                "status": "success",
+                "data": []
+            })
+
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed"}), 500
+
+        cursor = conn.cursor()
+        
+        # 将逗号分隔的ID字符串转换为列表
+        id_list = product_ids.split(',')
+        
+        # 构建 IN 查询的占位符
+        placeholders = ','.join(['%s'] * len(id_list))
+        
+        # 查询产品信息，包括所有需要的字段
+        cursor.execute(f"""
+            SELECT id, name, description, min_order_qty, max_order_qty, 
+                   product_unit as unit, status
+            FROM products 
+            WHERE id IN ({placeholders})
+            AND status = 'active'
+            ORDER BY name
+        """, id_list)
+        
+        columns = [desc[0] for desc in cursor.description]
+        products = [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "data": products
+        })
+
+    except Exception as e:
+        print(f"Error in get_viewable_products: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500 

@@ -35,33 +35,35 @@ export default {
   methods: {
     async handleLogin() {
       try {
-        const response = await axios.post('http://127.0.0.1:5000/api/customer-login', {
+        const response = await axios.post('http://localhost:5000/api/customer-login', {
           username: this.username,
           password: this.password
         }, {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          withCredentials: true
         });
 
         if (response.data.status === 'success') {
-          // 保存用户信息到 localStorage
+          // 保存用户信息到 localStorage 和 sessionStorage
           localStorage.setItem('customer_id', response.data.data.customer_id);
-          localStorage.setItem('username', response.data.data.username);
           
-          // 保存公司信息到 sessionStorage
-          sessionStorage.setItem('userInfo', JSON.stringify(response.data.data));
-          sessionStorage.setItem('isCustomerAuthenticated', 'true');
+          // 获取完整的用户信息
+          const userInfoResponse = await axios.get(`http://localhost:5000/api/customer/${response.data.data.customer_id}/info`, {
+            withCredentials: true
+          });
           
-          // 登入成功後導向客戶首頁
-          this.$router.push('/customer-homepage');
+          if (userInfoResponse.data.status === 'success') {
+            sessionStorage.setItem('userInfo', JSON.stringify(userInfoResponse.data.data));
+            sessionStorage.setItem('isCustomerAuthenticated', 'true');
+            this.$router.push('/customer-homepage');
+          } else {
+            throw new Error('Failed to get user info');
+          }
         } else {
           alert(response.data.message || '登入失敗');
         }
       } catch (error) {
         console.error('Login error:', error);
-        alert(error.response?.data?.error || '登入失敗：帳號或密碼錯誤');
+        alert(error.response?.data?.message || '登入失敗，請稍後再試');
       }
     },
     toggleMenu() {

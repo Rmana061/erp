@@ -138,17 +138,14 @@ export default {
         shipping_date: '',
         remark: ''
       }],
-      availableProducts: [
-        { id: 1, name: '漂白水', min_order_qty: 5, max_order_qty: 100, unit: 'kg' },
-        { id: 2, name: '硫酸', min_order_qty: 10, max_order_qty: 200, unit: 'kg' },
-        { id: 3, name: '鹽酸', min_order_qty: 8, max_order_qty: 150, unit: 'kg' }
-      ],
+      availableProducts: [],
       generatedOrderNumber: this.generateOrderNumber(),
       currentTime: ''
     };
   },
   computed: {
     hasProducts() {
+      console.log('Available products count:', this.availableProducts.length);
       return this.orderProducts.some(p => p.product_id && p.quantity > 0);
     },
     isFormValid() {
@@ -247,28 +244,30 @@ export default {
     },
     async fetchCompanyInfo() {
       try {
-        // 检查本地存储中是否有 customer_id
         const customerId = localStorage.getItem('customer_id');
+        console.log('Customer ID from localStorage:', customerId);
+        
         if (!customerId) {
           console.log('No customer_id found in localStorage');
           this.$router.push('/customer-login');
           return;
         }
 
-        // 尝试从 sessionStorage 获取用户信息缓存
         const cachedUserInfo = sessionStorage.getItem('userInfo');
         if (cachedUserInfo) {
           const userInfo = JSON.parse(cachedUserInfo);
+          console.log('Cached user info:', userInfo);
           if (userInfo && userInfo.company_name) {
             this.companyName = userInfo.company_name;
             return;
           }
         }
 
-        // 如果没有缓存，则调用 API
         const response = await axios.get('http://localhost:5000/api/customer/info', {
-          withCredentials: true  // 确保发送 cookies
+          withCredentials: true
         });
+        
+        console.log('Company info response:', response.data);
         
         if (response.data.status === 'success') {
           this.companyName = response.data.data.company_name;
@@ -277,15 +276,63 @@ export default {
           throw new Error(response.data.message || '获取用户信息失败');
         }
       } catch (error) {
-        console.error('Error fetching company info:', error);
-        if (error.response && error.response.status === 401) {
-          localStorage.removeItem('customer_id'); // 清除失效的登录状态
-          sessionStorage.removeItem('userInfo');
-          alert('登入已過期，請重新登入');
+        console.error('Error in fetchCompanyInfo:', error);
+        if (error.response) {
+          console.error('Error response:', error.response.data);
+        }
+        this.companyName = '客戶';
+      }
+    },
+    async fetchProducts() {
+      try {
+        console.log('Fetching products...');
+        // 先从 sessionStorage 获取用户信息
+        const cachedUserInfo = sessionStorage.getItem('userInfo');
+        if (!cachedUserInfo) {
+          console.log('No cached user info found');
           this.$router.push('/customer-login');
           return;
         }
-        this.companyName = '客戶';
+
+        const userInfo = JSON.parse(cachedUserInfo);
+        console.log('User info from cache:', userInfo);
+        
+        if (!userInfo.viewable_products) {
+          console.log('No viewable products found');
+          this.availableProducts = [];
+          return;
+        }
+
+        // 获取可见产品的详细信息
+        const response = await axios.get(`http://localhost:5000/api/products/viewable?ids=${userInfo.viewable_products}`, {
+          withCredentials: true
+        });
+
+        console.log('Products response:', response.data);
+
+        if (response.data.status === 'success') {
+          this.availableProducts = response.data.data.map(product => ({
+            id: product.id,
+            name: product.name,
+            min_order_qty: product.min_order_qty || 1,
+            max_order_qty: product.max_order_qty || 9999,
+            unit: product.product_unit || 'kg'
+          }));
+          console.log('Available products:', this.availableProducts);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+        if (error.response) {
+          console.error('Error response:', error.response.data);
+          if (error.response.status === 401) {
+            // 如果认证失败，清除缓存并重定向到登录页面
+            sessionStorage.removeItem('userInfo');
+            localStorage.removeItem('customer_id');
+            this.$router.push('/customer-login');
+            return;
+          }
+        }
+        this.availableProducts = [];
       }
     }
   },
@@ -293,6 +340,8 @@ export default {
     this.updateCurrentTime();
     setInterval(this.updateCurrentTime, 60000);
     this.fetchCompanyInfo();
+    console.log('Component created, fetching products...');
+    this.fetchProducts();
   }
 };
 </script>
