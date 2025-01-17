@@ -52,18 +52,23 @@
                 </div>
                 <div class="date-input">
                   <label :for="'shipping-date' + index">出貨日期：</label>
-                  <input 
-                    type="date" 
-                    :id="'shipping-date' + index"
-                    v-model="product.shipping_date"
-                    :min="getMinShippingDate(product.product_id)"
-                    :max="maxDate"
-                    @change="validateShippingDate(index)"
-                    required>
-                  <div class="shipping-hint" v-if="product.product_id && selectedProduct(product.product_id)">
-                    <div>最早出貨日期：{{ getMinShippingDate(product.product_id) }}</div>
-                    <div class="shipping-time">（出貨時間：{{ selectedProduct(product.product_id).shipping_time || 0 }}天）</div>
-                  </div>
+                  <template v-if="selectedProduct(product.product_id)?.special_date">
+                    <div class="special-date-notice">請和供應商確認日期</div>
+                  </template>
+                  <template v-else>
+                    <input 
+                      type="date" 
+                      :id="'shipping-date' + index"
+                      v-model="product.shipping_date"
+                      :min="getMinShippingDate(product.product_id)"
+                      :max="maxDate"
+                      @change="validateShippingDate(index)"
+                      required>
+                    <div class="shipping-hint" v-if="product.product_id && selectedProduct(product.product_id)">
+                      <div>最早出貨日期：{{ getMinShippingDate(product.product_id) }}</div>
+                      <div class="shipping-time">（出貨時間：{{ selectedProduct(product.product_id).shipping_time || 0 }}天）</div>
+                    </div>
+                  </template>
                 </div>
                 <div class="remark-input">
                   <label :for="'remark' + index">備註：</label>
@@ -350,7 +355,8 @@ export default {
               min_order_qty: product.min_order_qty || 1,
               max_order_qty: product.max_order_qty || 9999,
               unit: product.product_unit || 'kg',
-              shipping_time: product.shipping_time || 0
+              shipping_time: product.shipping_time || 0,
+              special_date: product.special_date || false
             };
           });
           console.log('Processed available products:', this.availableProducts);
@@ -383,6 +389,16 @@ export default {
 
 <style>
 @import '../assets/styles/unified-base.css';
+
+.special-date-notice {
+  color: #e74c3c;
+  font-size: 0.9em;
+  padding: 8px;
+  background-color: #fdeaea;
+  border-radius: 4px;
+  margin-top: 4px;
+  text-align: center;
+}
 
 /* 所有其他樣式已移至 unified-base */
 </style>
