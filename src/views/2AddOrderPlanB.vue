@@ -101,7 +101,13 @@
                     {{ selectedProduct(product.product_id)?.name }} - 
                     {{ product.quantity }} {{ selectedProduct(product.product_id)?.unit || 'kg' }}
                     <div class="summary-detail">
-                      出貨日期：{{ product.shipping_date || '未設定' }}
+                      出貨日期：
+                      <template v-if="selectedProduct(product.product_id)?.special_date">
+                        請和供應商確認日期
+                      </template>
+                      <template v-else>
+                        {{ product.shipping_date || '未設定' }}
+                      </template>
                       <div v-if="product.remark" class="summary-remark">
                         備註：{{ product.remark }}
                       </div>
@@ -251,25 +257,43 @@ export default {
       if (!this.isFormValid) return;
       
       try {
+        // 获取当前客户ID
+        const customerId = localStorage.getItem('customer_id');
+        if (!customerId) {
+          throw new Error('未找到客戶ID，請重新登入');
+        }
+
+        // 过滤掉未选择产品的项目
+        const validProducts = this.orderProducts.filter(p => p.product_id && p.quantity > 0);
+        
+        // 准备订单数据
         const orderData = {
           order_number: this.generatedOrderNumber,
-          products: this.orderProducts.filter(p => p.product_id && p.quantity > 0)
-            .map(p => ({
-              product_id: p.product_id,
-              quantity: p.quantity,
-              unit: this.selectedProduct(p.product_id).unit,
-              shipping_date: p.shipping_date,
-              remark: p.remark.trim()
-            })),
-          status: '待確認'
+          customer_id: parseInt(customerId),
+          products: validProducts.map(product => {
+            const selectedProd = this.selectedProduct(product.product_id);
+            return {
+              product_id: product.product_id,
+              product_quantity: product.quantity,
+              product_unit: selectedProd.unit,
+              order_status: '待確認',
+              shipping_date: selectedProd.special_date ? null : product.shipping_date,
+              remark: product.remark.trim()
+            };
+          })
         };
-        
-        console.log('提交訂單:', orderData);
-        alert('訂單已提交');
+
+        // 发送订单到后端
+        const response = await axios.post('http://localhost:5000/api/orders', orderData, {
+          withCredentials: true
+        });
+
+        console.log('訂單提交成功:', response.data);
+        alert('訂單已成功提交');
         this.$router.push('/order-system');
       } catch (error) {
         console.error('提交訂單失敗:', error);
-        alert('提交訂單失敗，請稍後重試');
+        alert('提交訂單失敗：' + (error.response?.data?.message || error.message));
       }
     },
     cancelOrder() {

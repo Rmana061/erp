@@ -10,6 +10,7 @@ from backend.routes.product_routes import product_bp
 from backend.routes.auth_routes import auth_bp
 from backend.routes.customer_routes import customer_bp
 from backend.routes.admin_routes import admin_bp
+from backend.routes.order_routes import order_bp
 
 app = Flask(__name__)
 
@@ -46,6 +47,7 @@ app.register_blueprint(product_bp, url_prefix='/api')
 app.register_blueprint(auth_bp, url_prefix='/api')
 app.register_blueprint(customer_bp, url_prefix='/api')
 app.register_blueprint(admin_bp, url_prefix='/api')
+app.register_blueprint(order_bp, url_prefix='/api')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
