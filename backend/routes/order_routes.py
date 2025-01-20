@@ -135,46 +135,51 @@ def get_orders():
         """
         
         cursor.execute(sql, (customer_id,))
-        rows = cursor.fetchall()
+        
+        # 获取列名
+        columns = [desc[0] for desc in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
         
         # 重组数据结构
         orders = {}
-        for row in cursor.fetchall():
+        for row in rows:
             order_id = row['order_id']
             if order_id not in orders:
                 orders[order_id] = {
                     'order_id': row['order_id'],
                     'order_number': row['order_number'],
-                    'customer_id': row['customer_id'],
-                    'created_at': row['order_created_at'],
-                    'details': []
+                    'created_at': row['order_created_at'].strftime('%Y-%m-%d %H:%M:%S') if row['order_created_at'] else None,
+                    'products': []
                 }
             
-            orders[order_id]['details'].append({
-                'detail_id': row['detail_id'],
+            orders[order_id]['products'].append({
+                'id': row['detail_id'],
                 'product_id': row['product_id'],
                 'product_name': row['product_name'],
                 'product_quantity': row['product_quantity'],
                 'product_unit': row['product_unit'],
                 'order_status': row['order_status'],
-                'shipping_date': row['shipping_date'],
-                'remark': row['remark'],
-                'created_at': row['detail_created_at']
+                'shipping_date': row['shipping_date'].strftime('%Y-%m-%d') if row['shipping_date'] else None,
+                'remark': row['remark']
             })
         
         cursor.close()
         conn.close()
         
+        # 将字典转换为列表并返回
+        orders_list = list(orders.values())
+        print("Returning orders:", orders_list)  # 添加调试日志
+        
         return jsonify({
             'status': 'success',
-            'data': list(orders.values())
+            'data': orders_list
         })
         
     except Exception as e:
-        print(f"Error in get_orders: {str(e)}")
+        print(f"Error in get_orders: {str(e)}")  # 添加错误日志
+        if 'cursor' in locals():
+            cursor.close()
         if 'conn' in locals():
-            if 'cursor' in locals():
-                cursor.close()
             conn.close()
         return jsonify({
             'status': 'error',
