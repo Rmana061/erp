@@ -184,4 +184,228 @@ def get_orders():
         return jsonify({
             'status': 'error',
             'message': str(e)
+        }), 500
+
+@order_bp.route('/orders/cancel', methods=['POST'])
+def cancel_order():
+    try:
+        data = request.json
+        if not data or 'order_number' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': '缺少訂單編號'
+            }), 400
+
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({
+                'status': 'error',
+                'message': '數據庫連接失敗'
+            }), 500
+
+        cursor = conn.cursor()
+
+        # 檢查訂單狀態是否為待確認
+        cursor.execute("""
+            SELECT od.order_status 
+            FROM orders o
+            JOIN order_details od ON o.id = od.order_id
+            WHERE o.order_number = %s
+        """, (data['order_number'],))
+
+        statuses = cursor.fetchall()
+        if not statuses:
+            return jsonify({
+                'status': 'error',
+                'message': '找不到該訂單'
+            }), 404
+
+        # 檢查所有產品是否都是待確認狀態
+        for status in statuses:
+            if status[0] != '待確認':
+                return jsonify({
+                    'status': 'error',
+                    'message': '只有待確認狀態的訂單可以取消'
+                }), 400
+
+        # 刪除訂單詳情
+        cursor.execute("""
+            DELETE FROM order_details
+            USING orders
+            WHERE orders.id = order_details.order_id
+            AND orders.order_number = %s
+        """, (data['order_number'],))
+
+        # 刪除訂單主表
+        cursor.execute("""
+            DELETE FROM orders 
+            WHERE order_number = %s
+        """, (data['order_number'],))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'status': 'success',
+            'message': '訂單已成功取消'
+        })
+
+    except Exception as e:
+        print(f"Error in cancel_order: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@order_bp.route('/orders/today', methods=['GET'])
+def get_today_orders():
+    try:
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({
+                'status': 'error',
+                'message': '數據庫連接失敗'
+            }), 500
+
+        cursor = conn.cursor()
+        
+        # 查詢今日訂單
+        sql = """
+            SELECT 
+                o.id as order_id,
+                o.order_number,
+                o.created_at as order_date,
+                c.company_name as customer_name,
+                od.id as detail_id,
+                p.name as product_name,
+                od.product_quantity,
+                od.product_unit,
+                od.order_status,
+                od.shipping_date,
+                od.remark
+            FROM orders o
+            JOIN order_details od ON o.id = od.order_id
+            JOIN customers c ON o.customer_id = c.id
+            JOIN products p ON od.product_id = p.id
+            WHERE DATE(o.created_at) = CURRENT_DATE
+            ORDER BY o.created_at DESC, od.id ASC;
+        """
+        
+        cursor.execute(sql)
+        
+        columns = [desc[0] for desc in cursor.description]
+        rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        # 重組數據結構
+        orders = []
+        for row in rows:
+            orders.append({
+                'id': row['detail_id'],
+                'order_id': row['order_id'],
+                'date': row['order_date'].isoformat(),  # 使用 ISO 格式返回時間
+                'customer': row['customer_name'],
+                'item': row['product_name'],
+                'quantity': str(row['product_quantity']),
+                'unit': row['product_unit'],
+                'orderNumber': row['order_number'],
+                'shipping_date': row['shipping_date'].isoformat() if row['shipping_date'] else None,
+                'note': row['remark'] or '',
+                'status': row['order_status']
+            })
+
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'data': orders
+        })
+        
+    except Exception as e:
+        print(f"Error in get_today_orders: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@order_bp.route('/orders/update-status', methods=['POST'])
+def update_order_status():
+    try:
+        data = request.json
+        if not data or 'order_id' not in data or 'status' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': '缺少必要參數'
+            }), 400
+
+        # 如果是核准訂單，需要檢查出貨日期
+        if data['status'] == '已確認' and 'shipping_date' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': '核准訂單時需要提供出貨日期'
+            }), 400
+
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({
+                'status': 'error',
+                'message': '數據庫連接失敗'
+            }), 500
+
+        cursor = conn.cursor()
+        
+        # 更新訂單狀態和出貨日期
+        update_sql = """
+            UPDATE order_details 
+            SET order_status = %s,
+                shipping_date = %s,
+                updated_at = NOW()
+            WHERE id = %s
+            RETURNING order_id;
+        """
+        
+        shipping_date = data.get('shipping_date') if data['status'] == '已確認' else None
+        cursor.execute(update_sql, (data['status'], shipping_date, data['order_id']))
+        
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({
+                'status': 'error',
+                'message': '找不到該訂單'
+            }), 404
+
+        # 更新主訂單的更新時間
+        cursor.execute("""
+            UPDATE orders 
+            SET updated_at = NOW()
+            WHERE id = %s;
+        """, (result[0],))
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            'status': 'success',
+            'message': '訂單狀態更新成功'
+        })
+
+    except Exception as e:
+        print(f"Error in update_order_status: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
         }), 500 

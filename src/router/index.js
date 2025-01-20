@@ -7,7 +7,6 @@ import CustomerManagement from '../views/CustomerManagement.vue';
 import NotificationSetting from '../views/NotificationSetting.vue';
 import ProductManagement from '../views/ProductManagement.vue';
 import TodayOrders from '../views/TodayOrders.vue';
-import CustomerHomepage from '../views/2CustomerHomepage.vue';  
 import AccountSettings from '../views/2AccountSettings.vue';    
 import AddPersonnel from '../views/AddPersonnel.vue';
 import AddCustomer from '../views/AddCustomer.vue';
@@ -89,12 +88,6 @@ const router = createRouter({
       path: '/customer-login',
       name: 'CustomerLogin',
       component: CustomerLogin
-    },
-    {
-      path: '/customer-homepage',
-      name: 'CustomerHomepage',
-      component: CustomerHomepage,
-      meta: { requiresCustomerAuth: true }
     },
     {
       path: '/account-settings',

@@ -35,7 +35,6 @@ export default {
     return {
       isMenuOpen: false,
       customerMenu: [
-        { path: '/customer-homepage', name: '首頁' },
         { path: '/order-system', name: '訂貨系統' },
         { path: '/order-record', name: '訂貨紀錄' },
         { path: '/product-list', name: '產品一覽' },

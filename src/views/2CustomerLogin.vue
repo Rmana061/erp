@@ -54,7 +54,7 @@ export default {
           if (userInfoResponse.data.status === 'success') {
             sessionStorage.setItem('userInfo', JSON.stringify(userInfoResponse.data.data));
             sessionStorage.setItem('isCustomerAuthenticated', 'true');
-            this.$router.push('/customer-homepage');
+            this.$router.push('/order-system');
           } else {
             throw new Error('Failed to get user info');
           }
