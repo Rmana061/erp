@@ -8,45 +8,192 @@
         <span>Hi {{ adminName }}您好,</span>
         <span>{{ currentTime }}</span>
       </div>
+      
       <div class="content-wrapper">
+        <div class="page-header">
+          <h2>所有訂單</h2>
+          <button class="export-btn" @click="exportOrders">
+            <i class="fas fa-file-export"></i> 報表匯出
+          </button>
+        </div>
+
+        <!-- 搜索欄位 -->
+        <div class="search-panel compact">
+          <div class="search-panel-body">
+            <div class="search-form">
+              <div class="search-form-row">
+                <div class="search-form-item">
+                  <input 
+                    type="date" 
+                    v-model="searchFilters.startDate"
+                    :max="searchFilters.endDate || maxShippingDate"
+                    class="search-field"
+                    placeholder="開始日期">
+                  <span class="date-separator">~</span>
+                  <input 
+                    type="date" 
+                    v-model="searchFilters.endDate"
+                    :min="searchFilters.startDate || minShippingDate"
+                    :max="maxShippingDate"
+                    class="search-field"
+                    placeholder="結束日期">
+                </div>
+                <div class="search-form-item">
+                  <input 
+                    type="text" 
+                    v-model="searchFilters.company" 
+                    placeholder="公司名稱"
+                    class="search-field">
+                </div>
+                <div class="search-form-item">
+                  <input 
+                    type="text" 
+                    v-model="searchFilters.product" 
+                    placeholder="產品名稱"
+                    class="search-field">
+                </div>
+                <div class="search-form-item">
+                  <input 
+                    type="text" 
+                    v-model="searchFilters.orderNumber" 
+                    placeholder="訂單編號"
+                    class="search-field">
+                </div>
+                <div class="search-actions">
+                  <button class="reset-btn" @click="resetFilters">
+                    <i class="fas fa-undo-alt"></i>重置
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="scrollable-content">
-          <h2>所有訂單 (按照日期排序)</h2>
-          <button class="export-btn" @click="exportToExcel">📊 報表匯出</button>
-          
           <div class="table-container">
-            <table id="ordersTable">
+            <table>
               <thead>
                 <tr>
-                  <th></th>
-                  <th>日期</th>
+                  <th>序號</th>
+                  <th>建立日期</th>
                   <th>客戶</th>
-                  <th>品項</th>
-                  <th>數量 kg</th>
                   <th>訂單編號</th>
+                  <th>品項</th>
+                  <th>數量</th>
+                  <th>單位</th>
+                  <th>出貨日期</th>
                   <th>備註</th>
-                  <th>核可</th>
+                  <th>狀態</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(order, index) in orders" :key="index">
-                  <td>{{ index + 1 }}</td>
-                  <td>{{ order.date }}</td>
-                  <td>{{ order.customer }}</td>
-                  <td>{{ order.item }}</td>
-                  <td>{{ order.quantity }}</td>
-                  <td>{{ order.orderNumber }}</td>
-                  <td>{{ order.notes }}</td>
-                  <td><span :class="statusClass(order.status)">{{ order.statusText }}</span></td>
-                </tr>
+                <template v-for="(order, orderIndex) in paginatedOrders" :key="order.orderNumber">
+                  <tr v-for="(item, itemIndex) in order.items" 
+                      :key="order.orderNumber + '-' + itemIndex"
+                      :class="{ 
+                        'first-product': itemIndex === 0,
+                        'approved': item.status === '已確認', 
+                        'rejected': item.status === '已取消' 
+                      }">
+                    <td>{{ itemIndex === 0 ? orderIndex + 1 : '' }}</td>
+                    <td>{{ itemIndex === 0 ? formatDateTime(order.date) : '' }}</td>
+                    <td>{{ itemIndex === 0 ? order.customer : '' }}</td>
+                    <td>{{ itemIndex === 0 ? order.orderNumber : '' }}</td>
+                    <td>{{ item.item }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.unit }}</td>
+                    <td>{{ formatDate(item.shipping_date) }}</td>
+                    <td>{{ item.note }}</td>
+                    <td>
+                      <span class="status-badge" :class="item.status">{{ item.status }}</span>
+                    </td>
+                    <td>
+                      <div class="action-buttons" v-if="itemIndex === 0 && allItemsPending(order.items)">
+                        <button class="approve-btn" @click="handleApprove(order)">
+                          審核
+                        </button>
+                      </div>
+                      <span v-else-if="itemIndex === 0">已處理</span>
+                    </td>
+                  </tr>
+                </template>
               </tbody>
             </table>
           </div>
-
-          <div class="pagination">
-            <button @click="changePage(-1)">上一頁</button>
-            <span>{{ currentPage }}</span> / <span>{{ totalPages }}</span>
-            <button @click="changePage(1)">下一頁</button>
+          
+          <!-- 分頁控制 -->
+          <div class="pagination" v-if="totalPages > 1">
+            <button 
+              @click="currentPage--" 
+              :disabled="currentPage === 1">
+              上一頁
+            </button>
+            <span>{{ currentPage }} / {{ totalPages }}</span>
+            <button 
+              @click="currentPage++" 
+              :disabled="currentPage === totalPages">
+              下一頁
+            </button>
           </div>
+        </div>
+        
+        <div class="notification">
+          結果會透過LINE發送
+        </div>
+      </div>
+    </div>
+
+    <!-- 審核確認對話框 -->
+    <div class="modal" v-if="showConfirmModal">
+      <div class="modal-content order-review">
+        <h3>訂單審核 - {{ selectedOrder?.orderNumber }}</h3>
+        
+        <div class="order-items">
+          <table class="review-table">
+            <thead>
+              <tr>
+                <th>品項</th>
+                <th>數量</th>
+                <th>單位</th>
+                <th>出貨日期</th>
+                <th>狀態</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in selectedOrder?.items" :key="index">
+                <td>{{ item.item }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.unit }}</td>
+                <td>
+                  <input 
+                    type="date" 
+                    v-model="item.tempShippingDate"
+                    :min="minShippingDate"
+                    :max="maxShippingDate"
+                    :disabled="item.tempStatus === '已取消'"
+                    @change="validateShippingDate(item)">
+                </td>
+                <td>
+                  <select v-model="item.tempStatus">
+                    <option value="待確認">待確認</option>
+                    <option value="已確認">核准</option>
+                    <option value="已取消">駁回</option>
+                  </select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="modal-buttons">
+          <button 
+            class="confirm-btn" 
+            @click="confirmOrderUpdate()"
+            :disabled="!isValidForConfirmation">
+            確認
+          </button>
+          <button class="cancel-btn" @click="closeConfirmModal">返回</button>
         </div>
       </div>
     </div>
@@ -55,83 +202,263 @@
 </template>
 
 <script>
+import { timeMixin } from '../mixins/timeMixin';
 import { adminMixin } from '../mixins/adminMixin';
 import SideBar from '../components/SideBar.vue';
+import axios from 'axios';
 
 export default {
   name: 'AllOrders',
-  mixins: [adminMixin],
   components: {
     SideBar
   },
+  mixins: [timeMixin, adminMixin],
   data() {
     return {
-      currentTime: '',
+      orders: [],
+      showConfirmModal: false,
+      selectedOrder: null,
       currentPage: 1,
-      totalPages: 5,
-      orders: [
-        { date: '08/15', customer: 'A公司', item: '漂白水', quantity: 10, orderNumber: 'T240815001', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/15', customer: 'A公司', item: '硫酸', quantity: 5, orderNumber: 'T240815002', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/15', customer: 'B公司', item: '鹽酸', quantity: 5, orderNumber: 'T240815003', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/15', customer: 'C公司', item: '硫酸', quantity: 5, orderNumber: 'T240815004', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/15', customer: 'D公司', item: '漂白水', quantity: 20, orderNumber: 'T240815005', notes: '', status: 'rejected', statusText: 'X' },
-        { date: '08/14', customer: 'A公司', item: '漂白水', quantity: 15, orderNumber: 'T240814006', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/13', customer: 'A公司', item: '硫酸', quantity: 5, orderNumber: 'T240813007', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/12', customer: 'B公司', item: '鹽酸', quantity: 10, orderNumber: 'T240812008', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/12', customer: 'C公司', item: '硫酸', quantity: 20, orderNumber: 'T240812009', notes: '', status: 'approved', statusText: 'V' },
-        { date: '08/10', customer: 'D公司', item: '漂白水', quantity: 30, orderNumber: 'T240810010', notes: '', status: 'rejected', statusText: 'X' }
-      ]
+      itemsPerPage: 10,
+      searchFilters: {
+        startDate: '',
+        endDate: '',
+        company: '',
+        orderNumber: '',
+        product: '',
+        status: ''
+      }
     };
   },
-  methods: {
-    updateCurrentTime() {
-      const now = new Date();
-      const options = { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit', 
-        weekday: 'long', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false 
-      };
-      this.currentTime = now.toLocaleString('zh-TW', options)
-        .replace(/\//g, '/')
-        .replace('星期', ' 星期')
-        .replace(/(\d+):(\d+)/, '$1:$2');
+  computed: {
+    minShippingDate() {
+      const today = new Date();
+      return today.toISOString().split('T')[0];
     },
-    statusClass(status) {
-      switch(status) {
-        case 'pending':
-          return 'status status-pending';
-        case 'approved':
-          return 'status status-approved';
-        case 'rejected':
-          return 'status status-rejected';
+    maxShippingDate() {
+      const maxDate = new Date();
+      maxDate.setMonth(maxDate.getMonth() + 3);
+      return maxDate.toISOString().split('T')[0];
+    },
+    filteredOrders() {
+      let filtered = [...this.orders];
+      
+      if (this.searchFilters.startDate) {
+        const startDate = new Date(this.searchFilters.startDate);
+        filtered = filtered.filter(order => new Date(order.date) >= startDate);
       }
+      if (this.searchFilters.endDate) {
+        const endDate = new Date(this.searchFilters.endDate);
+        endDate.setHours(23, 59, 59);
+        filtered = filtered.filter(order => new Date(order.date) <= endDate);
+      }
+      
+      if (this.searchFilters.company) {
+        filtered = filtered.filter(order => 
+          order.customer.toLowerCase().includes(this.searchFilters.company.toLowerCase())
+        );
+      }
+      
+      if (this.searchFilters.orderNumber) {
+        filtered = filtered.filter(order => 
+          order.order_number.toLowerCase().includes(this.searchFilters.orderNumber.toLowerCase())
+        );
+      }
+      
+      if (this.searchFilters.product) {
+        filtered = filtered.filter(order => 
+          order.item.toLowerCase().includes(this.searchFilters.product.toLowerCase())
+        );
+      }
+      
+      return filtered;
     },
-    exportToExcel() {
-      alert('報表匯出功能尚未實現');
+    groupedOrders() {
+      const grouped = {};
+      this.filteredOrders.forEach(order => {
+        if (!grouped[order.order_number]) {
+          grouped[order.order_number] = {
+            orderNumber: order.order_number,
+            date: order.date,
+            customer: order.customer,
+            items: []
+          };
+        }
+        grouped[order.order_number].items.push({
+          item: order.item,
+          quantity: order.quantity,
+          unit: order.unit,
+          note: order.note,
+          status: order.status,
+          id: order.detail_id,
+          shipping_date: order.shipping_date
+        });
+      });
+      return Object.values(grouped);
     },
-    changePage(direction) {
-      this.currentPage += direction;
-      if (this.currentPage < 1) this.currentPage = 1;
-      if (this.currentPage > this.totalPages) this.currentPage = this.totalPages;
+    isValidForConfirmation() {
+      if (!this.selectedOrder) return false;
+      return this.selectedOrder.items.every(item => {
+        if (item.tempStatus === '已確認') {
+          return !!item.tempShippingDate;
+        }
+        return true;
+      });
+    },
+    uniqueStatuses() {
+      const statuses = new Set(this.orders.map(order => order.status));
+      return Array.from(statuses).sort();
+    },
+    totalPages() {
+      return Math.ceil(this.groupedOrders.length / this.itemsPerPage);
+    },
+    paginatedOrders() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.groupedOrders.slice(start, end);
     }
   },
-  mounted() {
-    this.updateCurrentTime();
-    this.timeInterval = setInterval(this.updateCurrentTime, 60000);
-    document.title = '管理者系統';
+  methods: {
+    async fetchAllOrders() {
+      try {
+        console.log('開始獲取所有訂單...');
+        const response = await axios.get('http://localhost:5000/api/orders/all', {
+          withCredentials: true
+        });
+
+        console.log('API 響應:', response);
+
+        if (response.data.status === 'success') {
+          if (!Array.isArray(response.data.data)) {
+            console.error('API 返回的數據不是數組格式:', response.data);
+            alert('獲取訂單數據格式錯誤');
+            return;
+          }
+
+          this.orders = response.data.data;
+          console.log('所有訂單數據:', this.orders);
+        } else {
+          console.error('API 返回狀態不是 success:', response.data);
+          alert('獲取訂單失敗：' + (response.data.message || '未知錯誤'));
+        }
+      } catch (error) {
+        console.error('獲取所有訂單失敗:', error);
+        if (error.response) {
+          console.error('錯誤響應:', error.response.data);
+          console.error('狀態碼:', error.response.status);
+        }
+        alert('獲取所有訂單失敗：' + (error.response?.data?.message || error.message));
+      }
+    },
+    formatDateTime(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    },
+    formatDate(dateString) {
+      console.log('Formatting date:', dateString, 'Type:', typeof dateString);
+      
+      if (!dateString || dateString === 'null' || dateString === 'undefined') {
+        console.log('Date is empty or invalid');
+        return '待確認';
+      }
+      
+      try {
+        const date = new Date(dateString);
+        console.log('Parsed date:', date);
+        
+        if (isNaN(date.getTime())) {
+          console.log('Invalid date');
+          return '待確認';
+        }
+        
+        const formattedDate = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
+        console.log('Formatted date:', formattedDate);
+        return formattedDate;
+      } catch (error) {
+        console.error('Error formatting date:', error);
+        return '待確認';
+      }
+    },
+    allItemsPending(items) {
+      return items.every(item => item.status === '待確認');
+    },
+    handleApprove(order) {
+      this.selectedOrder = {
+        ...order,
+        items: order.items.map(item => ({
+          ...item,
+          tempStatus: '已確認',
+          tempShippingDate: item.shipping_date || ''
+        }))
+      };
+      this.showConfirmModal = true;
+    },
+    handleReject(order) {
+      this.selectedOrder = {
+        ...order,
+        items: order.items.map(item => ({
+          ...item,
+          tempStatus: '已取消',
+          tempShippingDate: item.shipping_date || ''
+        }))
+      };
+      this.showConfirmModal = true;
+    },
+    validateShippingDate(item) {
+      if (item.tempStatus === '已確認' && !item.tempShippingDate) {
+        alert('核准時必須選擇出貨日期');
+      }
+    },
+    async confirmOrderUpdate() {
+      try {
+        const updatePromises = this.selectedOrder.items.map(item => 
+          axios.post('http://localhost:5000/api/orders/update-status', {
+            order_id: item.id,
+            status: item.tempStatus,
+            shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null
+          }, {
+            withCredentials: true
+          })
+        );
+
+        await Promise.all(updatePromises);
+        alert('訂單處理完成');
+        this.fetchAllOrders();
+      } catch (error) {
+        console.error('Error updating order:', error);
+        alert('訂單處理失敗：' + (error.response?.data?.message || error.message));
+      } finally {
+        this.closeConfirmModal();
+      }
+    },
+    closeConfirmModal() {
+      this.showConfirmModal = false;
+      this.selectedOrder = null;
+    },
+    exportOrders() {
+      // TODO: 實現匯出功能
+      alert('匯出功能尚未實現');
+    },
+    resetFilters() {
+      this.searchFilters = {
+        startDate: '',
+        endDate: '',
+        company: '',
+        orderNumber: '',
+        product: '',
+        status: ''
+      };
+      this.currentPage = 1; // 重置時回到第一頁
+    }
   },
-  beforeUnmount() {
-    clearInterval(this.timeInterval);
+  created() {
+    this.fetchAllOrders();
   }
 };
 </script>
 
 <style>
 @import '../assets/styles/unified-base.css';
-
-/* 所有其他樣式已移至 unified-base */
 </style>
+

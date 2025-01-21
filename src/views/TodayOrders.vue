@@ -1,4 +1,4 @@
-<!-- 今日訂單 -->
+<!-- 所有訂單 -->
 <template>
   <body class="admin-mode">
   <div class="container">
@@ -15,6 +15,58 @@
           <button class="export-btn" @click="exportOrders">
             <i class="fas fa-file-export"></i> 報表匯出
           </button>
+        </div>
+
+        <!-- 搜索欄位 -->
+        <div class="search-panel compact">
+          <div class="search-panel-body">
+            <div class="search-form">
+              <div class="search-form-row">
+                <div class="search-form-item">
+                  <input 
+                    type="date" 
+                    v-model="searchFilters.startDate"
+                    :max="searchFilters.endDate || maxShippingDate"
+                    class="search-field"
+                    placeholder="開始日期">
+                  <span class="date-separator">~</span>
+                  <input 
+                    type="date" 
+                    v-model="searchFilters.endDate"
+                    :min="searchFilters.startDate || minShippingDate"
+                    :max="maxShippingDate"
+                    class="search-field"
+                    placeholder="結束日期">
+                </div>
+                <div class="search-form-item">
+                  <input 
+                    type="text" 
+                    v-model="searchFilters.company" 
+                    placeholder="公司名稱"
+                    class="search-field">
+                </div>
+                <div class="search-form-item">
+                  <input 
+                    type="text" 
+                    v-model="searchFilters.product" 
+                    placeholder="產品名稱"
+                    class="search-field">
+                </div>
+                <div class="search-form-item">
+                  <input 
+                    type="text" 
+                    v-model="searchFilters.orderNumber" 
+                    placeholder="訂單編號"
+                    class="search-field">
+                </div>
+                <div class="search-actions">
+                  <button class="reset-btn" @click="resetFilters">
+                    <i class="fas fa-undo-alt"></i>重置
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="scrollable-content">
@@ -36,7 +88,7 @@
                 </tr>
               </thead>
               <tbody>
-                <template v-for="(order, orderIndex) in groupedOrders" :key="order.orderNumber">
+                <template v-for="(order, orderIndex) in paginatedOrders" :key="order.orderNumber">
                   <tr v-for="(item, itemIndex) in order.items" 
                       :key="order.orderNumber + '-' + itemIndex"
                       :class="{ 
@@ -68,6 +120,21 @@
                 </template>
               </tbody>
             </table>
+          </div>
+          
+          <!-- 分頁控制 -->
+          <div class="pagination" v-if="totalPages > 1">
+            <button 
+              @click="currentPage--" 
+              :disabled="currentPage === 1">
+              上一頁
+            </button>
+            <span>{{ currentPage }} / {{ totalPages }}</span>
+            <button 
+              @click="currentPage++" 
+              :disabled="currentPage === totalPages">
+              下一頁
+            </button>
           </div>
         </div>
         
@@ -151,6 +218,16 @@ export default {
       orders: [],
       showConfirmModal: false,
       selectedOrder: null,
+      currentPage: 1,
+      itemsPerPage: 10,
+      searchFilters: {
+        startDate: '',
+        endDate: '',
+        company: '',
+        orderNumber: '',
+        product: '',
+        status: ''
+      }
     };
   },
   computed: {
@@ -163,24 +240,57 @@ export default {
       maxDate.setMonth(maxDate.getMonth() + 3);
       return maxDate.toISOString().split('T')[0];
     },
+    filteredOrders() {
+      let filtered = [...this.orders];
+      
+      if (this.searchFilters.startDate) {
+        const startDate = new Date(this.searchFilters.startDate);
+        filtered = filtered.filter(order => new Date(order.date) >= startDate);
+      }
+      if (this.searchFilters.endDate) {
+        const endDate = new Date(this.searchFilters.endDate);
+        endDate.setHours(23, 59, 59);
+        filtered = filtered.filter(order => new Date(order.date) <= endDate);
+      }
+      
+      if (this.searchFilters.company) {
+        filtered = filtered.filter(order => 
+          order.customer.toLowerCase().includes(this.searchFilters.company.toLowerCase())
+        );
+      }
+      
+      if (this.searchFilters.orderNumber) {
+        filtered = filtered.filter(order => 
+          order.order_number.toLowerCase().includes(this.searchFilters.orderNumber.toLowerCase())
+        );
+      }
+      
+      if (this.searchFilters.product) {
+        filtered = filtered.filter(order => 
+          order.item.toLowerCase().includes(this.searchFilters.product.toLowerCase())
+        );
+      }
+      
+      return filtered;
+    },
     groupedOrders() {
       const grouped = {};
-      this.orders.forEach(order => {
-        if (!grouped[order.orderNumber]) {
-          grouped[order.orderNumber] = {
-            orderNumber: order.orderNumber,
+      this.filteredOrders.forEach(order => {
+        if (!grouped[order.order_number]) {
+          grouped[order.order_number] = {
+            orderNumber: order.order_number,
             date: order.date,
             customer: order.customer,
             items: []
           };
         }
-        grouped[order.orderNumber].items.push({
+        grouped[order.order_number].items.push({
           item: order.item,
           quantity: order.quantity,
           unit: order.unit,
           note: order.note,
           status: order.status,
-          id: order.id,
+          id: order.detail_id,
           shipping_date: order.shipping_date
         });
       });
@@ -194,27 +304,50 @@ export default {
         }
         return true;
       });
+    },
+    uniqueStatuses() {
+      const statuses = new Set(this.orders.map(order => order.status));
+      return Array.from(statuses).sort();
+    },
+    totalPages() {
+      return Math.ceil(this.groupedOrders.length / this.itemsPerPage);
+    },
+    paginatedOrders() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.groupedOrders.slice(start, end);
     }
   },
   methods: {
-    async fetchTodayOrders() {
+    async fetchPendingOrders() {
       try {
-        const response = await axios.get('http://localhost:5000/api/orders/today', {
+        console.log('開始獲取待確認訂單...');
+        const response = await axios.get('http://localhost:5000/api/orders/pending', {
           withCredentials: true
         });
 
+        console.log('API 響應:', response);
+
         if (response.data.status === 'success') {
+          if (!Array.isArray(response.data.data)) {
+            console.error('API 返回的數據不是數組格式:', response.data);
+            alert('獲取訂單數據格式錯誤');
+            return;
+          }
+
           this.orders = response.data.data;
-          console.log('Today orders raw data:', response.data.data);
-          
-          // 檢查每個訂單的 shipping_date
-          this.orders.forEach(order => {
-            console.log(`Order ${order.orderNumber} shipping_date:`, order.shipping_date);
-          });
+          console.log('待確認訂單數據:', this.orders);
+        } else {
+          console.error('API 返回狀態不是 success:', response.data);
+          alert('獲取訂單失敗：' + (response.data.message || '未知錯誤'));
         }
       } catch (error) {
-        console.error('Error fetching today orders:', error);
-        alert('獲取今日訂單失敗：' + (error.response?.data?.message || error.message));
+        console.error('獲取待確認訂單失敗:', error);
+        if (error.response) {
+          console.error('錯誤響應:', error.response.data);
+          console.error('狀態碼:', error.response.status);
+        }
+        alert('獲取待確認訂單失敗：' + (error.response?.data?.message || error.message));
       }
     },
     formatDateTime(dateString) {
@@ -291,7 +424,7 @@ export default {
 
         await Promise.all(updatePromises);
         alert('訂單處理完成');
-        this.fetchTodayOrders();
+        this.fetchPendingOrders();
       } catch (error) {
         console.error('Error updating order:', error);
         alert('訂單處理失敗：' + (error.response?.data?.message || error.message));
@@ -306,217 +439,26 @@ export default {
     exportOrders() {
       // TODO: 實現匯出功能
       alert('匯出功能尚未實現');
+    },
+    resetFilters() {
+      this.searchFilters = {
+        startDate: '',
+        endDate: '',
+        company: '',
+        orderNumber: '',
+        product: '',
+        status: ''
+      };
+      this.currentPage = 1; // 重置時回到第一頁
     }
   },
   created() {
-    this.fetchTodayOrders();
+    this.fetchPendingOrders();
   }
 };
 </script>
 
-<style scoped>
+<style>
 @import '../assets/styles/unified-base.css';
-
-.table-container {
-  margin-top: 20px;
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-th {
-  background-color: #f8f9fa;
-  font-weight: bold;
-  color: #333;
-}
-
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.9em;
-  display: inline-block;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.approve-btn {
-  background-color: #28a745;
-  color: white;
-}
-
-.approve-btn:hover {
-  background-color: #218838;
-}
-
-/* 確認對話框樣式 */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background-color: white;
-  padding: 30px;
-  border-radius: 8px;
-  width: 400px;
-  text-align: center;
-}
-
-.modal-content h3 {
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.modal-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 20px;
-}
-
-.modal-buttons button {
-  padding: 8px 20px;
-  border-radius: 4px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.confirm-btn.approve {
-  background-color: #28a745;
-  color: white;
-}
-
-.confirm-btn.reject {
-  background-color: #dc3545;
-  color: white;
-}
-
-.cancel-btn {
-  background-color: #6c757d;
-  color: white;
-}
-
-.notification {
-  margin-top: 20px;
-  padding: 10px;
-  background-color: #e9ecef;
-  border-radius: 4px;
-  text-align: center;
-  color: #666;
-}
-
-/* 已處理訂單的樣式 */
-tr.approved {
-  background-color: #f8fff8;
-}
-
-tr.rejected {
-  background-color: #fff8f8;
-}
-
-.shipping-date-selector {
-  margin: 20px 0;
-  text-align: left;
-}
-
-.shipping-date-selector label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-}
-
-.shipping-date-selector input[type="date"] {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1em;
-}
-
-.date-hint {
-  color: #dc3545;
-  font-size: 0.9em;
-  margin-top: 4px;
-}
-
-.confirm-btn:disabled {
-  background-color: #6c757d;
-  cursor: not-allowed;
-}
-
-.first-product td {
-  border-top: 2px solid #ddd;
-}
-
-.order-review {
-  width: 80%;
-  max-width: 800px;
-}
-
-.order-items {
-  margin: 20px 0;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.review-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-}
-
-.review-table th,
-.review-table td {
-  padding: 10px;
-  border: 1px solid #ddd;
-}
-
-.review-table th {
-  background-color: #f8f9fa;
-}
-
-.review-table input[type="date"],
-.review-table select {
-  width: 100%;
-  padding: 6px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.review-table select {
-  background-color: white;
-}
-
-.review-table input[type="date"]:disabled,
-.review-table select:disabled {
-  background-color: #e9ecef;
-  cursor: not-allowed;
-}
-
-/* 所有其他樣式已移至 unified-base */
 </style>
 

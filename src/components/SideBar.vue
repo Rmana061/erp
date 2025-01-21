@@ -41,7 +41,7 @@ export default {
         { path: '/account-settings', name: '帳號設定' }
       ],
       adminMenu: [
-        { path: '/today-orders', name: '今日訂單' },
+        { path: '/today-orders', name: '待確認訂單' },
         { path: '/all-orders', name: '所有訂單' },
         { path: '/customer-management', name: '客戶管理' },
         { path: '/product-management', name: '產品管理' },

@@ -408,4 +408,135 @@ def update_order_status():
         return jsonify({
             'status': 'error',
             'message': str(e)
+        }), 500
+
+@order_bp.route('/orders/pending', methods=['GET'])
+def get_pending_orders():
+    try:
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({
+                'status': 'error',
+                'message': '數據庫連接失敗'
+            }), 500
+
+        cursor = conn.cursor()
+        
+        # 查询所有待确认状态的订单
+        sql = """
+            SELECT 
+                o.id,
+                o.order_number,
+                o.created_at as date,
+                c.company_name as customer,
+                od.id as detail_id,
+                p.name as item,
+                od.product_quantity as quantity,
+                od.product_unit as unit,
+                od.order_status as status,
+                od.shipping_date,
+                od.remark as note
+            FROM orders o
+            JOIN order_details od ON o.id = od.order_id
+            JOIN customers c ON o.customer_id = c.id
+            JOIN products p ON od.product_id = p.id
+            WHERE od.order_status = '待確認'
+            ORDER BY o.created_at DESC;
+        """
+        
+        cursor.execute(sql)
+        
+        # 获取列名
+        columns = [desc[0] for desc in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        # 处理日期格式
+        for row in results:
+            if row['date']:
+                row['date'] = row['date'].strftime('%Y-%m-%d %H:%M:%S')
+            if row['shipping_date']:
+                row['shipping_date'] = row['shipping_date'].strftime('%Y-%m-%d')
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'data': results
+        })
+        
+    except Exception as e:
+        print(f"Error in get_pending_orders: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@order_bp.route('/orders/all', methods=['GET'])
+def get_all_orders():
+    try:
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({
+                'status': 'error',
+                'message': '數據庫連接失敗'
+            }), 500
+
+        cursor = conn.cursor()
+        
+        # 查询所有订单
+        sql = """
+            SELECT 
+                o.id,
+                o.order_number,
+                o.created_at as date,
+                c.company_name as customer,
+                od.id as detail_id,
+                p.name as item,
+                od.product_quantity as quantity,
+                od.product_unit as unit,
+                od.order_status as status,
+                od.shipping_date,
+                od.remark as note
+            FROM orders o
+            JOIN order_details od ON o.id = od.order_id
+            JOIN customers c ON o.customer_id = c.id
+            JOIN products p ON od.product_id = p.id
+            ORDER BY o.created_at DESC;
+        """
+        
+        cursor.execute(sql)
+        
+        # 获取列名
+        columns = [desc[0] for desc in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        # 处理日期格式
+        for row in results:
+            if row['date']:
+                row['date'] = row['date'].strftime('%Y-%m-%d %H:%M:%S')
+            if row['shipping_date']:
+                row['shipping_date'] = row['shipping_date'].strftime('%Y-%m-%d')
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'data': results
+        })
+        
+    except Exception as e:
+        print(f"Error in get_all_orders: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
         }), 500 
