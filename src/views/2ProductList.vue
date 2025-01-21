@@ -139,22 +139,25 @@ export default {
             
             if (productsData) {
               console.log('Processing products data:', productsData);
-              this.products = productsData.map(product => {
-                console.log('Processing product:', product);
-                return {
-                  id: product.id,
-                  name: product.name,
-                  description: product.description,
-                  image_url: product.image_url,
-                  dm_url: product.dm_url,
-                  min_order_qty: product.min_order_qty,
-                  max_order_qty: product.max_order_qty,
-                  unit: product.unit || product.product_unit,
-                  shipping_time: product.shipping_time,
-                  created_at: product.created_at,
-                  updated_at: product.updated_at
-                };
-              });
+              // 只处理 viewableProducts 中包含的产品
+              this.products = productsData
+                .filter(product => viewableProducts.includes(product.id.toString()))
+                .map(product => {
+                  console.log('Processing product:', product);
+                  return {
+                    id: product.id,
+                    name: product.name,
+                    description: product.description,
+                    image_url: product.image_url,
+                    dm_url: product.dm_url,
+                    min_order_qty: product.min_order_qty,
+                    max_order_qty: product.max_order_qty,
+                    unit: product.unit || product.product_unit,
+                    shipping_time: product.shipping_time,
+                    created_at: product.created_at,
+                    updated_at: product.updated_at
+                  };
+                });
               console.log('Processed products:', this.products);
             } else {
               console.error('No valid products data in response:', response.data);
