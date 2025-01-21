@@ -158,16 +158,21 @@ export default {
 
       try {
         let response;
+        const requestData = {
+          admin_account: this.personnelAccount,
+          admin_name: this.personnelName,
+          staff_no: this.personnelStaffNo,
+          permission_level_id: this.getPermissionId(this.personnelPermission)
+        };
+
+        if (this.personnelPassword) {
+          requestData.admin_password = this.personnelPassword;
+        }
+
         if (this.isEditMode) {
           // 編輯模式
-          response = await axios.put('http://localhost:5000/api/admin/update', {
-            id: this.editId,
-            admin_account: this.personnelAccount,
-            admin_password: this.personnelPassword || undefined,
-            admin_name: this.personnelName,
-            staff_no: this.personnelStaffNo,
-            permission_level_id: this.getPermissionId(this.personnelPermission)
-          }, {
+          requestData.id = this.editId;
+          response = await axios.put('http://localhost:5000/api/admin/update', requestData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
@@ -175,14 +180,8 @@ export default {
           });
         } else {
           // 新增模式
-          response = await axios.post('http://localhost:5000/api/admin/add', {
-            admin_account: this.personnelAccount,
-            admin_password: this.personnelPassword,
-            admin_name: this.personnelName,
-            staff_no: this.personnelStaffNo,
-            permission_level_id: this.getPermissionId(this.personnelPermission),
-            status: 'active'
-          }, {
+          requestData.status = 'active';
+          response = await axios.post('http://localhost:5000/api/admin/add', requestData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
