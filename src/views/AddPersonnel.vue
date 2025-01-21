@@ -65,16 +65,17 @@
 import axios from 'axios';
 import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
+import { timeMixin } from '../mixins/timeMixin';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: 'AddPersonnel',
-  mixins: [adminMixin],
+  mixins: [adminMixin, timeMixin],
   components: {
     SideBar
   },
   data() {
     return {
-      currentTime: '',
       personnelAccount: '',
       personnelPassword: '',
       personnelName: '',
@@ -85,22 +86,6 @@ export default {
     };
   },
   methods: {
-    updateCurrentTime() {
-      const now = new Date();
-      const options = { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit', 
-        weekday: 'long', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false 
-      };
-      this.currentTime = now.toLocaleString('zh-TW', options)
-        .replace(/\//g, '/')
-        .replace('星期', ' 星期')
-        .replace(/(\d+):(\d+)/, '$1:$2');
-    },
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
     },
@@ -111,11 +96,8 @@ export default {
       this.editId = this.$route.query.id;
       
       try {
-        const response = await axios.get(`http://localhost:5000/api/admin/info/${this.editId}`, {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
+        const response = await axios.get(getApiUrl(API_PATHS.ADMIN_DETAIL(this.editId)), {
+          withCredentials: true
         });
 
         if (response.data.status === 'success') {
@@ -172,7 +154,7 @@ export default {
         if (this.isEditMode) {
           // 編輯模式
           requestData.id = this.editId;
-          response = await axios.put('http://localhost:5000/api/admin/update', requestData, {
+          response = await axios.put(getApiUrl(API_PATHS.ADMIN_UPDATE), requestData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
@@ -181,7 +163,7 @@ export default {
         } else {
           // 新增模式
           requestData.status = 'active';
-          response = await axios.post('http://localhost:5000/api/admin/add', requestData, {
+          response = await axios.post(getApiUrl(API_PATHS.ADMIN_ADD), requestData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
@@ -202,13 +184,8 @@ export default {
     }
   },
   mounted() {
-    this.updateCurrentTime();
-    this.timeInterval = setInterval(this.updateCurrentTime, 60000);
     document.title = '管理者系統';
     this.fetchAdminDetails();
-  },
-  beforeUnmount() {
-    clearInterval(this.timeInterval);
   }
 };
 </script>

@@ -7,11 +7,11 @@
       <form @submit.prevent="handleLogin">
         <div class="input-group">
           <label>帳號：</label>
-          <input type="text" v-model="username" required>
+          <input type="text" v-model="loginForm.account" required>
         </div>
         <div class="input-group">
           <label>密碼：</label>
-          <input type="password" v-model="password" required>
+          <input type="password" v-model="loginForm.password" required>
         </div>
         <button type="submit" class="login-button">登入</button>
       </form>
@@ -21,40 +21,52 @@
 </template>
 
 <script>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
-  name: 'CustomerLogin',
-  data() {
-    return {
-      username: '',
-      password: '',
-      isMenuOpen: false
-    };
-  },
-  methods: {
-    async handleLogin() {
+  setup() {
+    const router = useRouter();
+    const loginForm = ref({
+      account: '',
+      password: ''
+    });
+    const isMenuOpen = ref(false);
+
+    const handleLogin = async () => {
       try {
-        const response = await axios.post('http://localhost:5000/api/customer-login', {
-          username: this.username,
-          password: this.password
-        }, {
-          withCredentials: true
-        });
+        const response = await axios.post(
+          getApiUrl(API_PATHS.CUSTOMER_LOGIN),
+          {
+            username: loginForm.value.account,
+            password: loginForm.value.password
+          },
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
 
         if (response.data.status === 'success') {
           // 保存用户信息到 localStorage 和 sessionStorage
           localStorage.setItem('customer_id', response.data.data.customer_id);
           
           // 获取完整的用户信息
-          const userInfoResponse = await axios.get(`http://localhost:5000/api/customer/${response.data.data.customer_id}/info`, {
-            withCredentials: true
-          });
+          const userInfoResponse = await axios.get(
+            getApiUrl(API_PATHS.CUSTOMER_DETAIL(response.data.data.customer_id)), 
+            {
+              withCredentials: true
+            }
+          );
           
           if (userInfoResponse.data.status === 'success') {
             sessionStorage.setItem('userInfo', JSON.stringify(userInfoResponse.data.data));
             sessionStorage.setItem('isCustomerAuthenticated', 'true');
-            this.$router.push('/order-system');
+            router.push('/order-system');
           } else {
             throw new Error('Failed to get user info');
           }
@@ -65,20 +77,25 @@ export default {
         console.error('Login error:', error);
         alert(error.response?.data?.message || '登入失敗，請稍後再試');
       }
-    },
-    toggleMenu() {
-      this.isMenuOpen = !this.isMenuOpen;
-      document.body.style.overflow = this.isMenuOpen ? 'hidden' : '';
-    },
-    closeMenu() {
-      this.isMenuOpen = false;
+    };
+
+    const toggleMenu = () => {
+      isMenuOpen.value = !isMenuOpen.value;
+      document.body.style.overflow = isMenuOpen.value ? 'hidden' : '';
+    };
+
+    const closeMenu = () => {
+      isMenuOpen.value = false;
       document.body.style.overflow = '';
-    }
-  },
-  watch: {
-    $route() {
-      this.closeMenu();
-    }
+    };
+
+    return {
+      loginForm,
+      isMenuOpen,
+      handleLogin,
+      toggleMenu,
+      closeMenu
+    };
   }
 };
 </script>

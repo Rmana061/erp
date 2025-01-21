@@ -97,16 +97,17 @@ import axios from "axios";
 import * as XLSX from "xlsx";
 import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
+import { timeMixin } from '../mixins/timeMixin';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: "ProductManagement",
   components: {
     SideBar
   },
-  mixins: [adminMixin],
+  mixins: [adminMixin, timeMixin],
   data() {
     return {
-      currentTime: "",
       searchQuery: "",
       searchType: "name",
       products: [],
@@ -143,23 +144,6 @@ export default {
     }
   },
   methods: {
-    updateCurrentTime() {
-      const now = new Date();
-      const options = { 
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        weekday: "long",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      };
-      this.currentTime = now
-        .toLocaleString("zh-TW", options)
-        .replace(/\//g, "/")
-        .replace("星期", " 星期")
-        .replace(/(\d+):(\d+)/, "$1:$2");
-    },
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
     },
@@ -180,37 +164,31 @@ export default {
       if (confirm(`確定要刪除選中的 ${selectedProducts.length} 個產品嗎？`)) {
         try {
           await Promise.all(selectedProducts.map(product => 
-          axios.delete(`http://127.0.0.1:5000/api/products/${product.id}`, {
-            withCredentials: true,
-            headers: {
-              "Content-Type": "application/json",
-            },
-          })
+            axios.delete(getApiUrl(API_PATHS.PRODUCT_DELETE(product.id)), {
+              withCredentials: true
+            })
           ));
 
-            alert("產品已成功刪除");
-            this.fetchProducts();
+          alert("產品已成功刪除");
+          this.fetchProducts();
         } catch (error) {
-            console.error("Error deleting products:", error);
-            alert("刪除產品時發生錯誤：" + error.message);
+          console.error("Error deleting products:", error);
+          alert("刪除產品時發生錯誤：" + (error.response?.data?.message || error.message));
         }
       }
     },
     async deleteProduct(product) {
       if (confirm(`確定要刪除產品：${product.name}？`)) {
         try {
-          await axios.delete(`http://127.0.0.1:5000/api/products/${product.id}`, {
-            withCredentials: true,
-            headers: {
-              "Content-Type": "application/json",
-            },
+          await axios.delete(getApiUrl(API_PATHS.PRODUCT_DELETE(product.id)), {
+            withCredentials: true
           });
           
           alert("產品已成功刪除");
           this.fetchProducts();
         } catch (error) {
           console.error("Error deleting product:", error);
-          alert("刪除產品時發生錯誤：" + error.message);
+          alert("刪除產品時發生錯誤：" + (error.response?.data?.message || error.message));
         }
       }
     },
@@ -259,20 +237,21 @@ export default {
     },
     async fetchProducts() {
       try {
-        const response = await axios.get("http://127.0.0.1:5000/api/products", {
-          withCredentials: true,
-          headers: {
-            "Content-Type": "application/json",
-          },
+        const response = await axios.get(getApiUrl(API_PATHS.PRODUCTS), {
+          withCredentials: true
         });
 
-        this.products = response.data.map(product => ({
-          ...product,
-          selected: false
-        }));
+        if (response.data.status === 'success') {
+          this.products = response.data.data.map(product => ({
+            ...product,
+            selected: false
+          }));
+        } else {
+          throw new Error(response.data.message || '獲取產品列表失敗');
+        }
       } catch (error) {
         console.error("Error fetching products:", error);
-        alert("獲取產品列表失敗：" + error.message);
+        alert("獲取產品列表失敗：" + (error.response?.data?.message || error.message));
       }
     },
     showLargeImage(imageUrl) {
@@ -286,20 +265,15 @@ export default {
       const newPage = this.currentPage + direction;
       if (newPage >= 1 && newPage <= this.totalPages) {
         this.currentPage = newPage;
-    }
+      }
     },
     toggleSidebar() {
       this.isSidebarActive = !this.isSidebarActive;
     },
   },
   mounted() {
-    this.updateCurrentTime();
-    this.timeInterval = setInterval(this.updateCurrentTime, 60000);
     document.title = '管理者系統';
     this.fetchProducts();
-  },
-  beforeUnmount() {
-    clearInterval(this.timeInterval);
   },
 };
 </script>

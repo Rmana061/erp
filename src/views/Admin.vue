@@ -50,36 +50,21 @@
 import axios from 'axios';
 import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
+import { timeMixin } from '../mixins/timeMixin';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: 'Admin',
-  mixins: [adminMixin],
+  mixins: [adminMixin, timeMixin],
   components: {
     SideBar
   },
   data() {
     return {
-      currentTime: '',
       admins: []
     };
   },
   methods: {
-    updateCurrentTime() {
-      const now = new Date();
-      const options = { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit', 
-        weekday: 'long', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false 
-      };
-      this.currentTime = now.toLocaleString('zh-TW', options)
-        .replace(/\//g, '/')
-        .replace('星期', ' 星期')
-        .replace(/(\d+):(\d+)/, '$1:$2');
-    },
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
     },
@@ -93,7 +78,7 @@ export default {
 
       if (confirm(`確定要刪除選中的 ${selectedAdmins.length} 位人員嗎？`)) {
         const deletePromises = selectedAdmins.map(admin =>
-          axios.delete(`http://127.0.0.1:5000/api/admin/delete`, {
+          axios.delete(getApiUrl(API_PATHS.ADMIN_DELETE), {
             data: { id: admin.id },
             withCredentials: true,
             headers: {
@@ -135,11 +120,8 @@ export default {
     },
     async fetchAdmins() {
       try {
-        const response = await axios.get('http://localhost:5000/api/admin/list', {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
+        const response = await axios.get(getApiUrl(API_PATHS.ADMIN_LIST), {
+          withCredentials: true
         });
         
         if (response.data.status === 'success') {
@@ -170,13 +152,8 @@ export default {
     }
   },
   mounted() {
-    this.updateCurrentTime();
-    this.timeInterval = setInterval(this.updateCurrentTime, 60000);
     document.title = '管理者系統';
     this.fetchAdmins();
-  },
-  beforeUnmount() {
-    clearInterval(this.timeInterval);
   }
 };
 </script>

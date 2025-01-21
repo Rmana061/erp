@@ -18,18 +18,21 @@
         <div class="account-info">
           <div class="info-grid">
             <p><strong>公司名稱：</strong></p>
-            <p>A公司（客戶無法更改）</p>
+            <p>{{ customerInfo.company_name || '載入中...' }}</p>
             <p><strong>帳號：</strong></p>
-            <p>A公司（客戶無法更改）</p>
+            <p>{{ customerInfo.username || '載入中...' }}</p>
             <p><strong>密碼：</strong></p>
-            <p>12345678</p>
+            <p>********</p>
           </div>
           <div class="line-settings">
             <p><strong>LINE帳號綁定</strong></p>
             <div class="line-buttons">
-              <button @click="bindAccount">綁定帳號</button>
-              <button @click="unbindAccount">解除綁定</button>
+              <button @click="bindAccount" :disabled="customerInfo.line_account">綁定帳號</button>
+              <button @click="unbindAccount" :disabled="!customerInfo.line_account">解除綁定</button>
             </div>
+            <p v-if="customerInfo.line_account" class="line-status">
+              已綁定：{{ customerInfo.line_account }}
+            </p>
           </div>
         </div>
       </div>
@@ -43,6 +46,7 @@ import { timeMixin } from '../mixins/timeMixin';
 import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: 'AccountSettings',
@@ -50,13 +54,70 @@ export default {
     SideBar
   },
   mixins: [timeMixin, companyMixin],
+  data() {
+    return {
+      customerInfo: {}
+    };
+  },
   methods: {
-    bindAccount() {
-      alert('綁定帳號功能');
+    async fetchCustomerInfo() {
+      try {
+        const response = await axios.get(getApiUrl(API_PATHS.CUSTOMER_INFO), {
+          withCredentials: true
+        });
+
+        if (response.data.status === 'success') {
+          this.customerInfo = response.data.data;
+        } else {
+          throw new Error(response.data.message || '獲取客戶資料失敗');
+        }
+      } catch (error) {
+        console.error('Error fetching customer info:', error);
+        if (error.response?.status === 401) {
+          this.$router.push('/customer-login');
+        } else {
+          alert('獲取客戶資料失敗：' + (error.response?.data?.message || error.message));
+        }
+      }
     },
-    unbindAccount() {
-      alert('解除綁定功能');
+    async bindAccount() {
+      try {
+        const response = await axios.post(getApiUrl(API_PATHS.BIND_LINE), {}, {
+          withCredentials: true
+        });
+
+        if (response.data.status === 'success') {
+          window.location.href = response.data.data.url;
+        } else {
+          throw new Error(response.data.message || 'LINE帳號綁定失敗');
+        }
+      } catch (error) {
+        console.error('Error binding LINE account:', error);
+        alert('LINE帳號綁定失敗：' + (error.response?.data?.message || error.message));
+      }
+    },
+    async unbindAccount() {
+      if (!confirm('確定要解除LINE帳號綁定嗎？')) return;
+
+      try {
+        const response = await axios.post(getApiUrl(API_PATHS.UNBIND_LINE), {}, {
+          withCredentials: true
+        });
+
+        if (response.data.status === 'success') {
+          alert('LINE帳號解除綁定成功');
+          this.fetchCustomerInfo();
+        } else {
+          throw new Error(response.data.message || '解除LINE帳號綁定失敗');
+        }
+      } catch (error) {
+        console.error('Error unbinding LINE account:', error);
+        alert('解除LINE帳號綁定失敗：' + (error.response?.data?.message || error.message));
+      }
     }
+  },
+  created() {
+    this.fetchCustomerInfo();
   },
   mounted() {
     document.title = '客戶系統';
@@ -66,6 +127,12 @@ export default {
 
 <style>
 @import '../assets/styles/unified-base.css';
+
+.line-status {
+  margin-top: 10px;
+  color: #4CAF50;
+  font-size: 0.9em;
+}
 
 /* 所有其他樣式已移至 unified-base */
 </style>

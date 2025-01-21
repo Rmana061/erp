@@ -45,8 +45,8 @@
                 <input 
                   type="file" 
                   accept=".pdf,.doc,.docx" 
-                  @change="handleDocumentUpload"
-                  ref="documentInput"
+                  @change="handleDmUpload"
+                  ref="dmInput"
                 >
                 <div v-if="product.dm_url" class="preview-container">
                   <span class="file-name">
@@ -102,10 +102,12 @@
 import axios from 'axios';
 import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
+import { timeMixin } from '../mixins/timeMixin';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: 'AddProduct',
-  mixins: [adminMixin],
+  mixins: [adminMixin, timeMixin],
   components: {
     SideBar
   },
@@ -167,51 +169,32 @@ export default {
     },
     async fetchProductDetails(id) {
       try {
-        const response = await axios.get(`http://localhost:5000/api/products/${id}`, {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
+        const response = await axios.get(getApiUrl(API_PATHS.PRODUCT_DETAIL(id)), {
+          withCredentials: true
         });
         
-        // 將獲取的數據填充到表單中
-        this.product = {
-          name: response.data.name,
-          description: response.data.description,
-          image_url: response.data.image_url,
-          dm_url: response.data.dm_url,
-          min_order: response.data.min_order_qty,
-          max_order: response.data.max_order_qty,
-          unit: response.data.product_unit,
-          shipping_time: response.data.shipping_time,
-          special_date: response.data.special_date || false
-        };
+        if (response.data.status === 'success') {
+          const productData = response.data.data;
+          this.product = {
+            name: productData.name,
+            description: productData.description,
+            image_url: productData.image_url,
+            dm_url: productData.dm_url,
+            min_order: productData.min_order_qty,
+            max_order: productData.max_order_qty,
+            unit: productData.product_unit,
+            shipping_time: productData.shipping_time,
+            special_date: productData.special_date
+          };
+        }
       } catch (error) {
         console.error('Error fetching product details:', error);
-        alert('獲取產品詳情失敗：' + error.message);
+        alert('獲取產品資料失敗');
       }
     },
     async saveProduct() {
       try {
-        // 数据验证
-        if (!this.product.name) {
-          alert('請輸入產品名稱');
-          return;
-        }
-        if (!this.product.description) {
-          alert('請輸入產品描述');
-          return;
-        }
-        if (!this.product.min_order) {
-          alert('請輸入最小下單數量');
-          return;
-        }
-        if (!this.product.max_order) {
-          alert('請輸入最大下單數量');
-          return;
-        }
-        if (!this.product.unit) {
-          alert('請輸入產品單位');
+        if (!this.validateForm()) {
           return;
         }
 
@@ -230,7 +213,7 @@ export default {
         let response;
         if (this.isEditing) {
           // 编辑现有产品
-          response = await axios.put(`http://localhost:5000/api/products/${this.editingId}`, productData, {
+          response = await axios.put(getApiUrl(API_PATHS.PRODUCT_UPDATE(this.editingId)), productData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
@@ -239,7 +222,7 @@ export default {
           alert('產品更新成功！');
         } else {
           // 新增产品
-          response = await axios.post('http://localhost:5000/api/products', productData, {
+          response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), productData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
@@ -260,7 +243,7 @@ export default {
     },
     getFullUrl(path) {
       if (!path) return '';
-      return path.startsWith('http') ? path : `http://127.0.0.1:5000${path}`;
+      return path.startsWith('http') ? path : getApiUrl(path);
     },
     getFileName(path) {
       if (!path) return '';
@@ -281,26 +264,31 @@ export default {
       formData.append('productName', this.product.name);
       
       try {
-        const response = await axios.post('http://127.0.0.1:5000/api/upload/image', formData, {
+        const response = await axios.post(getApiUrl(API_PATHS.UPLOAD_IMAGE), formData, {
           withCredentials: true,
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
         
-        this.product.image_url = response.data.url;
+        if (response.data.status === 'success') {
+          this.product.image_url = response.data.data.file_path;
+          this.$refs.imageInput.value = '';
+        } else {
+          throw new Error(response.data.message);
+        }
       } catch (error) {
         console.error('Error uploading image:', error);
-        alert('上傳圖片失敗：' + error.message);
+        alert('上傳圖片失敗：' + (error.response?.data?.message || error.message));
       }
     },
-    async handleDocumentUpload(event) {
+    async handleDmUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
       
       if (!this.product.name) {
         alert('請先輸入產品名稱');
-        this.$refs.documentInput.value = '';
+        this.$refs.dmInput.value = '';
         return;
       }
       
@@ -309,17 +297,22 @@ export default {
       formData.append('productName', this.product.name);
       
       try {
-        const response = await axios.post('http://127.0.0.1:5000/api/upload/document', formData, {
+        const response = await axios.post(getApiUrl(API_PATHS.UPLOAD_DOCUMENT), formData, {
           withCredentials: true,
           headers: {
             'Content-Type': 'multipart/form-data'
           }
         });
         
-        this.product.dm_url = response.data.url;
+        if (response.data.status === 'success') {
+          this.product.dm_url = response.data.data.file_path;
+          this.$refs.dmInput.value = '';
+        } else {
+          throw new Error(response.data.message);
+        }
       } catch (error) {
         console.error('Error uploading document:', error);
-        alert('上傳文件失敗：' + error.message);
+        alert('上傳文件失敗：' + (error.response?.data?.message || error.message));
       }
     },
     handleShippingTimeChange() {
@@ -331,6 +324,29 @@ export default {
       if (this.product.special_date) {
         this.product.shipping_time = '';
       }
+    },
+    validateForm() {
+      if (!this.product.name) {
+        alert('請輸入產品名稱');
+        return false;
+      }
+      if (!this.product.description) {
+        alert('請輸入產品描述');
+        return false;
+      }
+      if (!this.product.min_order) {
+        alert('請輸入最小下單數量');
+        return false;
+      }
+      if (!this.product.max_order) {
+        alert('請輸入最大下單數量');
+        return false;
+      }
+      if (!this.product.unit) {
+        alert('請輸入產品單位');
+        return false;
+      }
+      return true;
     }
   },
   watch: {

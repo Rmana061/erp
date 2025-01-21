@@ -93,6 +93,7 @@ import { timeMixin } from '../mixins/timeMixin';
 import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: 'OrderSystem',
@@ -137,7 +138,7 @@ export default {
     },
     async confirmCancelOrder() {
       try {
-        const response = await axios.post('http://localhost:5000/api/orders/cancel', {
+        const response = await axios.post(getApiUrl(API_PATHS.CANCEL_ORDER), {
           order_number: this.selectedOrder
         }, {
           withCredentials: true
@@ -168,7 +169,7 @@ export default {
         const customerId = localStorage.getItem('customer_id');
         console.log('Fetching orders for customer:', customerId);
 
-        const response = await axios.get('http://localhost:5000/api/orders', {
+        const response = await axios.get(getApiUrl(API_PATHS.ORDERS), {
           params: {
             customer_id: customerId
           },

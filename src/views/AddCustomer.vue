@@ -75,6 +75,7 @@
 import axios from 'axios';
 import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: 'AddCustomer',
@@ -169,10 +170,14 @@ export default {
         if (this.isEditing) {
           // 编辑现有客户
           customerData.id = this.editingId;
-          response = await axios.put('http://localhost:5000/api/customer/update', customerData);
+          response = await axios.put(getApiUrl(API_PATHS.CUSTOMER_UPDATE), customerData, {
+            withCredentials: true
+          });
         } else {
           // 新增客户
-          response = await axios.post('http://localhost:5000/api/customer/add', customerData);
+          response = await axios.post(getApiUrl(API_PATHS.CUSTOMER_ADD), customerData, {
+            withCredentials: true
+          });
         }
 
         if (response.data.status === 'success') {
@@ -210,29 +215,26 @@ export default {
     },
     async fetchProducts() {
       try {
-        const response = await fetch('http://localhost:5000/api/products', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+        const response = await axios.get(getApiUrl(API_PATHS.PRODUCTS), {
+          withCredentials: true
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch products');
+        if (response.data.status === 'success') {
+          this.products = response.data.data.map(product => ({
+            name: product.name,
+            value: product.id.toString()
+          }));
+        } else {
+          throw new Error(response.data.message || '獲取產品列表失敗');
         }
-
-        const data = await response.json();
-        this.products = data.map(product => ({
-          name: product.name,
-          value: product.id.toString()
-        }));
       } catch (error) {
         console.error('Error fetching products:', error);
+        alert('獲取產品列表失敗：' + (error.response?.data?.message || error.message));
       }
     },
     async fetchCustomerDetails(customerId) {
       try {
-        const response = await axios.get(`http://localhost:5000/api/customer/${customerId}/info`, {
+        const response = await axios.get(getApiUrl(API_PATHS.CUSTOMER_DETAIL(customerId)), {
           withCredentials: true
         });
         
@@ -251,10 +253,12 @@ export default {
             address: customerData.address || '',
             notes: customerData.remark || ''
           };
+        } else {
+          throw new Error(response.data.message || '獲取客戶資料失敗');
         }
       } catch (error) {
         console.error('Error fetching customer details:', error);
-        alert('獲取客戶資料失敗');
+        alert('獲取客戶資料失敗：' + (error.response?.data?.message || error.message));
       }
     }
   },

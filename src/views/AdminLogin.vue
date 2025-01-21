@@ -5,7 +5,7 @@
     <div class="login-container">
       <div class="login-box">
         <h2>管理者系統</h2>
-        <form class="login-form" @submit.prevent="submitForm">
+        <form class="login-form" @submit.prevent="handleLogin">
           <div class="form-group">
             <label for="account">帳號</label>
             <input 
@@ -31,26 +31,27 @@
 </template>
 
 <script>
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
-  name: 'AdminLogin',
-  data() {
-    return {
-      loginForm: {
-        account: '',
-        password: ''
-      }
-    };
-  },
-  methods: {
-    async submitForm() {
+  setup() {
+    const router = useRouter();
+    const loginForm = ref({
+      account: '',
+      password: ''
+    });
+    const isMenuOpen = ref(false);
+
+    const handleLogin = async () => {
       try {
         const response = await axios.post(
-          'http://127.0.0.1:5000/api/admin-login',
+          getApiUrl(API_PATHS.ADMIN_LOGIN),
           {
-            admin_account: this.loginForm.account,
-            admin_password: this.loginForm.password
+            admin_account: loginForm.value.account,
+            admin_password: loginForm.value.password
           },
           {
             withCredentials: true,
@@ -73,7 +74,7 @@ export default {
           sessionStorage.setItem('isAuthenticated', 'true');
 
           // 使用 Vue Router 进行导航
-          this.$router.push({ name: 'TodayOrders' });
+          router.push({ name: 'TodayOrders' });
         } else {
           alert(response.data.message || '登入失敗');
         }
@@ -81,7 +82,25 @@ export default {
         console.log('Login error:', error);
         alert(error.response?.data?.message || '登入失敗，請稍後再試');
       }
-    }
+    };
+
+    const toggleMenu = () => {
+      isMenuOpen.value = !isMenuOpen.value;
+      document.body.style.overflow = isMenuOpen.value ? 'hidden' : '';
+    };
+
+    const closeMenu = () => {
+      isMenuOpen.value = false;
+      document.body.style.overflow = '';
+    };
+
+    return {
+      loginForm,
+      isMenuOpen,
+      handleLogin,
+      toggleMenu,
+      closeMenu
+    };
   }
 };
 </script>

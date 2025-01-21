@@ -203,6 +203,7 @@ import { timeMixin } from '../mixins/timeMixin';
 import { adminMixin } from '../mixins/adminMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
+import { API_BASE_URL, API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: 'TodayOrders',
@@ -319,7 +320,7 @@ export default {
     async fetchPendingOrders() {
       try {
         console.log('開始獲取待確認訂單...');
-        const response = await axios.get('http://localhost:5000/api/orders/pending', {
+        const response = await axios.get(getApiUrl(API_PATHS.PENDING_ORDERS), {
           withCredentials: true
         });
 
@@ -410,7 +411,7 @@ export default {
     async confirmOrderUpdate() {
       try {
         const updatePromises = this.selectedOrder.items.map(item => 
-          axios.post('http://localhost:5000/api/orders/update-status', {
+          axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
             order_id: item.id,
             status: item.tempStatus,
             shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null

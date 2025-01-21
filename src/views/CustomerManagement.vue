@@ -77,6 +77,7 @@ import axios from 'axios';
 import * as XLSX from 'xlsx';
 import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: 'CustomerManagement',
@@ -131,7 +132,8 @@ export default {
     },
     async fetchCustomers() {
       try {
-        const response = await axios.get('http://127.0.0.1:5000/api/customer/list', {
+        const response = await axios.get(getApiUrl(API_PATHS.CUSTOMER_LIST), {
+          withCredentials: true,
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
@@ -154,11 +156,12 @@ export default {
     async deleteCustomerRow(customer) {
       if (confirm('確定要刪除客戶：' + customer.company_name + '?')) {
         try {
-          const response = await axios.delete('http://127.0.0.1:5000/api/customer/delete', {
+          const response = await axios.delete(getApiUrl(API_PATHS.CUSTOMER_DELETE), {
             data: { id: customer.id },
             headers: {
               'Content-Type': 'application/json'
-            }
+            },
+            withCredentials: true
           });
 
           if (response.data && response.data.status === 'success') {

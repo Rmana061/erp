@@ -66,9 +66,10 @@ import { timeMixin } from '../mixins/timeMixin';
 import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
-  name: 'OrderSystem',
+  name: 'OrderRecord',
   components: {
     SideBar
   },
@@ -105,7 +106,7 @@ export default {
         const customerId = localStorage.getItem('customer_id');
         console.log('Fetching orders for customer:', customerId);
 
-        const response = await axios.get('http://localhost:5000/api/orders', {
+        const response = await axios.get(getApiUrl(API_PATHS.ORDERS), {
           params: {
             customer_id: customerId
           },
@@ -135,7 +136,7 @@ export default {
     this.fetchOrders();
   },
   mounted() {
-    document.title = '訂貨系統';
+    document.title = '訂貨紀錄';
   }
 };
 </script>

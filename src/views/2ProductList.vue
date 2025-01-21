@@ -73,6 +73,7 @@ import { timeMixin } from '../mixins/timeMixin';
 import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: 'ProductList',
@@ -99,26 +100,31 @@ export default {
   methods: {
     async fetchProducts() {
       try {
-        const response = await axios.get('http://127.0.0.1:5000/api/products', {
+        const response = await axios.get(getApiUrl(API_PATHS.VIEWABLE_PRODUCTS), {
           withCredentials: true
         });
-        this.products = response.data.map(product => ({
-          ...product,
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          image_url: product.image_url,
-          dm_url: product.dm_url,
-          min_order_qty: product.min_order_qty,
-          max_order_qty: product.max_order_qty,
-          unit: product.product_unit,
-          shipping_time: product.shipping_time,
-          created_at: product.created_at,
-          updated_at: product.updated_at
-        }));
+        
+        if (response.data.status === 'success') {
+          this.products = response.data.data.map(product => ({
+            ...product,
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            image_url: product.image_url,
+            dm_url: product.dm_url,
+            min_order_qty: product.min_order_qty,
+            max_order_qty: product.max_order_qty,
+            unit: product.product_unit,
+            shipping_time: product.shipping_time,
+            created_at: product.created_at,
+            updated_at: product.updated_at
+          }));
+        } else {
+          throw new Error(response.data.message || '獲取產品列表失敗');
+        }
       } catch (error) {
         console.error('Error fetching products:', error);
-        alert('獲取產品列表失敗');
+        alert('獲取產品列表失敗：' + (error.response?.data?.message || error.message));
       }
     },
     showLargeImage(imageUrl) {

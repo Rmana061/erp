@@ -27,60 +27,17 @@
 
 <script>
 import { adminMixin } from '../mixins/adminMixin';
+import { timeMixin } from '../mixins/timeMixin';
 import SideBar from '../components/SideBar.vue';
 
 export default {
   name: 'NotificationSetting',
-  mixins: [adminMixin],
+  mixins: [adminMixin, timeMixin],
   components: {
     SideBar
   },
   mounted() {
-    document.title = '管理者系統'; // 設置頁面標題
-  },
-  data() {
-    return {
-      isMenuOpen: false,
-      currentTime: ''
-    };
-  },
-  methods: {
-    toggleMenu() {
-      this.isMenuOpen = !this.isMenuOpen;
-      document.body.style.overflow = this.isMenuOpen ? 'hidden' : '';
-    },
-    closeMenu() {
-      this.isMenuOpen = false;
-      document.body.style.overflow = '';
-    },
-    updateCurrentTime() {
-      const now = new Date();
-      const options = { 
-        year: 'numeric', 
-        month: '2-digit', 
-        day: '2-digit', 
-        weekday: 'long', 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        hour12: false 
-      };
-      this.currentTime = now.toLocaleString('zh-TW', options)
-        .replace(/\//g, '/')
-        .replace('星期', ' 星期')
-        .replace(/(\d+):(\d+)/, '$1:$2');
-    },
-    navigateTo(routeName) {
-      this.$router.push({ name: routeName });
-    }
-  },
-  mounted() {
-    this.updateCurrentTime();
-    setInterval(this.updateCurrentTime, 60000);
-  },
-  watch: {
-    $route() {
-      this.closeMenu();
-    }
+    document.title = '管理者系統';
   }
 };
 </script>
@@ -88,5 +45,5 @@ export default {
 <style>
 @import '../assets/styles/unified-base.css';
 
-/* 所有其他樣式已移至 unified-base */
+/* 所有樣式已移至 unified-base */
 </style>

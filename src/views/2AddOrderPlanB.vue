@@ -139,6 +139,7 @@ import { timeMixin } from '../mixins/timeMixin';
 import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
+import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
   name: 'AddOrderPlanB',
@@ -284,7 +285,7 @@ export default {
         };
 
         // 发送订单到后端
-        const response = await axios.post('http://localhost:5000/api/orders', orderData, {
+        const response = await axios.post(getApiUrl(API_PATHS.ORDERS), orderData, {
           withCredentials: true
         });
 
@@ -322,7 +323,7 @@ export default {
           }
         }
 
-        const response = await axios.get('http://localhost:5000/api/customer/info', {
+        const response = await axios.get(getApiUrl(API_PATHS.CUSTOMER_INFO), {
           withCredentials: true
         });
         
@@ -363,7 +364,10 @@ export default {
         }
 
         // 获取可见产品的详细信息
-        const response = await axios.get(`http://localhost:5000/api/products/viewable?ids=${userInfo.viewable_products}`, {
+        const response = await axios.get(getApiUrl(API_PATHS.VIEWABLE_PRODUCTS), {
+          params: {
+            ids: userInfo.viewable_products
+          },
           withCredentials: true
         });
 
