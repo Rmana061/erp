@@ -117,9 +117,9 @@ export default {
         description: '',
         image_url: '',
         dm_url: '',
-        min_order_qty: '',
-        max_order_qty: '',
-        product_unit: '',
+        min_order: '',
+        max_order: '',
+        unit: '',
         shipping_time: '',
         special_date: false
       },
@@ -167,7 +167,7 @@ export default {
     },
     async fetchProductDetails(id) {
       try {
-        const response = await axios.get(`http://127.0.0.1:5000/api/products/${id}`, {
+        const response = await axios.get(`http://localhost:5000/api/products/${id}`, {
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json'
@@ -180,9 +180,9 @@ export default {
           description: response.data.description,
           image_url: response.data.image_url,
           dm_url: response.data.dm_url,
-          min_order_qty: response.data.min_order_qty,
-          max_order_qty: response.data.max_order_qty,
-          product_unit: response.data.product_unit,
+          min_order: response.data.min_order_qty,
+          max_order: response.data.max_order_qty,
+          unit: response.data.product_unit,
           shipping_time: response.data.shipping_time,
           special_date: response.data.special_date || false
         };
@@ -191,9 +191,9 @@ export default {
         alert('獲取產品詳情失敗：' + error.message);
       }
     },
-    async submitProduct() {
+    async saveProduct() {
       try {
-        // 數據驗證
+        // 数据验证
         if (!this.product.name) {
           alert('請輸入產品名稱');
           return;
@@ -202,27 +202,35 @@ export default {
           alert('請輸入產品描述');
           return;
         }
-        if (!this.product.min_order_qty || !this.product.max_order_qty) {
-          alert('請輸入訂購數量範圍');
+        if (!this.product.min_order) {
+          alert('請輸入最小下單數量');
           return;
         }
-        if (!this.product.product_unit) {
+        if (!this.product.max_order) {
+          alert('請輸入最大下單數量');
+          return;
+        }
+        if (!this.product.unit) {
           alert('請輸入產品單位');
           return;
         }
 
         const productData = {
-          ...this.product,
-          min_order_qty: parseInt(this.product.min_order_qty),
-          max_order_qty: parseInt(this.product.max_order_qty),
-          shipping_time: this.product.shipping_time || null,
+          name: this.product.name,
+          description: this.product.description,
+          image_url: this.product.image_url,
+          dm_url: this.product.dm_url,
+          min_order_qty: parseInt(this.product.min_order),
+          max_order_qty: parseInt(this.product.max_order),
+          product_unit: this.product.unit,
+          shipping_time: this.product.shipping_time ? parseInt(this.product.shipping_time) : null,
           special_date: this.product.special_date
         };
 
         let response;
         if (this.isEditing) {
-          // 編輯現有產品
-          response = await axios.put(`http://127.0.0.1:5000/api/products/${this.editingId}`, productData, {
+          // 编辑现有产品
+          response = await axios.put(`http://localhost:5000/api/products/${this.editingId}`, productData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
@@ -230,8 +238,8 @@ export default {
           });
           alert('產品更新成功！');
         } else {
-          // 新增產品
-          response = await axios.post('http://127.0.0.1:5000/api/products', productData, {
+          // 新增产品
+          response = await axios.post('http://localhost:5000/api/products', productData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
@@ -240,11 +248,11 @@ export default {
           alert('產品新增成功！');
         }
 
+        // 保存成功后跳转到产品管理页面
         this.$router.push('/product-management');
       } catch (error) {
-        console.error('Error submitting product:', error);
-        const errorMessage = error.response?.data?.error || error.message;
-        alert(this.isEditing ? '更新產品失敗：' : '新增產品失敗：' + errorMessage);
+        console.error('Error saving product:', error);
+        alert(this.isEditing ? '更新產品失敗：' : '新增產品失敗：' + (error.response?.data?.message || error.message));
       }
     },
     cancel() {

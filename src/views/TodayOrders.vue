@@ -12,9 +12,6 @@
       <div class="content-wrapper">
         <div class="page-header">
           <h2>待確認訂單</h2>
-          <button class="export-btn" @click="exportOrders">
-            <i class="fas fa-file-export"></i> 報表匯出
-          </button>
         </div>
 
         <!-- 搜索欄位 -->

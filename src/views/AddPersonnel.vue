@@ -79,7 +79,9 @@ export default {
       personnelPassword: '',
       personnelName: '',
       personnelStaffNo: '',
-      personnelPermission: ''
+      personnelPermission: '',
+      isEditMode: false,
+      editId: null
     };
   },
   methods: {
@@ -102,41 +104,101 @@ export default {
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
     },
-    async updatePersonnel() {
-      if (!this.personnelAccount || !this.personnelPassword || !this.personnelName || !this.personnelStaffNo || !this.personnelPermission) {
-        alert('請填寫所有必要欄位');
-        return;
-      }
-
-      const permissionMap = {
-        '最高權限': 1,
-        '普通權限': 2,
-        '基本權限': 3,
-        '檢視權限': 4
-      };
-
+    async fetchAdminDetails() {
+      if (!this.$route.query.id) return;
+      
+      this.isEditMode = true;
+      this.editId = this.$route.query.id;
+      
       try {
-        const response = await axios.post('http://127.0.0.1:5000/api/admins', {
-          admin_account: this.personnelAccount,
-          admin_password: this.personnelPassword,
-          admin_name: this.personnelName,
-          staff_no: this.personnelStaffNo,
-          permission_level_id: permissionMap[this.personnelPermission],
-          status: 'active'
-        }, {
+        const response = await axios.get(`http://localhost:5000/api/admin/info/${this.editId}`, {
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json'
           }
         });
 
-        if (response.data) {
-          alert('人員新增成功！');
-          this.$router.push('/admin');
+        if (response.data.status === 'success') {
+          const admin = response.data.data;
+          this.personnelAccount = admin.admin_account;
+          this.personnelName = admin.admin_name;
+          this.personnelStaffNo = admin.staff_no;
+          this.personnelPermission = this.getPermissionName(admin.permission_level_id);
+        } else {
+          throw new Error(response.data.message || '獲取管理員資料失敗');
         }
       } catch (error) {
-        console.error('Error adding personnel:', error);
-        alert('新增失敗：' + (error.response?.data?.error || error.message));
+        console.error('Error fetching admin details:', error);
+        alert('獲取管理員資料失敗：' + (error.response?.data?.message || error.message));
+      }
+    },
+    getPermissionName(level_id) {
+      const permissions = {
+        1: '最高權限',
+        2: '普通權限',
+        3: '基本權限',
+        4: '檢視權限'
+      };
+      return permissions[level_id] || '未知權限';
+    },
+    getPermissionId(permissionName) {
+      const permissions = {
+        '最高權限': 1,
+        '普通權限': 2,
+        '基本權限': 3,
+        '檢視權限': 4
+      };
+      return permissions[permissionName] || 2;
+    },
+    async updatePersonnel() {
+      if (!this.personnelAccount || !this.personnelName || !this.personnelStaffNo || !this.personnelPermission) {
+        alert('請填寫所有必要欄位');
+        return;
+      }
+
+      try {
+        let response;
+        if (this.isEditMode) {
+          // 編輯模式
+          response = await axios.put('http://localhost:5000/api/admin/update', {
+            id: this.editId,
+            admin_account: this.personnelAccount,
+            admin_password: this.personnelPassword || undefined,
+            admin_name: this.personnelName,
+            staff_no: this.personnelStaffNo,
+            permission_level_id: this.getPermissionId(this.personnelPermission)
+          }, {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+        } else {
+          // 新增模式
+          response = await axios.post('http://localhost:5000/api/admin/add', {
+            admin_account: this.personnelAccount,
+            admin_password: this.personnelPassword,
+            admin_name: this.personnelName,
+            staff_no: this.personnelStaffNo,
+            permission_level_id: this.getPermissionId(this.personnelPermission),
+            status: 'active'
+          }, {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+        }
+
+        if (response.data.status === 'success') {
+          alert(this.isEditMode ? '人員更新成功！' : '人員新增成功！');
+          this.$router.push('/admin');
+        } else {
+          throw new Error(response.data.message || (this.isEditMode ? '更新失敗' : '新增失敗'));
+        }
+      } catch (error) {
+        console.error('Error updating/adding personnel:', error);
+        alert((this.isEditMode ? '更新' : '新增') + '失敗：' + (error.response?.data?.message || error.message));
       }
     }
   },
@@ -144,6 +206,7 @@ export default {
     this.updateCurrentTime();
     this.timeInterval = setInterval(this.updateCurrentTime, 60000);
     document.title = '管理者系統';
+    this.fetchAdminDetails();
   },
   beforeUnmount() {
     clearInterval(this.timeInterval);

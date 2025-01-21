@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, session
 from backend.config.database import get_db_connection
 from backend.utils.password_utils import hash_password
 import datetime
+import psycopg2.extras
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -134,103 +135,62 @@ def add_admin():
 @admin_bp.route('/admin/update', methods=['PUT'])
 def update_admin():
     try:
-        data = request.json
-        if 'id' not in data:
+        data = request.get_json()
+        admin_id = data.get('id')
+        admin_account = data.get('admin_account')
+        admin_password = data.get('admin_password')
+        admin_name = data.get('admin_name')
+        staff_no = data.get('staff_no')
+        permission_level_id = data.get('permission_level_id')
+
+        if not all([admin_id, admin_account, admin_name, staff_no, permission_level_id]):
             return jsonify({
                 "status": "error",
-                "message": "缺少管理員ID"
+                "message": "缺少必要的欄位"
             }), 400
-            
+
         conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
-            
         cursor = conn.cursor()
-        
-        # 檢查管理員是否存在
-        cursor.execute("""
-            SELECT id FROM administrators 
-            WHERE id = %s AND status = 'active'
-        """, (data['id'],))
-        if not cursor.fetchone():
-            return jsonify({
-                "status": "error",
-                "message": "管理員不存在"
-            }), 404
-        
-        # 檢查帳號是否重複
-        if 'admin_account' in data:
-            cursor.execute("""
-                SELECT id FROM administrators 
-                WHERE admin_account = %s AND id != %s AND status = 'active'
-            """, (data['admin_account'], data['id']))
-            if cursor.fetchone():
-                return jsonify({
-                    "status": "error",
-                    "message": "管理員帳號已存在"
-                }), 400
-        
-        # 檢查信箱是否重複
-        if 'email' in data:
-            cursor.execute("""
-                SELECT id FROM administrators 
-                WHERE email = %s AND id != %s AND status = 'active'
-            """, (data['email'], data['id']))
-            if cursor.fetchone():
-                return jsonify({
-                    "status": "error",
-                    "message": "信箱已存在"
-                }), 400
-        
-        # 構建更新語句
-        update_fields = []
-        update_values = []
-        
-        field_mapping = {
-            'admin_account': 'admin_account',
-            'admin_name': 'admin_name',
-            'phone': 'phone',
-            'email': 'email'
-        }
-        
-        for key, field in field_mapping.items():
-            if key in data and data[key] is not None:
-                update_fields.append(f"{field} = %s")
-                update_values.append(data[key])
-        
-        # 如果有密碼更新
-        if 'admin_password' in data and data['admin_password']:
+
+        update_fields = [
+            "admin_account = %s",
+            "admin_name = %s",
+            "staff_no = %s",
+            "permission_level_id = %s",
+            "updated_at = CURRENT_TIMESTAMP"
+        ]
+        params = [admin_account, admin_name, staff_no, permission_level_id]
+
+        if admin_password:
             update_fields.append("admin_password = %s")
-            update_values.append(hash_password(data['admin_password']))
-        
-        if not update_fields:
-            return jsonify({
-                "status": "error",
-                "message": "沒有提供要更新的欄位"
-            }), 400
-        
-        # 添加更新時間
-        update_fields.append("updated_at = NOW()")
-        
-        # 執行更新
-        update_values.append(data['id'])
-        update_query = f"""
+            params.append(hash_password(admin_password))
+
+        params.append(admin_id)  # for WHERE clause
+
+        query = f"""
             UPDATE administrators 
-            SET {', '.join(update_fields)}
-            WHERE id = %s AND status = 'active'
+            SET {", ".join(update_fields)}
+            WHERE id = %s
+            RETURNING id
         """
-        
-        cursor.execute(update_query, tuple(update_values))
+
+        cursor.execute(query, params)
+        updated = cursor.fetchone()
         conn.commit()
-        
         cursor.close()
         conn.close()
-        
+
+        if not updated:
+            return jsonify({
+                "status": "error",
+                "message": "找不到要更新的管理員"
+            }), 404
+
         return jsonify({
             "status": "success",
             "message": "管理員資料更新成功"
         })
-        
+
     except Exception as e:
         print(f"Error in update_admin: {str(e)}")
         if 'cursor' in locals():
@@ -239,7 +199,7 @@ def update_admin():
             conn.close()
         return jsonify({
             "status": "error",
-            "message": str(e)
+            "message": f"更新管理員資料失敗: {str(e)}"
         }), 500
 
 @admin_bp.route('/admin/delete', methods=['DELETE'])
@@ -332,4 +292,38 @@ def get_admin_info():
 
     except Exception as e:
         print(f"Error in get_admin_info: {str(e)}")
+        return jsonify({"status": "error", "message": "獲取管理員資訊失敗"}), 500
+
+@admin_bp.route('/admin/info/<int:admin_id>', methods=['GET'])
+def get_admin_detail(admin_id):
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        cursor.execute("""
+            SELECT id, admin_account, admin_name, staff_no, permission_level_id
+            FROM administrators 
+            WHERE id = %s AND status = 'active'
+        """, (admin_id,))
+        
+        admin_data = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not admin_data:
+            return jsonify({"status": "error", "message": "找不到管理員資訊"}), 404
+
+        return jsonify({
+            "status": "success",
+            "data": {
+                "id": admin_data['id'],
+                "admin_account": admin_data['admin_account'],
+                "admin_name": admin_data['admin_name'],
+                "staff_no": admin_data['staff_no'],
+                "permission_level_id": admin_data['permission_level_id']
+            }
+        })
+
+    except Exception as e:
+        print(f"Error in get_admin_detail: {str(e)}")
         return jsonify({"status": "error", "message": "獲取管理員資訊失敗"}), 500 

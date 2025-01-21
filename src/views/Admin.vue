@@ -15,7 +15,6 @@
             <button class="action-button" @click="navigateTo('AddPersonnel')">+ 新增人員</button>
             <button class="action-button" @click="deletePersonnel">- 刪除人員</button>
             <button class="action-button" @click="editPersonnel">+ 編輯人員</button>
-            <button class="action-button" @click="batchOperate">V 批量操作</button>
           </div>
 
           <div class="table-container">
@@ -127,19 +126,16 @@ export default {
       }
 
       this.$router.push({
-        name: 'EditAdmin',
-        params: { id: selectedAdmins[0].id }
+        name: 'AddPersonnel',
+        query: { id: selectedAdmins[0].id }
       });
-    },
-    batchOperate() {
-      alert('批量操作功能尚未實現');
     },
     toggleSelection(index) {
       this.admins[index].selected = !this.admins[index].selected;
     },
     async fetchAdmins() {
       try {
-        const response = await axios.get('http://127.0.0.1:5000/api/admin/list', {
+        const response = await axios.get('http://localhost:5000/api/admin/list', {
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json'
@@ -152,7 +148,7 @@ export default {
             account: admin.admin_account,
             name: admin.admin_name,
             staff_no: admin.staff_no || '-',
-            permission_level: this.getPermissionName(admin.permission_level || 2),
+            permission_level: this.getPermissionName(admin.permission_level_id),
             selected: false
           }));
         } else {
