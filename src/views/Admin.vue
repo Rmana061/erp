@@ -13,28 +13,29 @@
           <h2>管理員</h2>
           <div class="action-buttons">
             <button class="action-button" @click="navigateTo('AddPersonnel')">+ 新增人員</button>
-            <button class="action-button" @click="deletePersonnel">- 刪除人員</button>
-            <button class="action-button" @click="editPersonnel">+ 編輯人員</button>
           </div>
 
           <div class="table-container">
             <table class="admin-list">
               <thead>
                 <tr>
-                  <th>選擇</th>
                   <th>帳號</th>
                   <th>姓名</th>
                   <th>工號</th>
                   <th>權限等級</th>
+                  <th>操作</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(admin, index) in admins" :key="admin.id">
-                  <td @click="toggleSelection(index)">{{ admin.selected ? '■' : '□' }}</td>
                   <td>{{ admin.account }}</td>
                   <td>{{ admin.name }}</td>
                   <td>{{ admin.staff_no }}</td>
                   <td>{{ admin.permission_level }}</td>
+                  <td>
+                    <button class="edit-btn" @click="editPersonnel(admin.id)">編輯</button>
+                    <button class="delete-btn" @click="deletePersonnel(admin.id)">刪除</button>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -68,55 +69,34 @@ export default {
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
     },
-    deletePersonnel() {
-      const selectedAdmins = this.admins.filter(admin => admin.selected);
-      
-      if (selectedAdmins.length === 0) {
-        alert('請選擇要刪除的人員');
-        return;
-      }
-
-      if (confirm(`確定要刪除選中的 ${selectedAdmins.length} 位人員嗎？`)) {
-        const deletePromises = selectedAdmins.map(admin =>
-          axios.delete(getApiUrl(API_PATHS.ADMIN_DELETE), {
-            data: { id: admin.id },
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          })
-        );
-
-        Promise.all(deletePromises)
-          .then(responses => {
-            const hasError = responses.some(response => response.data.status !== 'success');
-            if (hasError) {
-              throw new Error('部分人員刪除失敗');
-            }
+    deletePersonnel(adminId) {
+      if (confirm('確定要刪除此人員嗎？')) {
+        axios.delete(getApiUrl(API_PATHS.ADMIN_DELETE), {
+          data: { id: adminId },
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => {
+          if (response.data.status === 'success') {
             this.fetchAdmins();
             alert('人員已成功刪除');
-          })
-          .catch(error => {
-            console.error('Error deleting admins:', error);
-            alert('刪除人員時發生錯誤：' + (error.response?.data?.message || error.message));
-          });
+          } else {
+            throw new Error(response.data.message || '刪除人員失敗');
+          }
+        })
+        .catch(error => {
+          console.error('Error deleting admin:', error);
+          alert('刪除人員時發生錯誤：' + (error.response?.data?.message || error.message));
+        });
       }
     },
-    editPersonnel() {
-      const selectedAdmins = this.admins.filter(admin => admin.selected);
-      
-      if (selectedAdmins.length !== 1) {
-        alert('請選擇一位要編輯的人員');
-        return;
-      }
-
+    editPersonnel(adminId) {
       this.$router.push({
         name: 'AddPersonnel',
-        query: { id: selectedAdmins[0].id }
+        query: { id: adminId }
       });
-    },
-    toggleSelection(index) {
-      this.admins[index].selected = !this.admins[index].selected;
     },
     async fetchAdmins() {
       try {
@@ -130,8 +110,7 @@ export default {
             account: admin.admin_account,
             name: admin.admin_name,
             staff_no: admin.staff_no || '-',
-            permission_level: this.getPermissionName(admin.permission_level_id),
-            selected: false
+            permission_level: this.getPermissionName(admin.permission_level_id)
           }));
         } else {
           throw new Error(response.data.message || '獲取管理員列表失敗');
@@ -162,4 +141,30 @@ export default {
 @import '../assets/styles/unified-base.css';
 
 /* 所有其他樣式已移至 unified-base */
+.edit-btn, .delete-btn {
+  padding: 4px 8px;
+  margin: 0 4px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.edit-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.edit-btn:hover {
+  background-color: #45a049;
+}
+
+.delete-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.delete-btn:hover {
+  background-color: #da190b;
+}
 </style>

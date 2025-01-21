@@ -16,13 +16,27 @@
         </div>
         
         <div class="scrollable-content">
+          <!-- 添加搜索框 -->
+          <div class="search-panel compact">
+            <div class="search-form-row">
+              <div class="search-form-item">
+                <input 
+                  type="text" 
+                  v-model="searchQuery" 
+                  placeholder="搜索訂單號、日期或產品名稱..."
+                  class="search-input"
+                >
+              </div>
+            </div>
+          </div>
+
           <div class="table-container">
             <table class="order-table">
               <thead>
                 <tr>
                   <th>訂單編號</th>
                   <th>建立日期</th>
-                  <th>品項</th>
+                  <th>產品</th>
                   <th>數量</th>
                   <th>單位</th>
                   <th>狀態</th>
@@ -80,13 +94,40 @@ export default {
       selectedOrder: null,
       showCancelModal: false,
       currentPage: 1,
-      ordersPerPage: 10
+      ordersPerPage: 10,
+      searchQuery: ''
     };
   },
   computed: {
+    filteredOrders() {
+      if (!this.searchQuery) {
+        return this.orders;
+      }
+      
+      const searchLower = this.searchQuery.toLowerCase().trim();
+      
+      return this.orders.filter(order => {
+        // 搜索订单号（支持部分匹配）
+        const orderNumberMatch = order.order_number.toLowerCase().includes(searchLower);
+        
+        // 搜索日期（支持多种格式）
+        const createdDate = new Date(order.created_at);
+        const dateStr = this.formatDate(order.created_at).toLowerCase();
+        const shortDateStr = `${createdDate.getFullYear()}/${String(createdDate.getMonth() + 1).padStart(2, '0')}/${String(createdDate.getDate()).padStart(2, '0')}`.toLowerCase();
+        const dateMatch = dateStr.includes(searchLower) || shortDateStr.includes(searchLower);
+        
+        // 搜索产品名称
+        const productMatch = order.products.some(product => 
+          product.product_name.toLowerCase().includes(searchLower)
+        );
+        
+        return orderNumberMatch || dateMatch || productMatch;
+      });
+    },
+    
     paginatedOrders() {
       const start = (this.currentPage - 1) * this.ordersPerPage;
-      return this.orders.slice(start, start + this.ordersPerPage);
+      return this.filteredOrders.slice(start, start + this.ordersPerPage);
     },
   },
   methods: {
@@ -203,6 +244,44 @@ export default {
 .status-badge.已取消 {
   background-color: #f8d7da;
   color: #721c24;
+}
+
+/* 搜索框样式 */
+.search-panel.compact {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.search-form-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-form-item {
+  flex: 1;
+  max-width: 300px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.search-input:focus {
+  border-color: #4CAF50;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.search-input::placeholder {
+  color: #999;
 }
 
 /* 所有其他樣式已移至 unified-base */
