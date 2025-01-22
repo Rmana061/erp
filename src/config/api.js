@@ -1,5 +1,5 @@
 // API配置文件
-export const API_BASE_URL = 'http://localhost:5000';
+export const API_BASE_URL = 'https://be6f-111-249-201-90.ngrok-free.app';
 
 // API路径配置
 export const API_PATHS = {

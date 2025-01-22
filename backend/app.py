@@ -16,25 +16,29 @@ app = Flask(__name__)
 
 # Session 配置
 app.secret_key = os.urandom(24)
-app.config['SESSION_COOKIE_SECURE'] = False  # 开发环境设为 False
+app.config['SESSION_COOKIE_SECURE'] = True  # 使用 HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # 允许跨站点请求
 app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # session 过期时间设为 30 分钟
 
-# 配置 CORS
-CORS(app, 
-     resources={r"/api/*": {
-         "origins": ["http://localhost:5173"],
-         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-         "allow_headers": ["Content-Type", "Authorization"],
-         "supports_credentials": True
-     }})
+# CORS 配置
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "http://localhost:5173",
+            "https://f06f-111-249-201-90.ngrok-free.app"
+        ],
+        "supports_credentials": True,
+        "allow_headers": ["Content-Type", "Authorization"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    }
+})
 
 # 设置响应头
 @app.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
-    if origin and origin == 'http://localhost:5173':
+    if origin in ["http://localhost:5173", "https://f06f-111-249-201-90.ngrok-free.app"]:
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
