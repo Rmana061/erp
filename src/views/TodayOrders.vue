@@ -178,12 +178,10 @@
                   <input 
                     type="text" 
                     v-model="item.tempSupplierNote"
-                    :disabled="item.tempStatus === '已取消'"
                     placeholder="請輸入供應商備註">
                 </td>
                 <td>
                   <select v-model="item.tempStatus">
-                    <option value="待確認">待確認</option>
                     <option value="已確認">核准</option>
                     <option value="已取消">駁回</option>
                   </select>
@@ -425,17 +423,27 @@ export default {
     },
     async confirmOrderUpdate() {
       try {
+        // 1. 首先更新所有产品状态
         const updatePromises = this.selectedOrder.items.map(item => 
           axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
             order_id: item.id,
             status: item.tempStatus,
-            shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null
+            shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
+            supplier_note: item.tempSupplierNote || ''
           }, {
             withCredentials: true
           })
         );
 
         await Promise.all(updatePromises);
+
+        // 2. 然后更新订单确认状态
+        await axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_CONFIRMED), {
+          order_number: this.selectedOrder.orderNumber
+        }, {
+          withCredentials: true
+        });
+
         alert('訂單處理完成');
         this.fetchPendingOrders();
       } catch (error) {

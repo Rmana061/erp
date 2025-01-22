@@ -13,6 +13,8 @@ export const API_PATHS = {
     ORDERS_ALL: '/api/orders/all',
     PENDING_ORDERS: '/api/orders/pending',
     UPDATE_ORDER_STATUS: '/api/orders/update-status',
+    UPDATE_ORDER_CONFIRMED: '/api/orders/update-confirmed',
+    UPDATE_ORDER_SHIPPED: '/api/orders/update-shipped',
     CANCEL_ORDER: '/api/orders/cancel',
     
     // 产品相关

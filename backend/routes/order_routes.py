@@ -368,13 +368,15 @@ def update_order_status():
             UPDATE order_details 
             SET order_status = %s,
                 shipping_date = %s,
+                supplier_note = %s,
                 updated_at = NOW()
             WHERE id = %s
             RETURNING order_id;
         """
         
         shipping_date = data.get('shipping_date') if data['status'] == '已確認' else None
-        cursor.execute(update_sql, (data['status'], shipping_date, data['order_id']))
+        supplier_note = data.get('supplier_note')
+        cursor.execute(update_sql, (data['status'], shipping_date, supplier_note, data['order_id']))
         
         result = cursor.fetchone()
         if not result:
@@ -534,6 +536,134 @@ def get_all_orders():
         
     except Exception as e:
         print(f"Error in get_all_orders: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@order_bp.route('/orders/update-confirmed', methods=['POST'])
+def update_order_confirmed():
+    try:
+        data = request.json
+        if not data or 'order_number' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': '缺少訂單編號'
+            }), 400
+
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({
+                'status': 'error',
+                'message': '數據庫連接失敗'
+            }), 500
+
+        cursor = conn.cursor()
+
+        # 檢查訂單所有產品狀態
+        cursor.execute("""
+            SELECT od.order_status 
+            FROM orders o
+            JOIN order_details od ON o.id = od.order_id
+            WHERE o.order_number = %s
+        """, (data['order_number'],))
+
+        statuses = [row[0] for row in cursor.fetchall()]
+        
+        # 檢查是否所有產品都是已確認或已取消狀態
+        all_confirmed_or_cancelled = all(status in ['已確認', '已取消'] for status in statuses)
+        
+        if all_confirmed_or_cancelled:
+            # 更新訂單確認狀態
+            cursor.execute("""
+                UPDATE orders 
+                SET order_confirmed = true,
+                    updated_at = NOW()
+                WHERE order_number = %s
+            """, (data['order_number'],))
+
+            conn.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'message': '訂單確認狀態已更新'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '尚有產品未完成審核'
+            }), 400
+
+    except Exception as e:
+        print(f"Error in update_order_confirmed: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@order_bp.route('/orders/update-shipped', methods=['POST'])
+def update_order_shipped():
+    try:
+        data = request.json
+        if not data or 'order_number' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': '缺少訂單編號'
+            }), 400
+
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({
+                'status': 'error',
+                'message': '數據庫連接失敗'
+            }), 500
+
+        cursor = conn.cursor()
+
+        # 檢查訂單所有產品狀態
+        cursor.execute("""
+            SELECT od.order_status 
+            FROM orders o
+            JOIN order_details od ON o.id = od.order_id
+            WHERE o.order_number = %s
+        """, (data['order_number'],))
+
+        statuses = [row[0] for row in cursor.fetchall()]
+        
+        # 檢查是否所有產品都是已出貨或已取消狀態
+        all_shipped_or_cancelled = all(status in ['已出貨', '已取消'] for status in statuses)
+        
+        if all_shipped_or_cancelled:
+            # 更新訂單出貨狀態
+            cursor.execute("""
+                UPDATE orders 
+                SET order_shipped = true,
+                    updated_at = NOW()
+                WHERE order_number = %s
+            """, (data['order_number'],))
+
+            conn.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'message': '訂單出貨狀態已更新'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '尚有產品未完成出貨'
+            }), 400
+
+    except Exception as e:
+        print(f"Error in update_order_shipped: {str(e)}")
         if 'cursor' in locals():
             cursor.close()
         if 'conn' in locals():
