@@ -219,32 +219,6 @@ export default {
   border-top: 2px solid #ddd;
 }
 
-.status-badge {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.9em;
-  display: inline-block;
-}
-
-.status-badge.待確認 {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status-badge.待出貨 {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status-badge.已完成 {
-  background-color: #cce5ff;
-  color: #004085;
-}
-
-.status-badge.已取消 {
-  background-color: #f8d7da;
-  color: #721c24;
-}
 
 /* 搜索框样式 */
 .search-panel.compact {

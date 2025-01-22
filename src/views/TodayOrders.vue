@@ -1,4 +1,4 @@
-<!-- 所有訂單 -->
+<!-- 待確認訂單 -->
 <template>
   <body class="admin-mode">
   <div class="container">
@@ -71,7 +71,6 @@
             <table>
               <thead>
                 <tr>
-                  <th>序號</th>
                   <th>建立日期</th>
                   <th>客戶</th>
                   <th>訂單編號</th>
@@ -80,6 +79,7 @@
                   <th>單位</th>
                   <th>出貨日期</th>
                   <th>備註</th>
+                  <th>供應商備註</th>
                   <th>狀態</th>
                   <th>操作</th>
                 </tr>
@@ -93,7 +93,6 @@
                         'approved': item.status === '已確認', 
                         'rejected': item.status === '已取消' 
                       }">
-                    <td>{{ itemIndex === 0 ? orderIndex + 1 : '' }}</td>
                     <td>{{ itemIndex === 0 ? formatDateTime(order.date) : '' }}</td>
                     <td>{{ itemIndex === 0 ? order.customer : '' }}</td>
                     <td>{{ itemIndex === 0 ? order.orderNumber : '' }}</td>
@@ -101,7 +100,8 @@
                     <td>{{ item.quantity }}</td>
                     <td>{{ item.unit }}</td>
                     <td>{{ formatDate(item.shipping_date) }}</td>
-                    <td>{{ item.note }}</td>
+                    <td>{{ item.remark || '-' }}</td>
+                    <td>{{ item.supplier_note || '-' }}</td>
                     <td>
                       <span class="status-badge" :class="item.status">{{ item.status }}</span>
                     </td>
@@ -154,6 +154,8 @@
                 <th>數量</th>
                 <th>單位</th>
                 <th>出貨日期</th>
+                <th>備註</th>
+                <th>供應商備註</th>
                 <th>狀態</th>
               </tr>
             </thead>
@@ -170,6 +172,14 @@
                     :max="maxShippingDate"
                     :disabled="item.tempStatus === '已取消'"
                     @change="validateShippingDate(item)">
+                </td>
+                <td>{{ item.remark }}</td>
+                <td>
+                  <input 
+                    type="text" 
+                    v-model="item.tempSupplierNote"
+                    :disabled="item.tempStatus === '已取消'"
+                    placeholder="請輸入供應商備註">
                 </td>
                 <td>
                   <select v-model="item.tempStatus">
@@ -286,7 +296,8 @@ export default {
           item: order.item,
           quantity: order.quantity,
           unit: order.unit,
-          note: order.note,
+          remark: order.remark,
+          supplier_note: order.supplier_note,
           status: order.status,
           id: order.detail_id,
           shipping_date: order.shipping_date
@@ -335,6 +346,10 @@ export default {
 
           this.orders = response.data.data;
           console.log('待確認訂單數據:', this.orders);
+          if (this.orders.length > 0) {
+            console.log('第一筆訂單的備註:', this.orders[0].remark);
+            console.log('第一筆訂單的供應商備註:', this.orders[0].supplier_note);
+          }
         } else {
           console.error('API 返回狀態不是 success:', response.data);
           alert('獲取訂單失敗：' + (response.data.message || '未知錯誤'));

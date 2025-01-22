@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from backend.config.database import get_db_connection
 from datetime import datetime
 
-order_bp = Blueprint('order', __name__)
+order_bp = Blueprint('order', __name__, url_prefix='/api')
 
 @order_bp.route('/orders', methods=['POST'])
 def create_order():
@@ -435,7 +435,8 @@ def get_pending_orders():
                 od.product_unit as unit,
                 od.order_status as status,
                 od.shipping_date,
-                od.remark as note
+                od.remark,
+                od.supplier_note
             FROM orders o
             JOIN order_details od ON o.id = od.order_id
             JOIN customers c ON o.customer_id = c.id
@@ -501,7 +502,8 @@ def get_all_orders():
                 od.product_unit as unit,
                 od.order_status as status,
                 od.shipping_date,
-                od.remark as note
+                od.remark,
+                od.supplier_note
             FROM orders o
             JOIN order_details od ON o.id = od.order_id
             JOIN customers c ON o.customer_id = c.id
