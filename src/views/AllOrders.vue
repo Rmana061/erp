@@ -111,7 +111,12 @@
                           審核
                         </button>
                       </div>
-                      <span v-else-if="itemIndex === 0">已處理</span>
+                      <div class="action-buttons" v-else-if="itemIndex === 0 && allItemsConfirmed(order.items)">
+                        <button class="complete-btn" @click="handleComplete(order)">
+                          完成
+                        </button>
+                      </div>
+                      <span v-else-if="itemIndex === 0">已完成</span>
                     </td>
                   </tr>
                 </template>
@@ -204,6 +209,18 @@
         </div>
       </div>
     </div>
+
+    <!-- 完成出貨確認對話框 -->
+    <div class="modal" v-if="showCompleteModal">
+      <div class="modal-content">
+        <h3>確認出貨完成</h3>
+        <p>確認將訂單 {{ selectedOrder?.orderNumber }} 標記為已出貨？</p>
+        <div class="modal-buttons">
+          <button class="confirm-btn" @click="confirmComplete">確認</button>
+          <button class="cancel-btn" @click="closeCompleteModal">取消</button>
+        </div>
+      </div>
+    </div>
   </div>
   </body>
 </template>
@@ -225,6 +242,7 @@ export default {
     return {
       orders: [],
       showConfirmModal: false,
+      showCompleteModal: false,
       selectedOrder: null,
       currentPage: 1,
       itemsPerPage: 10,
@@ -283,6 +301,8 @@ export default {
     },
     groupedOrders() {
       const grouped = {};
+      console.log('開始處理訂單分組，原始數據:', this.filteredOrders);
+      
       this.filteredOrders.forEach(order => {
         if (!grouped[order.order_number]) {
           grouped[order.order_number] = {
@@ -303,7 +323,10 @@ export default {
           shipping_date: order.shipping_date
         });
       });
-      return Object.values(grouped);
+      
+      const result = Object.values(grouped);
+      console.log('分組後的訂單數據:', result);
+      return result;
     },
     isValidForConfirmation() {
       if (!this.selectedOrder) return false;
@@ -328,6 +351,14 @@ export default {
     }
   },
   methods: {
+    allItemsPending(items) {
+      console.log('檢查訂單項目狀態:', items.map(item => item.status));
+      return items.every(item => item.status === '待確認');
+    },
+    allItemsConfirmed(items) {
+      console.log('檢查訂單項目狀態:', items.map(item => item.status));
+      return items.every(item => item.status === '已確認');
+    },
     async fetchAllOrders() {
       try {
         console.log('開始獲取所有訂單...');
@@ -392,9 +423,6 @@ export default {
         console.error('Error formatting date:', error);
         return '待確認';
       }
-    },
-    allItemsPending(items) {
-      return items.every(item => item.status === '待確認');
     },
     handleApprove(order) {
       this.selectedOrder = {
@@ -463,6 +491,35 @@ export default {
         status: ''
       };
       this.currentPage = 1; // 重置時回到第一頁
+    },
+    handleComplete(order) {
+      this.selectedOrder = order;
+      this.showCompleteModal = true;
+    },
+    async confirmComplete() {
+      try {
+        const updatePromises = this.selectedOrder.items.map(item => 
+          axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
+            order_id: item.id,
+            status: '已出貨'
+          }, {
+            withCredentials: true
+          })
+        );
+
+        await Promise.all(updatePromises);
+        alert('訂單已標記為出貨完成');
+        this.fetchAllOrders();
+      } catch (error) {
+        console.error('Error completing order:', error);
+        alert('操作失敗：' + (error.response?.data?.message || error.message));
+      } finally {
+        this.closeCompleteModal();
+      }
+    },
+    closeCompleteModal() {
+      this.showCompleteModal = false;
+      this.selectedOrder = null;
     }
   },
   created() {
@@ -473,5 +530,68 @@ export default {
 
 <style>
 @import '../assets/styles/unified-base.css';
+
+.complete-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.complete-btn:hover {
+  background-color: #45a049;
+}
+
+.complete-btn:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+.modal-content p {
+  margin-bottom: 20px;
+  color: #666;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.modal-buttons .confirm-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.modal-buttons .cancel-btn {
+  background-color: #f44336;
+  color: white;
+}
 </style>
 
