@@ -41,12 +41,19 @@
                   <th>單位</th>
                   <th>狀態</th>
                   <th>出貨日期</th>
+                  <th>備註</th>
+                  <th>供應商備註</th>
                 </tr>
               </thead>
               <tbody>
                 <template v-for="order in paginatedOrders" :key="order.order_number">
                   <tr v-for="(product, productIndex) in order.products" :key="order.order_number + '-' + productIndex"
-                      :class="{ 'first-product': productIndex === 0 }">
+                      :class="{ 
+                        'first-product': productIndex === 0,
+                        'approved': product.order_status === '已確認',
+                        'rejected': product.order_status === '已取消',
+                        'shipped': product.order_status === '已出貨'
+                      }">
                     <td>{{ productIndex === 0 ? order.order_number : '' }}</td>
                     <td>{{ productIndex === 0 ? formatDate(order.created_at) : '' }}</td>
                     <td>{{ product.product_name }}</td>
@@ -58,6 +65,8 @@
                       </span>
                     </td>
                     <td>{{ product.shipping_date || '待確認' }}</td>
+                    <td>{{ product.remark || '-' }}</td>
+                    <td>{{ product.supplier_note || '-' }}</td>
                   </tr>
                 </template>
               </tbody>

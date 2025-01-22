@@ -126,6 +126,7 @@ def get_orders():
                 od.order_status,
                 od.shipping_date,
                 od.remark,
+                od.supplier_note,
                 od.created_at as detail_created_at
             FROM orders o
             JOIN order_details od ON o.id = od.order_id
@@ -160,7 +161,8 @@ def get_orders():
                 'product_unit': row['product_unit'],
                 'order_status': row['order_status'],
                 'shipping_date': row['shipping_date'].strftime('%Y-%m-%d') if row['shipping_date'] else None,
-                'remark': row['remark']
+                'remark': row['remark'],
+                'supplier_note': row['supplier_note']
             })
         
         cursor.close()

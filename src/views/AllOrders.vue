@@ -91,7 +91,8 @@
                       :class="{ 
                         'first-product': itemIndex === 0,
                         'approved': item.status === '已確認', 
-                        'rejected': item.status === '已取消' 
+                        'rejected': item.status === '已取消',
+                        'shipped': item.status === '已出貨'
                       }">
                     <td>{{ itemIndex === 0 ? formatDateTime(order.date) : '' }}</td>
                     <td>{{ itemIndex === 0 ? order.customer : '' }}</td>

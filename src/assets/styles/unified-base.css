@@ -269,6 +269,9 @@ tr:hover {
   color: #721c24;
 }
 
+tr.shipped {
+  background-color: rgba(0, 123, 255, 0.05);
+}
 
 /* 側邊欄樣式 */
 .sidebar {
