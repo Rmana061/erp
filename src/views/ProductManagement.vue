@@ -237,21 +237,40 @@ export default {
     },
     async fetchProducts() {
       try {
+        console.log('開始獲取產品列表...');
         const response = await axios.get(getApiUrl(API_PATHS.PRODUCTS), {
           withCredentials: true
         });
 
+        console.log('API響應:', response.data);
+
         if (response.data.status === 'success') {
+          if (!Array.isArray(response.data.data)) {
+            console.error('API返回的數據不是數組格式:', response.data);
+            throw new Error('獲取產品列表數據格式錯誤');
+          }
+
           this.products = response.data.data.map(product => ({
             ...product,
             selected: false
           }));
+          console.log('成功獲取產品列表:', this.products);
         } else {
+          console.error('API返回狀態不是success:', response.data);
           throw new Error(response.data.message || '獲取產品列表失敗');
         }
       } catch (error) {
-        console.error("Error fetching products:", error);
-        alert("獲取產品列表失敗：" + (error.response?.data?.message || error.message));
+        console.error('獲取產品列表失敗:', error);
+        if (error.response) {
+          console.error('錯誤響應:', error.response.data);
+          console.error('狀態碼:', error.response.status);
+          if (error.response.status === 401) {
+            alert('登入已過期，請重新登入');
+            this.$router.push('/admin-login');
+            return;
+          }
+        }
+        alert('獲取產品列表失敗：' + (error.response?.data?.message || error.message));
       }
     },
     showLargeImage(imageUrl) {

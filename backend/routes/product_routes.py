@@ -16,7 +16,10 @@ def get_products():
     try:
         conn = get_db_connection()
         if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
+            return jsonify({
+                "status": "error",
+                "message": "Database connection failed"
+            }), 500
             
         cursor = conn.cursor()
         cursor.execute("""
@@ -33,17 +36,26 @@ def get_products():
         cursor.close()
         conn.close()
         
-        return jsonify(products)
+        return jsonify({
+            "status": "success",
+            "data": products
+        })
     except Exception as e:
         print(f"Error in get_products: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
 
 @product_bp.route('/products/<int:product_id>', methods=['GET'])
 def get_product(product_id):
     try:
         conn = get_db_connection()
         if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
+            return jsonify({
+                "status": "error",
+                "message": "Database connection failed"
+            }), 500
             
         cursor = conn.cursor()
         cursor.execute("""
@@ -58,7 +70,10 @@ def get_product(product_id):
         row = cursor.fetchone()
         
         if row is None:
-            return jsonify({'error': 'Product not found'}), 404
+            return jsonify({
+                'status': 'error',
+                'message': 'Product not found'
+            }), 404
             
         product = dict(zip(columns, row))
         
@@ -68,10 +83,16 @@ def get_product(product_id):
         
         cursor.close()
         conn.close()
-        return jsonify(product)
+        return jsonify({
+            'status': 'success',
+            'data': product
+        })
     except Exception as e:
         print(f"Error in get_product: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @product_bp.route('/products', methods=['POST'])
 def create_product():
@@ -83,20 +104,29 @@ def create_product():
         
         conn = get_db_connection()
         if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
+            return jsonify({
+                "status": "error",
+                "message": "Database connection failed"
+            }), 500
             
         cursor = conn.cursor()
         
         required_fields = ['name', 'description', 'min_order_qty', 'max_order_qty', 'product_unit']
         for field in required_fields:
             if not data.get(field):
-                return jsonify({'error': f'Missing required field: {field}'}), 400
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Missing required field: {field}'
+                }), 400
         
         try:
             min_qty = int(data.get('min_order_qty'))
             max_qty = int(data.get('max_order_qty'))
         except (ValueError, TypeError):
-            return jsonify({'error': 'Invalid quantity values'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid quantity values'
+            }), 400
             
         sql = """
             INSERT INTO products (
@@ -124,15 +154,21 @@ def create_product():
         conn.commit()
         
         return jsonify({
-            'message': 'Product created successfully',
-            'id': new_id
+            'status': 'success',
+            'data': {
+                'id': new_id,
+                'message': 'Product created successfully'
+            }
         }), 201
         
     except Exception as e:
         print(f"Error in create_product: {str(e)}")
         if conn:
             conn.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
         
     finally:
         if cursor:
@@ -243,13 +279,19 @@ def delete_product(product_id):
 def upload_image():
     try:
         if 'file' not in request.files or 'productName' not in request.form:
-            return jsonify({'error': 'Missing file or product name'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing file or product name'
+            }), 400
             
         file = request.files['file']
         product_name = request.form['productName']
         
         if file.filename == '':
-            return jsonify({'error': 'No selected file'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'No selected file'
+            }), 400
             
         if file and allowed_image_file(file.filename):
             file_ext = os.path.splitext(file.filename)[1]
@@ -262,26 +304,40 @@ def upload_image():
             
             relative_path = os.path.join('uploads', secure_filename(product_name), new_filename)
             return jsonify({
-                'message': 'File uploaded successfully',
-                'url': f'/{relative_path.replace(os.sep, "/")}'
+                'status': 'success',
+                'data': {
+                    'file_path': f'/{relative_path.replace(os.sep, "/")}'
+                }
             })
             
-        return jsonify({'error': 'File type not allowed'}), 400
+        return jsonify({
+            'status': 'error',
+            'message': 'File type not allowed'
+        }), 400
     except Exception as e:
         print(f"Error in upload_image: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @product_bp.route('/upload/document', methods=['POST'])
 def upload_document():
     try:
         if 'file' not in request.files or 'productName' not in request.form:
-            return jsonify({'error': 'Missing file or product name'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing file or product name'
+            }), 400
             
         file = request.files['file']
         product_name = request.form['productName']
         
         if file.filename == '':
-            return jsonify({'error': 'No selected file'}), 400
+            return jsonify({
+                'status': 'error',
+                'message': 'No selected file'
+            }), 400
             
         if file and allowed_doc_file(file.filename):
             file_ext = os.path.splitext(file.filename)[1]
@@ -294,14 +350,22 @@ def upload_document():
             
             relative_path = os.path.join('uploads', secure_filename(product_name), new_filename)
             return jsonify({
-                'message': 'File uploaded successfully',
-                'url': f'/{relative_path.replace(os.sep, "/")}'
+                'status': 'success',
+                'data': {
+                    'file_path': f'/{relative_path.replace(os.sep, "/")}'
+                }
             })
             
-        return jsonify({'error': 'File type not allowed'}), 400
+        return jsonify({
+            'status': 'error',
+            'message': 'File type not allowed'
+        }), 400
     except Exception as e:
         print(f"Error in upload_document: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @product_bp.route('/uploads/<path:filename>')
 def uploaded_file(filename):

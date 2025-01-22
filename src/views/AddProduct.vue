@@ -11,7 +11,7 @@
       <div class="content-wrapper">
         <div class="scrollable-content">
           <div class="form-container">
-            <h2>{{ isEdit ? '編輯產品' : '新增產品' }}</h2>
+            <h2>{{ isEditing ? '編輯產品' : '新增產品' }}</h2>
             <div class="form-group">
               <label>產品名稱：</label>
               <input v-model="product.name" type="text" placeholder="請輸入產品名稱">
@@ -126,7 +126,6 @@ export default {
         special_date: false
       },
       isEditing: false,
-      isMenuOpen: false,
       editingId: null
     };
   },
@@ -134,6 +133,9 @@ export default {
     // 檢查是否是編輯模式
     const mode = this.$route.query.mode;
     const id = this.$route.query.id;
+    
+    console.log('Route query:', { mode, id });
+    
     if (mode === 'edit' && id) {
       this.isEditing = true;
       this.editingId = id;
@@ -169,9 +171,12 @@ export default {
     },
     async fetchProductDetails(id) {
       try {
+        console.log('Fetching product details for ID:', id);
         const response = await axios.get(getApiUrl(API_PATHS.PRODUCT_DETAIL(id)), {
           withCredentials: true
         });
+        
+        console.log('Product details response:', response.data);
         
         if (response.data.status === 'success') {
           const productData = response.data.data;
@@ -186,10 +191,14 @@ export default {
             shipping_time: productData.shipping_time,
             special_date: productData.special_date
           };
+          console.log('Product data loaded:', this.product);
+        } else {
+          throw new Error(response.data.message || '獲取產品資料失敗');
         }
       } catch (error) {
         console.error('Error fetching product details:', error);
-        alert('獲取產品資料失敗');
+        alert('獲取產品資料失敗：' + (error.response?.data?.message || error.message));
+        this.$router.push('/product-management');
       }
     },
     async saveProduct() {
@@ -212,27 +221,34 @@ export default {
 
         let response;
         if (this.isEditing) {
-          // 编辑现有产品
           response = await axios.put(getApiUrl(API_PATHS.PRODUCT_UPDATE(this.editingId)), productData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
             }
           });
-          alert('產品更新成功！');
+          
+          if (response.data.status === 'success') {
+            alert('產品更新成功！');
+            this.$router.push('/product-management');
+          } else {
+            throw new Error(response.data.message || '更新產品失敗');
+          }
         } else {
-          // 新增产品
           response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), productData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
             }
           });
-          alert('產品新增成功！');
+          
+          if (response.data.status === 'success') {
+            alert('產品新增成功！');
+            this.$router.push('/product-management');
+          } else {
+            throw new Error(response.data.message || '新增產品失敗');
+          }
         }
-
-        // 保存成功后跳转到产品管理页面
-        this.$router.push('/product-management');
       } catch (error) {
         console.error('Error saving product:', error);
         alert(this.isEditing ? '更新產品失敗：' : '新增產品失敗：' + (error.response?.data?.message || error.message));
@@ -275,7 +291,7 @@ export default {
           this.product.image_url = response.data.data.file_path;
           this.$refs.imageInput.value = '';
         } else {
-          throw new Error(response.data.message);
+          throw new Error(response.data.message || '上傳圖片失敗');
         }
       } catch (error) {
         console.error('Error uploading image:', error);
@@ -308,7 +324,7 @@ export default {
           this.product.dm_url = response.data.data.file_path;
           this.$refs.dmInput.value = '';
         } else {
-          throw new Error(response.data.message);
+          throw new Error(response.data.message || '上傳文件失敗');
         }
       } catch (error) {
         console.error('Error uploading document:', error);
