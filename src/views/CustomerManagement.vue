@@ -164,7 +164,7 @@ export default {
 
       try {
         const response = await axios.post(
-          getApiUrl(API_PATHS.DELETE_CUSTOMER),
+          getApiUrl(API_PATHS.CUSTOMER_DELETE),
           { id: customerId },
           {
             withCredentials: true,

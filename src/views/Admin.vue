@@ -69,27 +69,52 @@ export default {
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
     },
-    deletePersonnel(adminId) {
-      if (confirm('確定要刪除此人員嗎？')) {
-        axios.delete(getApiUrl(API_PATHS.ADMIN_DELETE), {
-          data: { id: adminId },
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
+    // deletePersonnel(adminId) {
+    //   if (confirm('確定要刪除此人員嗎？')) {
+    //     axios.delete(getApiUrl(API_PATHS.ADMIN_DELETE), {
+    //       data: { id: adminId },
+    //       withCredentials: true,
+    //       headers: {
+    //         'Content-Type': 'application/json'
+    //       }
+    //     })
+    //     .then(response => {
+    //       if (response.data.status === 'success') {
+    //         this.fetchAdmins();
+    //         alert('人員已成功刪除');
+    //       } else {
+    //         throw new Error(response.data.message || '刪除人員失敗');
+    //       }
+    //     })
+    //     .catch(error => {
+    //       console.error('Error deleting admin:', error);
+    //       alert('刪除人員時發生錯誤：' + (error.response?.data?.message || error.message));
+    //     });
+    //   }
+    async deletePersonnel(adminId) {
+      if (!confirm('確定要刪除此人員嗎？')) return;
+
+      try {
+        const response = await axios.post(
+          getApiUrl(API_PATHS.ADMIN_DELETE),
+          { id: adminId },
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
           }
-        })
-        .then(response => {
-          if (response.data.status === 'success') {
-            this.fetchAdmins();
-            alert('人員已成功刪除');
-          } else {
-            throw new Error(response.data.message || '刪除人員失敗');
-          }
-        })
-        .catch(error => {
-          console.error('Error deleting admin:', error);
-          alert('刪除人員時發生錯誤：' + (error.response?.data?.message || error.message));
-        });
+        );
+
+        if (response.data.status === 'success') {
+          alert('人員已成功刪除');
+          this.fetchAdmins();  // 重新获取客户列表
+        } else {
+          throw new Error(response.data.message || '刪除人員失敗');
+        }
+      } catch (error) {
+        console.error('Error deleting customer:', error);
+        alert('刪除人員失敗：' + (error.response?.data?.message || error.message));
       }
     },
     editPersonnel(adminId) {
