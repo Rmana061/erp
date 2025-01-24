@@ -11,7 +11,7 @@ import os
 
 product_bp = Blueprint('product', __name__)
 
-@product_bp.route('/products', methods=['POST'])
+@product_bp.route('/products/list', methods=['POST'])
 def get_products():
     try:
         data = request.json
@@ -84,7 +84,78 @@ def get_products():
             "message": str(e)
         }), 500
 
-@product_bp.route('/products/<int:product_id>', methods=['POST'])
+@product_bp.route('/products/add', methods=['POST'])
+def add_product():
+    try:
+        data = request.json
+        
+        if not data.get('type') == 'admin':
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized access'
+            }), 403
+
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed"}), 500
+            
+        cursor = conn.cursor()
+        
+        required_fields = ['name', 'description', 'min_order_qty', 'max_order_qty', 'product_unit']
+        for field in required_fields:
+            if not data.get(field):
+                return jsonify({
+                    'status': 'error',
+                    'message': f'Missing required field: {field}'
+                }), 400
+        
+        cursor.execute("""
+            INSERT INTO products (
+                name, description, image_url, dm_url,
+                min_order_qty, max_order_qty, product_unit,
+                shipping_time, special_date, status,
+                created_at, updated_at
+            ) VALUES (
+                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            ) RETURNING id
+        """, (
+            data.get('name'),
+            data.get('description'),
+            data.get('image_url'),
+            data.get('dm_url'),
+            data.get('min_order_qty'),
+            data.get('max_order_qty'),
+            data.get('product_unit'),
+            data.get('shipping_time'),
+            data.get('special_date', False),
+            'active'
+        ))
+        
+        new_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Product added successfully',
+            'id': new_id
+        })
+        
+    except Exception as e:
+        print(f"Error in add_product: {str(e)}")
+        if 'conn' in locals():
+            conn.rollback()
+            if 'cursor' in locals():
+                cursor.close()
+            conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@product_bp.route('/products/update/<int:product_id>', methods=['POST'])
 def update_product(product_id):
     try:
         data = request.json
@@ -157,7 +228,7 @@ def update_product(product_id):
             conn.close()
         return jsonify({'error': str(e)}), 500
 
-@product_bp.route('/products/<int:product_id>', methods=['POST'])
+@product_bp.route('/products/delete/<int:product_id>', methods=['POST'])
 def delete_product(product_id):
     try:
         conn = get_db_connection()

@@ -164,8 +164,11 @@ export default {
       if (confirm(`確定要刪除選中的 ${selectedProducts.length} 個產品嗎？`)) {
         try {
           await Promise.all(selectedProducts.map(product => 
-            axios.delete(getApiUrl(API_PATHS.PRODUCT_DELETE(product.id)), {
-              withCredentials: true
+            axios.post(getApiUrl(API_PATHS.PRODUCT_DELETE(product.id)), null, {
+              withCredentials: true,
+              headers: {
+                'Content-Type': 'application/json'
+              }
             })
           ));
 
@@ -180,8 +183,11 @@ export default {
     async deleteProduct(product) {
       if (confirm(`確定要刪除產品：${product.name}？`)) {
         try {
-          await axios.delete(getApiUrl(API_PATHS.PRODUCT_DELETE(product.id)), {
-            withCredentials: true
+          await axios.post(getApiUrl(API_PATHS.PRODUCT_DELETE(product.id)), null, {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
           });
           
           alert("產品已成功刪除");

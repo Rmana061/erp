@@ -227,16 +227,20 @@ export default {
           min_order_qty: parseInt(this.product.min_order),
           max_order_qty: parseInt(this.product.max_order),
           product_unit: this.product.unit.trim(),
-          stock_quantity: 0,
-          status: 'available',
           shipping_time: parseInt(this.product.shipping_time) || 0,
           special_date: this.product.special_date || false
         };
 
+        // 如果是新增产品，添加额外的必要字段
+        if (!this.isEditing) {
+          productData.status = 'active';
+          productData.stock_quantity = 0;
+        }
+
         console.log('Sending product data:', productData);
 
         const response = await axios.post(
-          getApiUrl(this.isEditing ? API_PATHS.PRODUCT_UPDATE(this.editingId) : API_PATHS.PRODUCTS),
+          getApiUrl(this.isEditing ? API_PATHS.PRODUCT_UPDATE(this.editingId) : API_PATHS.PRODUCT_ADD),
           productData,
           {
             withCredentials: true,

@@ -154,7 +154,7 @@ export default {
         if (this.isEditMode) {
           // 編輯模式
           requestData.id = this.editId;
-          response = await axios.put(getApiUrl(API_PATHS.ADMIN_UPDATE), requestData, {
+          response = await axios.post(getApiUrl(API_PATHS.ADMIN_UPDATE), requestData, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'

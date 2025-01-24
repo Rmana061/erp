@@ -19,10 +19,12 @@ export const API_PATHS = {
     CANCEL_ORDER: '/api/orders/cancel',
     
     // 产品相关
-    PRODUCTS: '/api/products',
-    PRODUCT_DETAIL: (id) => `/api/products/${id}`,
-    PRODUCT_UPDATE: (id) => `/api/products/${id}`,
-    PRODUCT_DELETE: (id) => `/api/products/${id}`,
+    LOGIN: '/api/login',
+    LOGOUT: '/api/logout',
+    PRODUCTS: '/api/products/list',
+    PRODUCT_ADD: '/api/products/add',
+    PRODUCT_UPDATE: (id) => `/api/products/update/${id}`,
+    PRODUCT_DELETE: (id) => `/api/products/delete/${id}`,
     VIEWABLE_PRODUCTS: '/api/products/viewable',
     
     // 客户相关
