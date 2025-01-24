@@ -362,7 +362,7 @@ export default {
     async fetchAllOrders() {
       try {
         console.log('開始獲取所有訂單...');
-        const response = await axios.get(getApiUrl(API_PATHS.ORDERS_ALL), {
+        const response = await axios.post(getApiUrl(API_PATHS.ORDERS_ALL), {}, {
           withCredentials: true
         });
 

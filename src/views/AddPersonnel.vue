@@ -96,7 +96,7 @@ export default {
       this.editId = this.$route.query.id;
       
       try {
-        const response = await axios.get(getApiUrl(API_PATHS.ADMIN_DETAIL(this.editId)), {
+        const response = await axios.post(getApiUrl(API_PATHS.ADMIN_DETAIL(this.editId)), {}, {
           withCredentials: true
         });
 

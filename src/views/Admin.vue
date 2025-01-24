@@ -100,7 +100,7 @@ export default {
     },
     async fetchAdmins() {
       try {
-        const response = await axios.get(getApiUrl(API_PATHS.ADMIN_LIST), {
+        const response = await axios.post(getApiUrl(API_PATHS.ADMIN_LIST), {}, {
           withCredentials: true
         });
         

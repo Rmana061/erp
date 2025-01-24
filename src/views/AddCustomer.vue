@@ -215,7 +215,9 @@ export default {
     },
     async fetchProducts() {
       try {
-        const response = await axios.get(getApiUrl(API_PATHS.PRODUCTS), {
+        const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
+          type: 'admin'
+        }, {
           withCredentials: true
         });
 
@@ -234,7 +236,7 @@ export default {
     },
     async fetchCustomerDetails(customerId) {
       try {
-        const response = await axios.get(getApiUrl(API_PATHS.CUSTOMER_DETAIL(customerId)), {
+        const response = await axios.post(getApiUrl(API_PATHS.CUSTOMER_DETAIL(customerId)), {}, {
           withCredentials: true
         });
         

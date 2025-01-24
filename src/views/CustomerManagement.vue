@@ -132,7 +132,7 @@ export default {
     },
     async fetchCustomers() {
       try {
-        const response = await axios.get(getApiUrl(API_PATHS.CUSTOMER_LIST), {
+        const response = await axios.post(getApiUrl(API_PATHS.CUSTOMER_LIST), {}, {
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json',

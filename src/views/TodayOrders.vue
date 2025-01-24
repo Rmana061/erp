@@ -329,7 +329,7 @@ export default {
     async fetchPendingOrders() {
       try {
         console.log('開始獲取待確認訂單...');
-        const response = await axios.get(getApiUrl(API_PATHS.PENDING_ORDERS), {
+        const response = await axios.post(getApiUrl(API_PATHS.PENDING_ORDERS), {}, {
           withCredentials: true
         });
 

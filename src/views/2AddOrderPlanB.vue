@@ -364,10 +364,9 @@ export default {
         }
 
         // 获取可见产品的详细信息
-        const response = await axios.get(getApiUrl(API_PATHS.VIEWABLE_PRODUCTS), {
-          params: {
-            ids: userInfo.viewable_products
-          },
+        const response = await axios.post(getApiUrl(API_PATHS.VIEWABLE_PRODUCTS), {
+          ids: userInfo.viewable_products
+        }, {
           withCredentials: true
         });
 

@@ -109,7 +109,7 @@ export default {
 
         // 先获取用户信息
         console.log('Fetching user info...');
-        const userInfoResponse = await axios.get(getApiUrl(API_PATHS.CUSTOMER_INFO), {
+        const userInfoResponse = await axios.post(getApiUrl(API_PATHS.CUSTOMER_INFO), {}, {
           withCredentials: true
         });
 
@@ -126,10 +126,9 @@ export default {
           // 如果有可见产品列表，则获取产品详情
           if (viewableProducts && viewableProducts.length > 0) {
             console.log('Fetching products with IDs:', viewableProducts);
-            const response = await axios.get(getApiUrl(API_PATHS.PRODUCTS), {
-              params: {
-                ids: Array.isArray(viewableProducts) ? viewableProducts.join(',') : viewableProducts
-              },
+            const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
+              ids: Array.isArray(viewableProducts) ? viewableProducts.join(',') : viewableProducts
+            }, {
               withCredentials: true
             });
             

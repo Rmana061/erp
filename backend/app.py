@@ -26,11 +26,14 @@ CORS(app, resources={
     r"/*": {
         "origins": [
             "http://localhost:5173",
-            "https://f06f-111-249-201-90.ngrok-free.app"
+            "https://dba1-111-249-201-90.ngrok-free.app",
+            "https://0406-111-249-201-90.ngrok-free.app"
         ],
         "supports_credentials": True,
         "allow_headers": ["Content-Type", "Authorization"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "expose_headers": ["Content-Type", "Authorization"],
+        "max_age": 600
     }
 })
 
@@ -38,12 +41,23 @@ CORS(app, resources={
 @app.after_request
 def after_request(response):
     origin = request.headers.get('Origin')
-    if origin in ["http://localhost:5173", "https://f06f-111-249-201-90.ngrok-free.app"]:
+    allowed_origins = [
+        "http://localhost:5173",
+        "https://dba1-111-249-201-90.ngrok-free.app",
+        "https://0406-111-249-201-90.ngrok-free.app"
+    ]
+    if origin in allowed_origins:
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
         response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
+        response.headers['Access-Control-Max-Age'] = '600'
         response.headers['Vary'] = 'Origin'
+    
+    # 處理 OPTIONS 請求
+    if request.method == 'OPTIONS':
+        return response
+
     return response
 
 # 註冊藍圖

@@ -5,7 +5,7 @@ import datetime
 
 customer_bp = Blueprint('customer', __name__)
 
-@customer_bp.route('/customer/list', methods=['GET'])
+@customer_bp.route('/customer/list', methods=['POST'])
 def get_customer_list():
     try:
         conn = get_db_connection()
@@ -250,7 +250,7 @@ def update_customer():
             "message": str(e)
         }), 500
 
-@customer_bp.route('/customer/delete', methods=['DELETE'])
+@customer_bp.route('/customer/delete', methods=['POST'])
 def delete_customer():
     try:
         data = request.json
@@ -304,7 +304,7 @@ def delete_customer():
             "message": str(e)
         }), 500
 
-@customer_bp.route('/customer/info', methods=['GET'])
+@customer_bp.route('/customer/info', methods=['POST'])
 def get_customer_info():
     try:
         # 从 session 中获取用户 ID
@@ -360,7 +360,7 @@ def get_customer_info():
             "message": str(e)
         }), 500 
 
-@customer_bp.route('/customer/<int:customer_id>/info', methods=['GET'])
+@customer_bp.route('/customer/<int:customer_id>/info', methods=['POST'])
 def get_customer_detail(customer_id):
     try:
         conn = get_db_connection()

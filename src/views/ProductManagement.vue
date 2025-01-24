@@ -238,7 +238,7 @@ export default {
     async fetchProducts() {
       try {
         console.log('開始獲取產品列表...');
-        const response = await axios.get(getApiUrl(API_PATHS.PRODUCTS), {
+        const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {}, {
           withCredentials: true
         });
 

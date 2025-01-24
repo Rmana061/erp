@@ -92,10 +92,11 @@ def create_order():
             'message': str(e)
         }), 500
 
-@order_bp.route('/orders', methods=['GET'])
+@order_bp.route('/orders', methods=['POST'])
 def get_orders():
     try:
-        customer_id = request.args.get('customer_id')
+        data = request.json
+        customer_id = data.get('customer_id')
         if not customer_id:
             return jsonify({
                 'status': 'error',
@@ -264,7 +265,7 @@ def cancel_order():
             'message': str(e)
         }), 500
 
-@order_bp.route('/orders/today', methods=['GET'])
+@order_bp.route('/orders/today', methods=['POST'])
 def get_today_orders():
     try:
         conn = get_db_connection()
@@ -414,7 +415,7 @@ def update_order_status():
             'message': str(e)
         }), 500
 
-@order_bp.route('/orders/pending', methods=['GET'])
+@order_bp.route('/orders/pending', methods=['POST'])
 def get_pending_orders():
     try:
         conn = get_db_connection()
@@ -481,7 +482,7 @@ def get_pending_orders():
             'message': str(e)
         }), 500
 
-@order_bp.route('/orders/all', methods=['GET'])
+@order_bp.route('/orders/all', methods=['POST'])
 def get_all_orders():
     try:
         conn = get_db_connection()

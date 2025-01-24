@@ -6,7 +6,7 @@ import psycopg2.extras
 
 admin_bp = Blueprint('admin', __name__)
 
-@admin_bp.route('/admin/list', methods=['GET'])
+@admin_bp.route('/admin/list', methods=['POST'])
 def get_admin_list():
     try:
         conn = get_db_connection()
@@ -132,7 +132,7 @@ def add_admin():
             "message": str(e)
         }), 500
 
-@admin_bp.route('/admin/update', methods=['PUT'])
+@admin_bp.route('/admin/update', methods=['POST'])
 def update_admin():
     try:
         data = request.get_json()
@@ -202,7 +202,7 @@ def update_admin():
             "message": f"更新管理員資料失敗: {str(e)}"
         }), 500
 
-@admin_bp.route('/admin/delete', methods=['DELETE'])
+@admin_bp.route('/admin/delete', methods=['POST'])
 def delete_admin():
     try:
         data = request.json
@@ -256,7 +256,7 @@ def delete_admin():
             "message": str(e)
         }), 500
 
-@admin_bp.route('/admin/info', methods=['GET'])
+@admin_bp.route('/admin/info', methods=['POST'])
 def get_admin_info():
     try:
         admin_id = session.get('admin_id')
@@ -294,7 +294,7 @@ def get_admin_info():
         print(f"Error in get_admin_info: {str(e)}")
         return jsonify({"status": "error", "message": "獲取管理員資訊失敗"}), 500
 
-@admin_bp.route('/admin/info/<int:admin_id>', methods=['GET'])
+@admin_bp.route('/admin/info/<int:admin_id>', methods=['POST'])
 def get_admin_detail(admin_id):
     try:
         conn = get_db_connection()
