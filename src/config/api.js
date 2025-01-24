@@ -31,7 +31,7 @@ export const API_PATHS = {
     CUSTOMER_UPDATE: '/api/customer/update',
     CUSTOMER_DELETE: '/api/customer/delete',
     CUSTOMER_INFO: '/api/customer/info',
-    CUSTOMER_DETAIL: (id) => `/api/customer/info`,
+    CUSTOMER_DETAIL: (id) => `/api/customer/${id}/info`,
     
     // 管理员相关
     ADMIN_LIST: '/api/admin/list',

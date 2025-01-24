@@ -15,7 +15,8 @@ def get_customer_list():
         cursor = conn.cursor()
         cursor.execute("""
             SELECT id, username, company_name, contact_name, phone, 
-                   email, address, created_at, updated_at 
+                   email, address, line_account, viewable_products, remark,
+                   created_at, updated_at 
             FROM customers 
             WHERE status = 'active'
             ORDER BY created_at DESC

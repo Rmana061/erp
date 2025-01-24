@@ -107,12 +107,40 @@ export default {
   created() {
     // 检查是否是编辑模式
     const query = this.$route.query;
-    if (query.mode === 'edit') {
+    if (query.mode === 'edit' && query.id) {
       this.isEditing = true;
       this.editingId = query.id;
-      // 从数据库获取客户详细信息
-      this.fetchCustomerDetails(query.id);
+      
+      // 处理可见产品列表
+      let selectedProducts = [];
+      if (query.viewable_products) {
+        selectedProducts = query.viewable_products.split(',')
+          .map(p => p.trim())
+          .filter(p => p !== '');
+      }
+      
+      // 直接使用 URL 中的数据初始化表单
+      this.newCustomer = {
+        companyName: query.company_name || '',
+        account: query.username || '',
+        password: '', // 密码不回填
+        selectedProducts: selectedProducts,
+        lineAccount: query.line_account || '',
+        contactPerson: query.contact_person || '',
+        phone: query.phone || '',
+        email: query.email || '',
+        address: query.address || '',
+        notes: query.remark || ''
+      };
+      
+      console.log('Initialized customer data:', {
+        viewable_products: query.viewable_products,
+        selectedProducts: this.newCustomer.selectedProducts,
+        lineAccount: this.newCustomer.lineAccount,
+        notes: this.newCustomer.notes
+      });
     }
+    
     this.fetchProducts(); // 获取产品列表
   },
   methods: {
@@ -236,13 +264,20 @@ export default {
     },
     async fetchCustomerDetails(customerId) {
       try {
-        const response = await axios.post(getApiUrl(API_PATHS.CUSTOMER_DETAIL(customerId)), {}, {
-          withCredentials: true
-        });
-        
+        const response = await axios.post(
+          getApiUrl(API_PATHS.CUSTOMER_DETAIL(customerId)),
+          {},
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          }
+        );
+
         if (response.data.status === 'success') {
           const customerData = response.data.data;
-          // 填充表单数据
           this.newCustomer = {
             companyName: customerData.company_name || '',
             account: customerData.username || '',

@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 # Session 配置
 app.secret_key = 'your-super-secret-key-here'  # 使用固定的密钥
-app.config['SESSION_COOKIE_SECURE'] = True  # 暂时关闭 HTTPS 要求
+app.config['SESSION_COOKIE_SECURE'] = False  # 暂时关闭 HTTPS 要求
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # 修改为 Lax
 app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # session 过期时间设为 30 分钟

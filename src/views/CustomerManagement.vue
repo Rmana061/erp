@@ -52,14 +52,14 @@
                         phone: customer.phone,
                         email: customer.email,
                         address: customer.address,
-                        line_account: customer.line_account,
-                        viewable_products: customer.viewable_products,
-                        remark: customer.remark
+                        line_account: customer.line_account || '',
+                        viewable_products: customer.viewable_products || '',
+                        remark: customer.remark || ''
                       }
                     }">
                       <button class="table-button edit">編輯</button>
                     </router-link>
-                    <button class="table-button delete" @click="deleteCustomerRow(customer)">刪除</button>
+                    <button class="table-button delete" @click="deleteCustomerRow(customer.id)">刪除</button>
                   </td>
                 </tr>
               </tbody>
@@ -141,7 +141,13 @@ export default {
         });
         
         if (response.data && response.data.status === 'success') {
-          this.customers = response.data.data;
+          this.customers = response.data.data.map(customer => ({
+            ...customer,
+            viewable_products: customer.viewable_products || '',
+            line_account: customer.line_account || '',
+            remark: customer.remark || ''
+          }));
+          console.log('Fetched customers:', this.customers);
         } else {
           console.error('獲取客戶數據失敗:', response.data.message);
         }
@@ -153,27 +159,30 @@ export default {
         }
       }
     },
-    async deleteCustomerRow(customer) {
-      if (confirm('確定要刪除客戶：' + customer.company_name + '?')) {
-        try {
-          const response = await axios.delete(getApiUrl(API_PATHS.CUSTOMER_DELETE), {
-            data: { id: customer.id },
+    async deleteCustomerRow(customerId) {
+      if (!confirm('確定要刪除此客戶嗎？')) return;
+
+      try {
+        const response = await axios.post(
+          getApiUrl(API_PATHS.DELETE_CUSTOMER),
+          { id: customerId },
+          {
+            withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
-            },
-            withCredentials: true
-          });
-
-          if (response.data && response.data.status === 'success') {
-            await this.fetchCustomers();
-            alert('客戶已成功刪除');
-          } else {
-            alert('刪除失敗：' + (response.data.message || '未知錯誤'));
+            }
           }
-        } catch (error) {
-          console.error('Error deleting customer:', error);
-          alert('刪除客戶時發生錯誤：' + (error.response?.data?.message || error.message));
+        );
+
+        if (response.data.status === 'success') {
+          alert('客戶刪除成功');
+          this.fetchCustomers();  // 重新获取客户列表
+        } else {
+          throw new Error(response.data.message || '刪除客戶失敗');
         }
+      } catch (error) {
+        console.error('Error deleting customer:', error);
+        alert('刪除客戶失敗：' + (error.response?.data?.message || error.message));
       }
     },
     exportCustomers() {
