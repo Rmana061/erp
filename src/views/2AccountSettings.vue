@@ -62,9 +62,23 @@ export default {
   methods: {
     async fetchCustomerInfo() {
       try {
-        const response = await axios.get(getApiUrl(API_PATHS.CUSTOMER_INFO), {
-          withCredentials: true
-        });
+        // 首先检查是否有customer_id
+        const customerId = localStorage.getItem('customer_id');
+        if (!customerId) {
+          this.$router.push('/customer-login');
+          return;
+        }
+
+        const response = await axios.post(getApiUrl(API_PATHS.CUSTOMER_INFO), 
+          { customer_id: customerId },  // 添加 customer_id 到请求体
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          }
+        );
 
         if (response.data.status === 'success') {
           this.customerInfo = response.data.data;

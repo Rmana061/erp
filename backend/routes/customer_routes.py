@@ -309,6 +309,17 @@ def get_customer_info():
     try:
         # 从 session 中获取用户 ID
         customer_id = session.get('customer_id')
+        print(f"Session data: {dict(session)}")  # 打印完整的 session 数据
+        print(f"Customer ID from session: {customer_id}")  # 打印从 session 中获取的 customer_id
+        
+        # 从请求体中获取 customer_id
+        data = request.json
+        body_customer_id = data.get('customer_id') if data else None
+        print(f"Customer ID from request body: {body_customer_id}")  # 打印从请求体中获取的 customer_id
+
+        # 优先使用 session 中的 customer_id，如果没有则使用请求体中的
+        customer_id = customer_id or body_customer_id
+        
         if not customer_id:
             return jsonify({
                 "status": "error",

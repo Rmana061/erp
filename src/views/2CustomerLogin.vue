@@ -53,23 +53,17 @@ export default {
 
         if (response.data.status === 'success') {
           // 保存用户信息到 localStorage 和 sessionStorage
-          localStorage.setItem('customer_id', response.data.data.customer_id);
+          const userData = response.data.data;
+          localStorage.setItem('customer_id', userData.customer_id);
+          sessionStorage.setItem('userInfo', JSON.stringify({
+            customer_id: userData.customer_id,
+            username: userData.username,
+            company_name: userData.company_name
+          }));
+          sessionStorage.setItem('isCustomerAuthenticated', 'true');
           
-          // 获取完整的用户信息
-          const userInfoResponse = await axios.get(
-            getApiUrl(API_PATHS.CUSTOMER_DETAIL(response.data.data.customer_id)), 
-            {
-              withCredentials: true
-            }
-          );
-          
-          if (userInfoResponse.data.status === 'success') {
-            sessionStorage.setItem('userInfo', JSON.stringify(userInfoResponse.data.data));
-            sessionStorage.setItem('isCustomerAuthenticated', 'true');
-            router.push('/order-system');
-          } else {
-            throw new Error('Failed to get user info');
-          }
+          // 直接跳转到订单系统
+          router.push('/order-system');
         } else {
           alert(response.data.message || '登入失敗');
         }

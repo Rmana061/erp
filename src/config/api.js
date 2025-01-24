@@ -9,9 +9,10 @@ export const API_PATHS = {
     LOGOUT: '/api/auth/logout',
     
     // 订单相关
-    ORDERS: '/api/orders',
+    ORDERS: '/api/orders/list',
     ORDERS_ALL: '/api/orders/all',
     PENDING_ORDERS: '/api/orders/pending',
+    CREATE_ORDER: '/api/orders/create',
     UPDATE_ORDER_STATUS: '/api/orders/update-status',
     UPDATE_ORDER_CONFIRMED: '/api/orders/update-confirmed',
     UPDATE_ORDER_SHIPPED: '/api/orders/update-shipped',
@@ -30,7 +31,7 @@ export const API_PATHS = {
     CUSTOMER_UPDATE: '/api/customer/update',
     CUSTOMER_DELETE: '/api/customer/delete',
     CUSTOMER_INFO: '/api/customer/info',
-    CUSTOMER_DETAIL: (id) => `/api/customer/${id}/info`,
+    CUSTOMER_DETAIL: (id) => `/api/customer/info`,
     
     // 管理员相关
     ADMIN_LIST: '/api/admin/list',

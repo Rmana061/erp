@@ -156,10 +156,9 @@ export default {
         const customerId = localStorage.getItem('customer_id');
         console.log('Fetching orders for customer:', customerId);
 
-        const response = await axios.get(getApiUrl(API_PATHS.ORDERS), {
-          params: {
-            customer_id: customerId
-          },
+        const response = await axios.post(getApiUrl(API_PATHS.ORDERS), {
+          customer_id: customerId
+        }, {
           withCredentials: true
         });
 

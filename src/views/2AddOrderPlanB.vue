@@ -285,7 +285,7 @@ export default {
         };
 
         // 发送订单到后端
-        const response = await axios.post(getApiUrl(API_PATHS.ORDERS), orderData, {
+        const response = await axios.post(getApiUrl(API_PATHS.CREATE_ORDER), orderData, {
           withCredentials: true
         });
 
@@ -346,26 +346,17 @@ export default {
     async fetchProducts() {
       try {
         console.log('Fetching products...');
-        // 先从 sessionStorage 获取用户信息
-        const cachedUserInfo = sessionStorage.getItem('userInfo');
-        if (!cachedUserInfo) {
-          console.log('No cached user info found');
+        const customerId = localStorage.getItem('customer_id');
+        if (!customerId) {
+          console.log('No customer_id found');
           this.$router.push('/customer-login');
           return;
         }
 
-        const userInfo = JSON.parse(cachedUserInfo);
-        console.log('User info from cache:', userInfo);
-        
-        if (!userInfo.viewable_products) {
-          console.log('No viewable products found');
-          this.availableProducts = [];
-          return;
-        }
-
-        // 获取可见产品的详细信息
-        const response = await axios.post(getApiUrl(API_PATHS.VIEWABLE_PRODUCTS), {
-          ids: userInfo.viewable_products
+        console.log('Fetching products for customer:', customerId);
+        const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
+          type: 'customer',
+          customer_id: customerId
         }, {
           withCredentials: true
         });
@@ -374,19 +365,18 @@ export default {
 
         if (response.data.status === 'success') {
           console.log('Raw product data:', response.data.data);
-          this.availableProducts = response.data.data.map(product => {
-            console.log(`Processing product ${product.id}:`, product);
-            return {
-              id: product.id,
-              name: product.name,
-              min_order_qty: product.min_order_qty || 1,
-              max_order_qty: product.max_order_qty || 9999,
-              unit: product.product_unit || 'kg',
-              shipping_time: product.shipping_time || 0,
-              special_date: product.special_date || false
-            };
-          });
+          this.availableProducts = response.data.data.map(product => ({
+            id: product.id,
+            name: product.name,
+            min_order_qty: product.min_order_qty || 1,
+            max_order_qty: product.max_order_qty || 9999,
+            unit: product.product_unit || 'kg',
+            shipping_time: product.shipping_time || 0,
+            special_date: product.special_date || false
+          }));
           console.log('Processed available products:', this.availableProducts);
+        } else {
+          throw new Error(response.data.message || '獲取產品列表失敗');
         }
       } catch (error) {
         console.error('Error fetching products:', error);
@@ -394,13 +384,13 @@ export default {
           console.error('Error response:', error.response.data);
           if (error.response.status === 401) {
             // 如果认证失败，清除缓存并重定向到登录页面
-            sessionStorage.removeItem('userInfo');
             localStorage.removeItem('customer_id');
             this.$router.push('/customer-login');
             return;
           }
         }
         this.availableProducts = [];
+        alert('獲取產品列表失敗：' + (error.response?.data?.message || error.message));
       }
     }
   },

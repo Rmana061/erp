@@ -74,9 +74,11 @@ def customer_login():
         conn.close()
         
         # 设置 session
+        session.clear()  # 清除旧的session
         session['customer_id'] = customer[0]
         session['username'] = customer[1]
         session['company_name'] = customer[3]
+        session.permanent = True  # 使session持久化
         
         response = jsonify({
             "status": "success",
@@ -96,7 +98,7 @@ def customer_login():
             cursor.close()
         if 'conn' in locals():
             conn.close()
-        return jsonify({"error": str(e)}), 500 
+        return jsonify({"error": str(e)}), 500
 
 @auth_bp.route('/admin-login', methods=['POST'])
 def admin_login():

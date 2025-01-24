@@ -107,67 +107,32 @@ export default {
           return;
         }
 
-        // 先获取用户信息
-        console.log('Fetching user info...');
-        const userInfoResponse = await axios.post(getApiUrl(API_PATHS.CUSTOMER_INFO), {}, {
+        console.log('Fetching products for customer:', customerId);
+        const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
+          type: 'customer',
+          customer_id: customerId
+        }, {
           withCredentials: true
         });
-
-        console.log('User info response:', userInfoResponse.data);
-        if (userInfoResponse.data.status === 'success') {
-          const userInfo = userInfoResponse.data.data;
-          
-          // 检查并处理 viewable_products 的格式
-          let viewableProducts = userInfo.viewable_products;
-          if (typeof viewableProducts === 'string') {
-            viewableProducts = viewableProducts.split(',');
-          }
-          
-          // 如果有可见产品列表，则获取产品详情
-          if (viewableProducts && viewableProducts.length > 0) {
-            console.log('Fetching products with IDs:', viewableProducts);
-            const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
-              ids: Array.isArray(viewableProducts) ? viewableProducts.join(',') : viewableProducts
-            }, {
-              withCredentials: true
-            });
             
-            console.log('Products response:', response.data);
-            // 检查响应数据是否为数组
-            const productsData = Array.isArray(response.data) ? response.data : response.data.data;
-            
-            if (productsData) {
-              console.log('Processing products data:', productsData);
-              // 只处理 viewableProducts 中包含的产品
-              this.products = productsData
-                .filter(product => viewableProducts.includes(product.id.toString()))
-                .map(product => {
-                  console.log('Processing product:', product);
-                  return {
-                    id: product.id,
-                    name: product.name,
-                    description: product.description,
-                    image_url: product.image_url,
-                    dm_url: product.dm_url,
-                    min_order_qty: product.min_order_qty,
-                    max_order_qty: product.max_order_qty,
-                    unit: product.unit || product.product_unit,
-                    shipping_time: product.shipping_time,
-                    created_at: product.created_at,
-                    updated_at: product.updated_at
-                  };
-                });
-              console.log('Processed products:', this.products);
-            } else {
-              console.error('No valid products data in response:', response.data);
-              throw new Error('獲取產品列表失敗');
-            }
-          } else {
-            console.log('No viewable products found for user');
-            this.products = [];
-          }
+        console.log('Products response:', response.data);
+        if (response.data.status === 'success') {
+          this.products = response.data.data.map(product => ({
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            image_url: product.image_url,
+            dm_url: product.dm_url,
+            min_order_qty: product.min_order_qty,
+            max_order_qty: product.max_order_qty,
+            unit: product.unit || product.product_unit,
+            shipping_time: product.shipping_time,
+            created_at: product.created_at,
+            updated_at: product.updated_at
+          }));
+          console.log('Processed products:', this.products);
         } else {
-          throw new Error(userInfoResponse.data.message || '獲取用戶資訊失敗');
+          throw new Error(response.data.message || '獲取產品列表失敗');
         }
       } catch (error) {
         console.error('Error fetching products:', error);

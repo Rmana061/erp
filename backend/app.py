@@ -4,7 +4,7 @@ import sys
 # 將專案根目錄添加到 Python 路徑
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from flask import Flask, request
+from flask import Flask, request, session
 from flask_cors import CORS
 from backend.routes.product_routes import product_bp
 from backend.routes.auth_routes import auth_bp
@@ -15,11 +15,13 @@ from backend.routes.order_routes import order_bp
 app = Flask(__name__)
 
 # Session 配置
-app.secret_key = os.urandom(24)
-app.config['SESSION_COOKIE_SECURE'] = True  # 使用 HTTPS
+app.secret_key = 'your-super-secret-key-here'  # 使用固定的密钥
+app.config['SESSION_COOKIE_SECURE'] = True  # 暂时关闭 HTTPS 要求
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'  # 允许跨站点请求
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # 修改为 Lax
 app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # session 过期时间设为 30 分钟
+app.config['SESSION_COOKIE_DOMAIN'] = None  # 允许所有域名
+app.config['SESSION_COOKIE_PATH'] = '/'  # Cookie路径
 
 # CORS 配置
 CORS(app, resources={
@@ -30,7 +32,7 @@ CORS(app, resources={
             "https://0406-111-249-201-90.ngrok-free.app"
         ],
         "supports_credentials": True,
-        "allow_headers": ["Content-Type", "Authorization"],
+        "allow_headers": ["Content-Type", "Authorization", "Accept"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "expose_headers": ["Content-Type", "Authorization"],
         "max_age": 600
@@ -49,9 +51,10 @@ def after_request(response):
     if origin in allowed_origins:
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,Accept'
         response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
         response.headers['Access-Control-Max-Age'] = '600'
+        response.headers['Access-Control-Expose-Headers'] = 'Content-Type,Authorization'
         response.headers['Vary'] = 'Origin'
     
     # 處理 OPTIONS 請求
