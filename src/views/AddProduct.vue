@@ -172,14 +172,25 @@ export default {
     async fetchProductDetails(id) {
       try {
         console.log('Fetching product details for ID:', id);
-        const response = await axios.get(getApiUrl(API_PATHS.PRODUCT_DETAIL(id)), {
-          withCredentials: true
+        const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
+          type: 'admin',
+          product_id: id
+        }, {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         });
         
         console.log('Product details response:', response.data);
         
-        if (response.data.status === 'success') {
-          const productData = response.data.data;
+        if (response.data.status === 'success' && response.data.data) {
+          // 从返回的产品列表中找到对应的产品
+          const productData = response.data.data.find(p => p.id === parseInt(id));
+          if (!productData) {
+            throw new Error('找不到該產品');
+          }
+          
           this.product = {
             name: productData.name,
             description: productData.description,
@@ -202,56 +213,55 @@ export default {
       }
     },
     async saveProduct() {
+      if (!this.validateForm()) {
+        return;
+      }
+
       try {
-        if (!this.validateForm()) {
+        const productData = {
+          type: 'admin',
+          name: this.product.name.trim(),
+          description: this.product.description.trim(),
+          image_url: this.product.image_url || null,
+          dm_url: this.product.dm_url || null,
+          min_order_qty: parseInt(this.product.min_order),
+          max_order_qty: parseInt(this.product.max_order),
+          product_unit: this.product.unit.trim(),
+          stock_quantity: 0,
+          status: 'available',
+          shipping_time: parseInt(this.product.shipping_time) || 0,
+          special_date: this.product.special_date || false
+        };
+
+        console.log('Sending product data:', productData);
+
+        const response = await axios.post(
+          getApiUrl(this.isEditing ? API_PATHS.PRODUCT_UPDATE(this.editingId) : API_PATHS.PRODUCTS),
+          productData,
+          {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        console.log('Server response:', response.data);
+
+        if (response.data.status === 'success' || 
+            (response.data.message && response.data.message.includes('successfully'))) {
+          alert(this.isEditing ? '產品更新成功！' : '產品新增成功！');
+          this.$router.push('/product-management');
           return;
         }
 
-        const productData = {
-          name: this.product.name,
-          description: this.product.description,
-          image_url: this.product.image_url,
-          dm_url: this.product.dm_url,
-          min_order_qty: parseInt(this.product.min_order),
-          max_order_qty: parseInt(this.product.max_order),
-          product_unit: this.product.unit,
-          shipping_time: this.product.shipping_time ? parseInt(this.product.shipping_time) : null,
-          special_date: this.product.special_date
-        };
+        const errorMessage = response.data.message || '操作失敗，請稍後再試';
+        alert(errorMessage);
 
-        let response;
-        if (this.isEditing) {
-          response = await axios.put(getApiUrl(API_PATHS.PRODUCT_UPDATE(this.editingId)), productData, {
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.data.status === 'success') {
-            alert('產品更新成功！');
-            this.$router.push('/product-management');
-          } else {
-            throw new Error(response.data.message || '更新產品失敗');
-          }
-        } else {
-          response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), productData, {
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.data.status === 'success') {
-            alert('產品新增成功！');
-            this.$router.push('/product-management');
-          } else {
-            throw new Error(response.data.message || '新增產品失敗');
-          }
-        }
       } catch (error) {
         console.error('Error saving product:', error);
-        alert(this.isEditing ? '更新產品失敗：' : '新增產品失敗：' + (error.response?.data?.message || error.message));
+        const errorMessage = error.response?.data?.message || error.message || '操作失敗，請稍後再試';
+        alert(errorMessage);
       }
     },
     cancel() {
@@ -342,26 +352,48 @@ export default {
       }
     },
     validateForm() {
-      if (!this.product.name) {
+      // 检查必填字段
+      if (!this.product.name?.trim()) {
         alert('請輸入產品名稱');
         return false;
       }
-      if (!this.product.description) {
+      if (!this.product.description?.trim()) {
         alert('請輸入產品描述');
         return false;
       }
-      if (!this.product.min_order) {
-        alert('請輸入最小下單數量');
+
+      // 检查数值字段
+      const minOrder = parseInt(this.product.min_order);
+      const maxOrder = parseInt(this.product.max_order);
+      
+      if (isNaN(minOrder) || minOrder <= 0) {
+        alert('請輸入有效的最小下單數量');
         return false;
       }
-      if (!this.product.max_order) {
-        alert('請輸入最大下單數量');
+      if (isNaN(maxOrder) || maxOrder <= 0) {
+        alert('請輸入有效的最大下單數量');
         return false;
       }
-      if (!this.product.unit) {
+      if (minOrder > maxOrder) {
+        alert('最小下單數量不能大於最大下單數量');
+        return false;
+      }
+
+      // 检查单位
+      if (!this.product.unit?.trim()) {
         alert('請輸入產品單位');
         return false;
       }
+
+      // 检查出货时间
+      if (!this.product.special_date) {
+        const shippingTime = parseInt(this.product.shipping_time);
+        if (isNaN(shippingTime) || shippingTime < 0) {
+          alert('請輸入有效的出貨時間');
+          return false;
+        }
+      }
+
       return true;
     }
   },

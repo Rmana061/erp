@@ -85,138 +85,16 @@ def get_products():
         }), 500
 
 @product_bp.route('/products/<int:product_id>', methods=['POST'])
-def get_product(product_id):
-    try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({
-                "status": "error",
-                "message": "Database connection failed"
-            }), 500
-            
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id, name, description, image_url, dm_url, 
-                   min_order_qty, max_order_qty, product_unit, 
-                   shipping_time, special_date, created_at, updated_at 
-            FROM products 
-            WHERE id = %s
-        """, (product_id,))
-        
-        columns = [desc[0] for desc in cursor.description]
-        row = cursor.fetchone()
-        
-        if row is None:
-            return jsonify({
-                'status': 'error',
-                'message': 'Product not found'
-            }), 404
-            
-        product = dict(zip(columns, row))
-        
-        for key in ['created_at', 'updated_at']:
-            if key in product and product[key]:
-                product[key] = product[key].isoformat() if hasattr(product[key], 'isoformat') else str(product[key])
-        
-        cursor.close()
-        conn.close()
-        return jsonify({
-            'status': 'success',
-            'data': product
-        })
-    except Exception as e:
-        print(f"Error in get_product: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
-
-@product_bp.route('/products', methods=['POST'])
-def create_product():
-    conn = None
-    cursor = None
-    try:
-        data = request.json
-        print("Received data:", data)
-        
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({
-                "status": "error",
-                "message": "Database connection failed"
-            }), 500
-            
-        cursor = conn.cursor()
-        
-        required_fields = ['name', 'description', 'min_order_qty', 'max_order_qty', 'product_unit']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    'status': 'error',
-                    'message': f'Missing required field: {field}'
-                }), 400
-        
-        try:
-            min_qty = int(data.get('min_order_qty'))
-            max_qty = int(data.get('max_order_qty'))
-        except (ValueError, TypeError):
-            return jsonify({
-                'status': 'error',
-                'message': 'Invalid quantity values'
-            }), 400
-            
-        sql = """
-            INSERT INTO products (
-                name, description, image_url, dm_url,
-                min_order_qty, max_order_qty, product_unit, shipping_time,
-                special_date
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id;
-        """
-        
-        params = (
-            data.get('name'),
-            data.get('description'),
-            data.get('image_url'),
-            data.get('dm_url'),
-            min_qty,
-            max_qty,
-            data.get('product_unit'),
-            data.get('shipping_time'),
-            data.get('special_date', False)
-        )
-        
-        cursor.execute(sql, params)
-        new_id = cursor.fetchone()[0]
-        conn.commit()
-        
-        return jsonify({
-            'status': 'success',
-            'data': {
-                'id': new_id,
-                'message': 'Product created successfully'
-            }
-        }), 201
-        
-    except Exception as e:
-        print(f"Error in create_product: {str(e)}")
-        if conn:
-            conn.rollback()
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
-        
-    finally:
-        if cursor:
-            cursor.close()
-        if conn:
-            conn.close()
-
-@product_bp.route('/products/<int:product_id>', methods=['PUT'])
 def update_product(product_id):
     try:
         data = request.json
+        
+        if not data.get('type') == 'admin':
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized access'
+            }), 403
+
         conn = get_db_connection()
         if conn is None:
             return jsonify({"error": "Database connection failed"}), 500
@@ -265,6 +143,7 @@ def update_product(product_id):
         conn.close()
         
         return jsonify({
+            'status': 'success',
             'message': f'Product {product_id} updated successfully',
             'id': product_id
         })

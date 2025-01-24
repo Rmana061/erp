@@ -238,7 +238,9 @@ export default {
     async fetchProducts() {
       try {
         console.log('開始獲取產品列表...');
-        const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {}, {
+        const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
+          type: 'admin'
+        }, {
           withCredentials: true
         });
 
@@ -256,7 +258,6 @@ export default {
           }));
           console.log('成功獲取產品列表:', this.products);
         } else {
-          console.error('API返回狀態不是success:', response.data);
           throw new Error(response.data.message || '獲取產品列表失敗');
         }
       } catch (error) {
