@@ -57,7 +57,7 @@
                   <td>{{ product.description }}</td>
                   <td>{{ product.min_order_qty }}</td>
                   <td>{{ product.max_order_qty }}</td>
-                  <td>{{ product.unit }}</td>
+                  <td>{{ product.product_unit }}</td>
                   <td>{{ product.shipping_time }}天</td>
                   <td>
                     <button class="table-button edit" @click="editProduct(product)">編輯</button>
