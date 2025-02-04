@@ -641,10 +641,18 @@ def update_order_shipped():
 
         statuses = [row[0] for row in cursor.fetchall()]
         
-        # 檢查是否所有產品都是已出貨或已取消狀態
-        all_shipped_or_cancelled = all(status in ['已出貨', '已取消'] for status in statuses)
+        # 檢查是否所有已確認的產品都已出貨，已取消的產品不影響狀態
+        all_processed = all(
+            status in ['已出貨', '已取消'] 
+            for status in statuses
+        )
         
-        if all_shipped_or_cancelled:
+        has_confirmed = any(
+            status == '已確認'
+            for status in statuses
+        )
+        
+        if not has_confirmed and all_processed:
             # 更新訂單出貨狀態
             cursor.execute("""
                 UPDATE orders 

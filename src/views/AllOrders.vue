@@ -112,7 +112,7 @@
                           審核
                         </button>
                       </div>
-                      <div class="action-buttons" v-else-if="itemIndex === 0 && allItemsConfirmed(order.items)">
+                      <div class="action-buttons" v-else-if="itemIndex === 0 && hasConfirmedItems(order.items)">
                         <button class="complete-btn" @click="handleComplete(order)">
                           完成
                         </button>
@@ -355,9 +355,10 @@ export default {
       console.log('檢查訂單項目狀態:', items.map(item => item.status));
       return items.every(item => item.status === '待確認');
     },
-    allItemsConfirmed(items) {
-      console.log('檢查訂單項目狀態:', items.map(item => item.status));
-      return items.every(item => item.status === '已確認' || item.status === '已取消');
+    hasConfirmedItems(items) {
+      const hasConfirmed = items.some(item => item.status === '已確認');
+      const allCancelled = items.every(item => item.status === '已取消');
+      return hasConfirmed && !allCancelled;
     },
     async fetchAllOrders() {
       try {
@@ -508,19 +509,21 @@ export default {
     },
     async confirmComplete() {
       try {
-        // 1. 首先更新所有产品状态为已出货
-        const updatePromises = this.selectedOrder.items.map(item => 
-          axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
-            order_id: item.id,
-            status: '已出貨'
-          }, {
-            withCredentials: true
-          })
-        );
+        // 更新所有已确认状态的产品为已出货
+        const updatePromises = this.selectedOrder.items
+          .filter(item => item.status === '已確認')
+          .map(item => 
+            axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
+              order_id: item.id,
+              status: '已出貨'
+            }, {
+              withCredentials: true
+            })
+          );
 
         await Promise.all(updatePromises);
 
-        // 2. 然后更新订单出货状态
+        // 更新订单出货状态
         await axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_SHIPPED), {
           order_number: this.selectedOrder.orderNumber
         }, {
