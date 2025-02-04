@@ -26,6 +26,9 @@ export const API_PATHS = {
     PRODUCT_UPDATE: (id) => `/api/products/update/${id}`,
     PRODUCT_DELETE: (id) => `/api/products/delete/${id}`,
     VIEWABLE_PRODUCTS: '/api/products/viewable',
+    LOCKED_DATES: '/api/products/locked-dates',
+    LOCK_DATE: '/api/products/lock-date',
+    UNLOCK_DATE: '/api/products/unlock-date',
     
     // 客户相关
     CUSTOMER_LIST: '/api/customer/list',

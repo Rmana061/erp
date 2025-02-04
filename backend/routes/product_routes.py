@@ -400,4 +400,156 @@ def get_viewable_products():
         return jsonify({
             'status': 'error',
             'message': str(e)
+        }), 500
+
+@product_bp.route('/products/locked-dates', methods=['POST'])
+def get_locked_dates():
+    try:
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed"}), 500
+            
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, locked_date, created_at
+            FROM locked_dates
+            ORDER BY locked_date ASC
+        """)
+        
+        columns = [desc[0] for desc in cursor.description]
+        dates = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            "status": "success",
+            "data": dates
+        })
+        
+    except Exception as e:
+        print(f"Error in get_locked_dates: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@product_bp.route('/products/lock-date', methods=['POST'])
+def lock_date():
+    try:
+        data = request.json
+        if not data.get('type') == 'admin':
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized access'
+            }), 403
+            
+        if 'date' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing date parameter'
+            }), 400
+            
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed"}), 500
+            
+        cursor = conn.cursor()
+        
+        # 检查日期是否已经被锁定
+        cursor.execute("""
+            SELECT id FROM locked_dates
+            WHERE locked_date = %s
+        """, (data['date'],))
+        
+        if cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': '该日期已被锁定'
+            }), 400
+        
+        # 插入新的锁定日期
+        cursor.execute("""
+            INSERT INTO locked_dates (locked_date, created_at)
+            VALUES (%s, CURRENT_TIMESTAMP)
+            RETURNING id
+        """, (data['date'],))
+        
+        new_id = cursor.fetchone()[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '日期锁定成功',
+            'id': new_id
+        })
+        
+    except Exception as e:
+        print(f"Error in lock_date: {str(e)}")
+        if 'conn' in locals():
+            conn.rollback()
+            if 'cursor' in locals():
+                cursor.close()
+            conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@product_bp.route('/products/unlock-date', methods=['POST'])
+def unlock_date():
+    try:
+        data = request.json
+        if not data.get('type') == 'admin':
+            return jsonify({
+                'status': 'error',
+                'message': 'Unauthorized access'
+            }), 403
+            
+        if 'date_id' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing date_id parameter'
+            }), 400
+            
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed"}), 500
+            
+        cursor = conn.cursor()
+        
+        # 删除锁定日期
+        cursor.execute("""
+            DELETE FROM locked_dates
+            WHERE id = %s
+            RETURNING id
+        """, (data['date_id'],))
+        
+        if not cursor.fetchone():
+            return jsonify({
+                'status': 'error',
+                'message': '找不到该锁定日期'
+            }), 404
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '日期解鎖成功'
+        })
+        
+    except Exception as e:
+        print(f"Error in unlock_date: {str(e)}")
+        if 'conn' in locals():
+            conn.rollback()
+            if 'cursor' in locals():
+                cursor.close()
+            conn.close()
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
         }), 500 

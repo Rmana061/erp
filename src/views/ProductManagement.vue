@@ -16,71 +16,93 @@
       <h2>產品管理</h2>
       <div class="action-buttons">
         <button class="action-button" @click="navigateTo('AddProduct')">+ 新增產品</button>
-            <button class="action-button" @click="batchDelete">- 批量刪除</button>
-            <button class="action-button" @click="exportReport">↓ 報表匯出</button>
-            <div class="search-container">
-        <input type="text" v-model="searchQuery" placeholder="搜尋產品..." class="search-input" />
-              <select v-model="searchType" class="search-select">
-                <option value="name">產品名稱</option>
-                <option value="description">產品描述</option>
-              </select>
-            </div>
+        <button class="action-button" @click="batchDelete">- 批量刪除</button>
+        <button class="action-button" @click="exportReport">↓ 報表匯出</button>
+        <button class="action-button" @click="showLockDateDialog">🔒 鎖定日期</button>
+        <div class="search-container">
+          <input type="text" v-model="searchQuery" placeholder="搜尋產品..." class="search-input" />
+          <select v-model="searchType" class="search-select">
+            <option value="name">產品名稱</option>
+            <option value="description">產品描述</option>
+          </select>
+        </div>
       </div>
 
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th><input type="checkbox" @click="selectAll" :checked="allSelected"></th>
-                  <th>產品圖片</th>
-                  <th>產品名稱</th>
-                  <th>產品描述</th>
-                  <th>最小訂購量</th>
-                  <th>最大訂購量</th>
-                  <th>單位</th>
-                  <th>出貨時間</th>
-                  <th>操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="product in filteredProducts" :key="product.id">
-                  <td><input type="checkbox" v-model="product.selected"></td>
-                  <td>
-            <img 
-              :src="product.image_url" 
-                      class="product-thumbnail"
-              @click="showLargeImage(product.image_url)"
-                      alt="產品圖片"
-                    >
-                  </td>
-                  <td>{{ product.name }}</td>
-                  <td>{{ product.description }}</td>
-                  <td>{{ product.min_order_qty }}</td>
-                  <td>{{ product.max_order_qty }}</td>
-                  <td>{{ product.product_unit }}</td>
-                  <td>{{ product.shipping_time }}天</td>
-                  <td>
-                    <button class="table-button edit" @click="editProduct(product)">編輯</button>
-                    <button class="table-button delete" @click="deleteProduct(product)">刪除</button>
-                <a v-if="product.dm_url" 
-                   :href="product.dm_url" 
-                   target="_blank" 
-                       class="table-button">查看 DM</a>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-              </div>
+      <!-- 锁定日期对话框 -->
+      <div v-if="showLockDateModal" class="modal">
+        <div class="modal-content">
+          <h3>鎖定日期管理</h3>
+          <div class="lock-date-form">
+            <input type="date" v-model="newLockDate" :min="today">
+            <button @click="lockDate">鎖定</button>
+          </div>
+          <div class="locked-dates-list">
+            <h4>已鎖定日期列表</h4>
+            <ul>
+              <li v-for="date in lockedDates" :key="date.id">
+                {{ formatDate(date.locked_date) }}
+                <button @click="unlockDate(date.id)" class="unlock-button">解鎖</button>
+              </li>
+            </ul>
+          </div>
+          <button class="close-button" @click="closeLockDateDialog">&times;</button>
+        </div>
+      </div>
 
-          <div class="pagination">
-            <button @click="changePage(-1)" :disabled="currentPage === 1">上一頁</button>
-            <span>{{ currentPage }} / {{ totalPages }}</span>
-            <button @click="changePage(1)" :disabled="currentPage === totalPages">下一頁</button>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" @click="selectAll" :checked="allSelected"></th>
+              <th>產品圖片</th>
+              <th>產品名稱</th>
+              <th>產品描述</th>
+              <th>最小訂購量</th>
+              <th>最大訂購量</th>
+              <th>單位</th>
+              <th>出貨時間</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="product in filteredProducts" :key="product.id">
+              <td><input type="checkbox" v-model="product.selected"></td>
+              <td>
+        <img 
+          :src="product.image_url" 
+                  class="product-thumbnail"
+          @click="showLargeImage(product.image_url)"
+                  alt="產品圖片"
+                >
+              </td>
+              <td>{{ product.name }}</td>
+              <td>{{ product.description }}</td>
+              <td>{{ product.min_order_qty }}</td>
+              <td>{{ product.max_order_qty }}</td>
+              <td>{{ product.product_unit }}</td>
+              <td>{{ product.shipping_time }}天</td>
+              <td>
+                <button class="table-button edit" @click="editProduct(product)">編輯</button>
+                <button class="table-button delete" @click="deleteProduct(product)">刪除</button>
+            <a v-if="product.dm_url" 
+               :href="product.dm_url" 
+               target="_blank" 
+                   class="table-button">查看 DM</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
           </div>
-          </div>
+
+        <div class="pagination">
+          <button @click="changePage(-1)" :disabled="currentPage === 1">上一頁</button>
+          <span>{{ currentPage }} / {{ totalPages }}</span>
+          <button @click="changePage(1)" :disabled="currentPage === totalPages">下一頁</button>
+        </div>
         </div>
       </div>
     </div>
+  </div>
 
   <!-- 圖片預覽模態框 -->
   <div v-if="showModal" class="modal" @click="closeModal">
@@ -117,9 +139,15 @@ export default {
       itemsPerPage: 10,
       allSelected: false,
       isSidebarActive: false,
+      showLockDateModal: false,
+      newLockDate: '',
+      lockedDates: [],
     };
   },
   computed: {
+    today() {
+      return new Date().toISOString().split('T')[0];
+    },
     filteredProducts() {
       let filtered = this.products;
       if (this.searchQuery) {
@@ -296,6 +324,90 @@ export default {
     toggleSidebar() {
       this.isSidebarActive = !this.isSidebarActive;
     },
+    showLockDateDialog() {
+      this.showLockDateModal = true;
+      this.fetchLockedDates();
+    },
+    closeLockDateDialog() {
+      this.showLockDateModal = false;
+      this.newLockDate = '';
+    },
+    formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('zh-TW', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    },
+    async fetchLockedDates() {
+      try {
+        const response = await axios.post(getApiUrl(API_PATHS.LOCKED_DATES), {
+          type: 'admin'
+        }, {
+          withCredentials: true
+        });
+
+        if (response.data.status === 'success') {
+          this.lockedDates = response.data.data;
+        } else {
+          throw new Error(response.data.message || '獲取鎖定日期失敗');
+        }
+      } catch (error) {
+        console.error('Error fetching locked dates:', error);
+        alert('獲取鎖定日期失敗：' + (error.response?.data?.message || error.message));
+      }
+    },
+    async lockDate() {
+      if (!this.newLockDate) {
+        alert('請選擇要鎖定的日期');
+        return;
+      }
+
+      try {
+        const response = await axios.post(getApiUrl(API_PATHS.LOCK_DATE), {
+          type: 'admin',
+          date: this.newLockDate
+        }, {
+          withCredentials: true
+        });
+
+        if (response.data.status === 'success') {
+          alert('日期鎖定成功');
+          this.newLockDate = '';
+          this.fetchLockedDates();
+        } else {
+          throw new Error(response.data.message || '鎖定日期失敗');
+        }
+      } catch (error) {
+        console.error('Error locking date:', error);
+        alert('鎖定日期失敗：' + (error.response?.data?.message || error.message));
+      }
+    },
+    async unlockDate(dateId) {
+      if (!confirm('確定要解鎖這個日期嗎？')) {
+        return;
+      }
+
+      try {
+        const response = await axios.post(getApiUrl(API_PATHS.UNLOCK_DATE), {
+          type: 'admin',
+          date_id: dateId
+        }, {
+          withCredentials: true
+        });
+
+        if (response.data.status === 'success') {
+          alert('日期解鎖成功');
+          this.fetchLockedDates();
+        } else {
+          throw new Error(response.data.message || '解鎖日期失敗');
+        }
+      } catch (error) {
+        console.error('Error unlocking date:', error);
+        alert('解鎖日期失敗：' + (error.response?.data?.message || error.message));
+      }
+    },
   },
   mounted() {
     document.title = '管理者系統';
@@ -307,5 +419,54 @@ export default {
 <style>
 @import '../assets/styles/unified-base.css';
 
-/* 所有樣式已移至 unified-base */
+.lock-date-form {
+  margin: 20px 0;
+  display: flex;
+  gap: 10px;
+}
+
+.lock-date-form input[type="date"] {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.lock-date-form button {
+  padding: 8px 16px;
+  background-color: #40b883;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.locked-dates-list {
+  margin-top: 20px;
+}
+
+.locked-dates-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.locked-dates-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.unlock-button {
+  padding: 4px 8px;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.unlock-button:hover {
+  background-color: #cc0000;
+}
 </style>

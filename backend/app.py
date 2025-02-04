@@ -11,6 +11,7 @@ from backend.routes.auth_routes import auth_bp
 from backend.routes.customer_routes import customer_bp
 from backend.routes.admin_routes import admin_bp
 from backend.routes.order_routes import order_bp
+from backend.routes.line_bot_routes import line_bot_bp
 
 app = Flask(__name__)
 
@@ -32,7 +33,7 @@ CORS(app, resources={
             "https://0406-111-249-201-90.ngrok-free.app"
         ],
         "supports_credentials": True,
-        "allow_headers": ["Content-Type", "Authorization", "Accept"],
+        "allow_headers": ["Content-Type", "Authorization", "Accept", "X-Line-Signature"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "expose_headers": ["Content-Type", "Authorization"],
         "max_age": 600
@@ -51,7 +52,7 @@ def after_request(response):
     if origin in allowed_origins:
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Credentials'] = 'true'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,Accept'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,Accept,X-Line-Signature'
         response.headers['Access-Control-Allow-Methods'] = 'GET,PUT,POST,DELETE,OPTIONS'
         response.headers['Access-Control-Max-Age'] = '600'
         response.headers['Access-Control-Expose-Headers'] = 'Content-Type,Authorization'
@@ -69,6 +70,7 @@ app.register_blueprint(auth_bp, url_prefix='/api')
 app.register_blueprint(customer_bp, url_prefix='/api')
 app.register_blueprint(admin_bp, url_prefix='/api')
 app.register_blueprint(order_bp, url_prefix='/api')
+app.register_blueprint(line_bot_bp, url_prefix='/api/line')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

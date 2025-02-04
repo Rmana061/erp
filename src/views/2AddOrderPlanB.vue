@@ -56,14 +56,22 @@
                     <div class="special-date-notice">請和供應商確認日期</div>
                   </template>
                   <template v-else>
-                    <input 
-                      type="date" 
-                      :id="'shipping-date' + index"
-                      v-model="product.shipping_date"
-                      :min="getMinShippingDate(product.product_id)"
-                      :max="maxDate"
-                      @change="validateShippingDate(index)"
-                      required>
+                    <div class="datepicker-container">
+                      <Datepicker 
+                        v-model="product.shipping_date"
+                        :min-date="new Date(getMinShippingDate(product.product_id))"
+                        :max-date="new Date(maxDate)"
+                        :disabled-dates="getDisabledDatesArray()"
+                        :format="formatDate"
+                        model-type="yyyy-MM-dd"
+                        :enable-time-picker="false"
+                        locale="zh"
+                        auto-apply
+                        required
+                        @update:model-value="validateShippingDate(index)"
+                        text-input
+                      />
+                    </div>
                     <div class="shipping-hint" v-if="product.product_id && selectedProduct(product.product_id)">
                       <div>最早出貨日期：{{ getMinShippingDate(product.product_id) }}</div>
                       <div class="shipping-time">（出貨時間：{{ selectedProduct(product.product_id).shipping_time || 0 }}天）</div>
@@ -106,7 +114,7 @@
                         請和供應商確認日期
                       </template>
                       <template v-else>
-                        {{ product.shipping_date || '未設定' }}
+                        {{ formatDate(product.shipping_date) || '未設定' }}
                       </template>
                       <div v-if="product.remark" class="summary-remark">
                         備註：{{ product.remark }}
@@ -140,11 +148,14 @@ import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
 import { API_PATHS, getApiUrl } from '../config/api';
+import Datepicker from '@vuepic/vue-datepicker';
+import '@vuepic/vue-datepicker/dist/main.css';
 
 export default {
   name: 'AddOrderPlanB',
   components: {
-    SideBar
+    SideBar,
+    Datepicker
   },
   mixins: [timeMixin, companyMixin],
   data() {
@@ -157,7 +168,8 @@ export default {
       }],
       availableProducts: [],
       generatedOrderNumber: this.generateOrderNumber(),
-      currentTime: ''
+      currentTime: '',
+      lockedDates: []
     };
   },
   computed: {
@@ -172,7 +184,8 @@ export default {
                const product = this.selectedProduct(p.product_id);
                return product && 
                       p.quantity >= product.min_order_qty && 
-                      p.quantity <= product.max_order_qty;
+                      p.quantity <= product.max_order_qty &&
+                      (!p.shipping_date || !this.isDateLocked(p.shipping_date));
              });
     },
     minDate() {
@@ -234,11 +247,14 @@ export default {
     },
     validateShippingDate(index) {
       const product = this.orderProducts[index];
-      const minDate = this.getMinShippingDate(product.product_id);
+      if (!product.shipping_date) return;
       
-      if (product.shipping_date && product.shipping_date < minDate) {
-        alert(`根據產品出貨時間，最早可選擇的出貨日期為 ${minDate}`);
-        product.shipping_date = minDate;
+      const minDate = new Date(this.getMinShippingDate(product.product_id));
+      const selectedDate = new Date(product.shipping_date);
+      
+      if (selectedDate < minDate) {
+        alert(`根據產品出貨時間，最早可選擇的出貨日期為 ${this.formatDate(minDate)}`);
+        product.shipping_date = this.formatDate(minDate);
       }
     },
     addProduct() {
@@ -392,6 +408,37 @@ export default {
         this.availableProducts = [];
         alert('獲取產品列表失敗：' + (error.response?.data?.message || error.message));
       }
+    },
+    formatDate(date) {
+      if (!date) return '';
+      const d = new Date(date);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    },
+    isDateLocked(date) {
+      if (!date) return false;
+      const dateStr = typeof date === 'string' ? date : this.formatDate(date);
+      return this.lockedDates.some(lockedDate => 
+        this.formatDate(new Date(lockedDate.locked_date)) === dateStr
+      );
+    },
+    async fetchLockedDates() {
+      try {
+        const response = await axios.post(getApiUrl(API_PATHS.LOCKED_DATES), {}, {
+          withCredentials: true
+        });
+
+        if (response.data.status === 'success') {
+          this.lockedDates = response.data.data;
+        }
+      } catch (error) {
+        console.error('Error fetching locked dates:', error);
+      }
+    },
+    getDisabledDatesArray() {
+      return this.lockedDates.map(date => new Date(date.locked_date));
     }
   },
   created() {
@@ -400,22 +447,11 @@ export default {
     this.fetchCompanyInfo();
     console.log('Component created, fetching products...');
     this.fetchProducts();
+    this.fetchLockedDates();
   }
 };
 </script>
 
 <style>
 @import '../assets/styles/unified-base.css';
-
-.special-date-notice {
-  color: #e74c3c;
-  font-size: 0.9em;
-  padding: 8px;
-  background-color: #fdeaea;
-  border-radius: 4px;
-  margin-top: 4px;
-  text-align: center;
-}
-
-/* 所有其他樣式已移至 unified-base */
 </style>
