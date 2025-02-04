@@ -38,6 +38,10 @@ export const API_PATHS = {
     CUSTOMER_INFO: '/api/customer/info',
     CUSTOMER_DETAIL: (id) => `/api/customer/${id}/info`,
     
+    // LINE相关
+    BIND_LINE: '/api/line/bind',
+    UNBIND_LINE: '/api/line/unbind',
+    
     // 管理员相关
     ADMIN_LIST: '/api/admin/list',
     ADMIN_ADD: '/api/admin/add',

@@ -424,3 +424,64 @@ def get_customer_detail(customer_id):
             "status": "error",
             "message": str(e)
         }), 500 
+
+@customer_bp.route('/line/unbind', methods=['POST'])
+def unbind_line():
+    try:
+        # 尝试从 cookie 获取 customer_id
+        customer_id = request.cookies.get('customer_id')
+        
+        # 如果 cookie 中没有，则从请求体获取
+        if not customer_id:
+            data = request.get_json()
+            customer_id = data.get('customer_id') if data else None
+            
+        print(f"Customer ID: {customer_id}")
+
+        if not customer_id:
+            return jsonify({
+                "status": "error",
+                "message": "未登入或登入已過期"
+            }), 401
+
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"error": "Database connection failed"}), 500
+
+        cursor = conn.cursor()
+        
+        # 更新客户的 line_account 为 NULL
+        cursor.execute("""
+            UPDATE customers 
+            SET line_account = NULL,
+                updated_at = NOW()
+            WHERE id = %s AND status = 'active'
+            RETURNING id;
+        """, (customer_id,))
+        
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({
+                "status": "error",
+                "message": "找不到客戶資料"
+            }), 404
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({
+            "status": "success",
+            "message": "LINE帳號解除綁定成功"
+        })
+
+    except Exception as e:
+        print(f"Error in unbind_line: {str(e)}")
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500 

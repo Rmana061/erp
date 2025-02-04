@@ -114,9 +114,13 @@ export default {
       if (!confirm('確定要解除LINE帳號綁定嗎？')) return;
 
       try {
-        const response = await axios.post(getApiUrl(API_PATHS.UNBIND_LINE), {}, {
-          withCredentials: true
-        });
+        const customerId = localStorage.getItem('customer_id');
+        const response = await axios.post(getApiUrl(API_PATHS.UNBIND_LINE), 
+          { customer_id: customerId },  // 添加 customer_id 到请求体
+          {
+            withCredentials: true
+          }
+        );
 
         if (response.data.status === 'success') {
           alert('LINE帳號解除綁定成功');
