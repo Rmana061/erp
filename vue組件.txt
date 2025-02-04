@@ -1,1 +1,2 @@
 npm install @vuepic/vue-datepicker
+npm install qrcode

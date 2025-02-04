@@ -46,8 +46,8 @@ def after_request(response):
     origin = request.headers.get('Origin')
     allowed_origins = [
         "http://localhost:5173",
-        "https://dba1-111-249-201-90.ngrok-free.app",
-        "https://0406-111-249-201-90.ngrok-free.app"
+        "https://732b-111-249-219-202.ngrok-free.app",
+        "https://9c62-111-249-219-202.ngrok-free.app"
     ]
     if origin in allowed_origins:
         response.headers['Access-Control-Allow-Origin'] = origin

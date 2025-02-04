@@ -1,5 +1,5 @@
 // API配置文件
-export const API_BASE_URL = 'https://0406-111-249-201-90.ngrok-free.app';
+export const API_BASE_URL = 'https://9c62-111-249-219-202.ngrok-free.app';
 
 // API路径配置
 export const API_PATHS = {
@@ -39,6 +39,7 @@ export const API_PATHS = {
     CUSTOMER_DETAIL: (id) => `/api/customer/${id}/info`,
     
     // LINE相关
+    GENERATE_BIND_URL: '/api/line/generate-bind-url',
     BIND_LINE: '/api/line/bind',
     UNBIND_LINE: '/api/line/unbind',
     

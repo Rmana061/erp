@@ -17,6 +17,7 @@ import OrderSystem from '../views/2OrderSystem.vue';
 import OrderRecord from '../views/2OrderRecord.vue';            
 import AdminLogin from '../views/AdminLogin.vue';
 import CustomerLogin from '../views/2CustomerLogin.vue';
+import LineBinding from '../views/LineBinding.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -118,6 +119,11 @@ const router = createRouter({
       name: 'ProductList',
       component: ProductList,
       meta: { requiresCustomerAuth: true }
+    },
+    {
+      path: '/line-binding',
+      name: 'LineBinding',
+      component: LineBinding
     }
   ]
 });

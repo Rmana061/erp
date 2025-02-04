@@ -27,11 +27,27 @@
           <div class="line-settings">
             <p><strong>LINE帳號綁定</strong></p>
             <div class="line-buttons">
-              <button @click="bindAccount" :disabled="customerInfo.line_account">綁定帳號</button>
+              <button @click="showBindQRCode" :disabled="customerInfo.line_account">綁定帳號</button>
               <button @click="unbindAccount" :disabled="!customerInfo.line_account">解除綁定</button>
             </div>
             <p v-if="customerInfo.line_account" class="line-status">
               已綁定：{{ customerInfo.line_account }}
+            </p>
+          </div>
+        </div>
+
+        <!-- QR Code Modal -->
+        <div v-if="showQRModal" class="modal">
+          <div class="modal-content">
+            <span class="close-button" @click="closeQRModal">&times;</span>
+            <h3>掃描QR Code綁定LINE帳號</h3>
+            <div class="qr-container">
+              <img :src="qrCodeUrl" alt="QR Code" v-if="qrCodeUrl">
+              <div v-else class="loading">生成QR Code中...</div>
+            </div>
+            <p class="qr-instructions">
+              請使用LINE掃描此QR Code來綁定您的帳號。<br>
+              綁定後即可透過LINE接收訂單通知及查詢訂單狀態。
             </p>
           </div>
         </div>
@@ -47,6 +63,7 @@ import { companyMixin } from '../mixins/companyMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
 import { API_PATHS, getApiUrl } from '../config/api';
+import QRCode from 'qrcode'
 
 export default {
   name: 'AccountSettings',
@@ -56,7 +73,9 @@ export default {
   mixins: [timeMixin, companyMixin],
   data() {
     return {
-      customerInfo: {}
+      customerInfo: {},
+      showQRModal: false,
+      qrCodeUrl: '',
     };
   },
   methods: {
@@ -132,6 +151,36 @@ export default {
         console.error('Error unbinding LINE account:', error);
         alert('解除LINE帳號綁定失敗：' + (error.response?.data?.message || error.message));
       }
+    },
+    async showBindQRCode() {
+      try {
+        const customerId = localStorage.getItem('customer_id');
+        const response = await axios.post(getApiUrl(API_PATHS.GENERATE_BIND_URL), {
+          customer_id: customerId
+        });
+
+        if (response.data.status === 'success') {
+          // 生成 QR Code
+          this.qrCodeUrl = await QRCode.toDataURL(response.data.data.url, {
+            width: 300,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#ffffff'
+            }
+          });
+          this.showQRModal = true;
+        } else {
+          throw new Error(response.data.message || '生成QR Code失敗');
+        }
+      } catch (err) {
+        console.error('Error generating QR code:', err);
+        alert('生成QR Code失敗：' + (err.response?.data?.message || err.message));
+      }
+    },
+    closeQRModal() {
+      this.showQRModal = false;
+      this.qrCodeUrl = '';
     }
   },
   created() {
@@ -150,6 +199,63 @@ export default {
   margin-top: 10px;
   color: #4CAF50;
   font-size: 0.9em;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 90%;
+  position: relative;
+  text-align: center;
+}
+
+.close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.qr-container {
+  margin: 20px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.qr-container img {
+  max-width: 100%;
+  height: auto;
+}
+
+.loading {
+  color: #666;
+  font-size: 16px;
+}
+
+.qr-instructions {
+  margin-top: 20px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 /* 所有其他樣式已移至 unified-base */
