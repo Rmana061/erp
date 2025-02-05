@@ -233,11 +233,171 @@ def handle_message(event):
         customer = cursor.fetchone()
         
         if customer:
-            if user_message == '查看訂單':
-                # 這裡可以加入查看訂單的邏輯
-                reply_text = f"您好 {customer[1]}，您可以透過以下連結查看訂單狀態..."
+            if user_message == '近兩週訂單':
+                cursor.execute("""
+                    SELECT DISTINCT o.order_number, o.created_at, 
+                           CASE 
+                               WHEN o.order_shipped THEN '已出貨'
+                               WHEN o.order_confirmed THEN '已確認'
+                               ELSE '待確認'
+                           END as status,
+                           string_agg(
+                               p.name || ' x' || od.product_quantity || od.product_unit || 
+                               ' (' || od.order_status || ')' ||
+                               CASE 
+                                   WHEN od.remark IS NOT NULL AND od.remark != '' 
+                                   THEN E'\n客戶備註: ' || od.remark
+                                   ELSE ''
+                               END ||
+                               CASE 
+                                   WHEN od.supplier_note IS NOT NULL AND od.supplier_note != '' 
+                                   THEN E'\n供應商備註: ' || od.supplier_note
+                                   ELSE ''
+                               END,
+                               E'\n'
+                           ) as product_details
+                    FROM orders o
+                    JOIN order_details od ON o.id = od.order_id
+                    JOIN products p ON od.product_id = p.id
+                    WHERE o.customer_id = %s 
+                    AND o.created_at >= NOW() - INTERVAL '14 days'
+                    GROUP BY o.id, o.order_number, o.created_at, o.order_confirmed, o.order_shipped
+                    ORDER BY o.created_at DESC
+                    LIMIT 10
+                """, (customer[0],))
+                
+                orders = cursor.fetchall()
+                if orders:
+                    reply_text = f"您好 {customer[1]}，以下為最新的10筆近兩週訂單：\n\n"
+                    for order in orders:
+                        reply_text += f"訂單編號：{order[0]}\n"
+                        reply_text += f"建立時間：{order[1].strftime('%Y-%m-%d')}\n"
+                        reply_text += f"狀態：{order[2]}\n"
+                        reply_text += f"訂購商品：\n{order[3]}\n"
+                        reply_text += "-------------------\n"
+                else:
+                    reply_text = "近兩週內沒有訂單記錄。"
+
+            elif user_message == '待確認訂單':
+                cursor.execute("""
+                    SELECT DISTINCT o.order_number, o.created_at,
+                           string_agg(
+                               p.name || ' x' || od.product_quantity || od.product_unit || 
+                               ' (' || od.order_status || ')' ||
+                               CASE 
+                                   WHEN od.remark IS NOT NULL AND od.remark != '' 
+                                   THEN E'\n客戶備註: ' || od.remark
+                                   ELSE ''
+                               END ||
+                               CASE 
+                                   WHEN od.supplier_note IS NOT NULL AND od.supplier_note != '' 
+                                   THEN E'\n供應商備註: ' || od.supplier_note
+                                   ELSE ''
+                               END,
+                               E'\n'
+                           ) as product_details
+                    FROM orders o
+                    JOIN order_details od ON o.id = od.order_id
+                    JOIN products p ON od.product_id = p.id
+                    WHERE o.customer_id = %s 
+                    AND NOT o.order_confirmed 
+                    AND NOT o.order_shipped
+                    GROUP BY o.id, o.order_number, o.created_at
+                    ORDER BY o.created_at DESC
+                    LIMIT 10
+                """, (customer[0],))
+                
+                orders = cursor.fetchall()
+                if orders:
+                    reply_text = f"您好 {customer[1]}，以下為最新的10筆待確認訂單：\n\n"
+                    for order in orders:
+                        reply_text += f"訂單編號：{order[0]}\n"
+                        reply_text += f"建立時間：{order[1].strftime('%Y-%m-%d')}\n"
+                        reply_text += f"訂購商品：\n{order[2]}\n"
+                        reply_text += "-------------------\n"
+                else:
+                    reply_text = "目前沒有待確認的訂單。"
+
+            elif user_message == '已確認訂單':
+                cursor.execute("""
+                    SELECT DISTINCT o.order_number, o.created_at,
+                           string_agg(
+                               p.name || ' x' || od.product_quantity || od.product_unit || 
+                               ' (' || od.order_status || ')' ||
+                               CASE 
+                                   WHEN od.remark IS NOT NULL AND od.remark != '' 
+                                   THEN E'\n客戶備註: ' || od.remark
+                                   ELSE ''
+                               END ||
+                               CASE 
+                                   WHEN od.supplier_note IS NOT NULL AND od.supplier_note != '' 
+                                   THEN E'\n供應商備註: ' || od.supplier_note
+                                   ELSE ''
+                               END,
+                               E'\n'
+                           ) as product_details
+                    FROM orders o
+                    JOIN order_details od ON o.id = od.order_id
+                    JOIN products p ON od.product_id = p.id
+                    WHERE o.customer_id = %s 
+                    AND o.order_confirmed 
+                    AND NOT o.order_shipped
+                    GROUP BY o.id, o.order_number, o.created_at
+                    ORDER BY o.created_at DESC
+                    LIMIT 10
+                """, (customer[0],))
+                
+                orders = cursor.fetchall()
+                if orders:
+                    reply_text = f"您好 {customer[1]}，以下為最新的10筆已確認訂單：\n\n"
+                    for order in orders:
+                        reply_text += f"訂單編號：{order[0]}\n"
+                        reply_text += f"建立時間：{order[1].strftime('%Y-%m-%d')}\n"
+                        reply_text += f"訂購商品：\n{order[2]}\n"
+                        reply_text += "-------------------\n"
+                else:
+                    reply_text = "目前沒有已確認的訂單。"
+
+            elif user_message == '已完成訂單':
+                cursor.execute("""
+                    SELECT DISTINCT o.order_number, o.created_at,
+                           string_agg(
+                               p.name || ' x' || od.product_quantity || od.product_unit || 
+                               ' (' || od.order_status || ')' ||
+                               CASE 
+                                   WHEN od.remark IS NOT NULL AND od.remark != '' 
+                                   THEN E'\n客戶備註: ' || od.remark
+                                   ELSE ''
+                               END ||
+                               CASE 
+                                   WHEN od.supplier_note IS NOT NULL AND od.supplier_note != '' 
+                                   THEN E'\n供應商備註: ' || od.supplier_note
+                                   ELSE ''
+                               END,
+                               E'\n'
+                           ) as product_details
+                    FROM orders o
+                    JOIN order_details od ON o.id = od.order_id
+                    JOIN products p ON od.product_id = p.id
+                    WHERE o.customer_id = %s 
+                    AND o.order_shipped
+                    GROUP BY o.id, o.order_number, o.created_at
+                    ORDER BY o.created_at DESC
+                    LIMIT 10
+                """, (customer[0],))
+                
+                orders = cursor.fetchall()
+                if orders:
+                    reply_text = f"您好 {customer[1]}，以下為最新的10筆已完成訂單：\n\n"
+                    for order in orders:
+                        reply_text += f"訂單編號：{order[0]}\n"
+                        reply_text += f"建立時間：{order[1].strftime('%Y-%m-%d')}\n"
+                        reply_text += f"訂購商品：\n{order[2]}\n"
+                        reply_text += "-------------------\n"
+                else:
+                    reply_text = "目前沒有已完成的訂單。"
             else:
-                reply_text = f"您好 {customer[1]}，很高興為您服務！\n請問需要什麼協助？"
+                reply_text = f"您好 {customer[1]}，請選擇您要查詢的訂單類型。"
         else:
             reply_text = "您尚未綁定帳號，請先完成帳號綁定。"
             
