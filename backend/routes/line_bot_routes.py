@@ -181,7 +181,7 @@ def bind_line_account(customer_id, line_user_id):
             SET line_account = %s,
                 updated_at = NOW()
             WHERE id = %s AND status = 'active'
-            RETURNING id
+            RETURNING id, company_name
         """, (line_user_id, customer_id))
         
         result = cursor.fetchone()
@@ -190,11 +190,27 @@ def bind_line_account(customer_id, line_user_id):
             
         conn.commit()
         
-        # 發送歡迎訊息
+        # 發送歡迎訊息和好友邀請
         try:
+            # 創建歡迎訊息模板
+            welcome_message = TemplateSendMessage(
+                alt_text='歡迎使用我們的服務',
+                template=ButtonsTemplate(
+                    title='帳號綁定成功！',
+                    text=f'歡迎使用我們的服務\n請點擊下方按鈕加入好友以開始使用',
+                    actions=[
+                        URIAction(
+                            label='加入好友',
+                            uri=f'https://line.me/R/ti/p/@{LINE_CONFIG["BOT_BASIC_ID"]}'
+                        )
+                    ]
+                )
+            )
+            
+            # 發送訊息
             line_bot_api.push_message(
                 line_user_id,
-                TextSendMessage(text="帳號綁定成功！歡迎使用我們的服務。")
+                welcome_message
             )
         except Exception as e:
             print(f"Error sending welcome message: {str(e)}")

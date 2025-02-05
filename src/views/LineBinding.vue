@@ -14,7 +14,12 @@
       </div>
       <div v-else class="success">
         <p>綁定成功！</p>
-        <p>您可以關閉此視窗了。</p>
+        <p>請點擊下方按鈕加入好友以開始使用完整功能</p>
+        <a :href="friendLink" class="add-friend-btn" target="_blank">
+          <img src="https://developers.line.biz/media/line-icon.png" alt="LINE" class="line-icon">
+          加入好友
+        </a>
+        <p class="close-hint">加入好友後可關閉此視窗</p>
       </div>
     </div>
   </div>
@@ -32,6 +37,7 @@ export default {
     const loading = ref(true)
     const error = ref('')
     const debugInfo = ref('')
+    const friendLink = ref('https://line.me/R/ti/p/@936quota')  // 使用您的 LINE 官方帳號 ID
 
     const bindLineAccount = async (customerId, lineUserId) => {
       try {
@@ -125,7 +131,8 @@ export default {
       loading,
       error,
       debugInfo,
-      retryBinding
+      retryBinding,
+      friendLink
     }
   }
 }
@@ -188,5 +195,35 @@ h1 {
 
 .retry-btn:hover {
   background-color: #45a049;
+}
+
+.add-friend-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+  padding: 12px 24px;
+  background-color: #00B900;
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.add-friend-btn:hover {
+  background-color: #009900;
+}
+
+.line-icon {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+}
+
+.close-hint {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #666;
 }
 </style> 
