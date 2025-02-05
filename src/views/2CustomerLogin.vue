@@ -1,20 +1,30 @@
 <!-- 客戶登入 -->
 <template>
   <body class="customer-mode">
-  <div class="login-container">
-    <div class="login-box">
-      <h2>客戶登入</h2>
-      <form @submit.prevent="handleLogin">
-        <div class="input-group">
-          <label>帳號：</label>
-          <input type="text" v-model="loginForm.account" required>
-        </div>
-        <div class="input-group">
-          <label>密碼：</label>
-          <input type="password" v-model="loginForm.password" required>
-        </div>
-        <button type="submit" class="login-button">登入</button>
-      </form>
+  <div class="container">
+    <div class="login-container">
+      <div class="login-box">
+        <h2>客戶登入</h2>
+        <form class="login-form" @submit.prevent="handleLogin">
+          <div class="form-group">
+            <label for="account">帳號</label>
+            <input 
+              type="text" 
+              id="account"
+              v-model="loginForm.account"
+              required>
+          </div>
+          <div class="form-group">
+            <label for="password">密碼</label>
+            <input 
+              type="password" 
+              id="password"
+              v-model="loginForm.password"
+              required>
+          </div>
+          <button type="submit" class="login-button">登入</button>
+        </form>
+      </div>
     </div>
   </div>
   </body>
@@ -94,8 +104,6 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 @import '../assets/styles/unified-base.css';
-
-/* 所有其他樣式已移至 unified-base */
 </style>
