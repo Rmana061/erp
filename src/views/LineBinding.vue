@@ -16,7 +16,6 @@
         <p>綁定成功！</p>
         <p>請點擊下方按鈕加入好友以開始使用完整功能</p>
         <a :href="friendLink" class="add-friend-btn" target="_blank">
-          <img src="https://developers.line.biz/media/line-icon.png" alt="LINE" class="line-icon">
           加入好友
         </a>
         <p class="close-hint">加入好友後可關閉此視窗</p>

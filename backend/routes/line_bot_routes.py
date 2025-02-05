@@ -166,14 +166,15 @@ def bind_line_account(customer_id, line_user_id):
             
         cursor = conn.cursor()
         
-        # 檢查是否已經綁定
+        # 檢查是否已經綁定到其他帳號（排除當前客戶）
         cursor.execute("""
-            SELECT id FROM customers 
-            WHERE line_account = %s AND id != %s
+            SELECT id, company_name FROM customers 
+            WHERE line_account = %s AND id != %s AND status = 'active'
         """, (line_user_id, customer_id))
         
-        if cursor.fetchone():
-            raise Exception("此LINE帳號已被其他客戶綁定")
+        existing_binding = cursor.fetchone()
+        if existing_binding:
+            raise Exception(f"此LINE帳號已被其他客戶 {existing_binding[1]} 綁定")
         
         # 更新客戶的LINE帳號
         cursor.execute("""
@@ -190,27 +191,12 @@ def bind_line_account(customer_id, line_user_id):
             
         conn.commit()
         
-        # 發送歡迎訊息和好友邀請
+        # 發送歡迎訊息
         try:
-            # 創建歡迎訊息模板
-            welcome_message = TemplateSendMessage(
-                alt_text='歡迎使用我們的服務',
-                template=ButtonsTemplate(
-                    title='帳號綁定成功！',
-                    text=f'歡迎使用我們的服務\n請點擊下方按鈕加入好友以開始使用',
-                    actions=[
-                        URIAction(
-                            label='加入好友',
-                            uri=f'https://line.me/R/ti/p/@{LINE_CONFIG["BOT_BASIC_ID"]}'
-                        )
-                    ]
-                )
-            )
-            
-            # 發送訊息
+            # 發送歡迎訊息
             line_bot_api.push_message(
                 line_user_id,
-                welcome_message
+                TextSendMessage(text=f'{result[1]} 您好！\n您的帳號已成功綁定。')
             )
         except Exception as e:
             print(f"Error sending welcome message: {str(e)}")

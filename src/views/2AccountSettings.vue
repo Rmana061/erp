@@ -27,7 +27,7 @@
           <div class="line-settings">
             <p><strong>LINE帳號綁定</strong></p>
             <div class="line-buttons">
-              <button @click="showBindQRCode" :disabled="customerInfo.line_account">綁定帳號</button>
+              <button @click="showBindQRCode" :disabled="!!customerInfo.line_account">綁定帳號</button>
               <button @click="unbindAccount" :disabled="!customerInfo.line_account">解除綁定</button>
             </div>
             <p v-if="customerInfo.line_account" class="line-status">
@@ -76,12 +76,12 @@ export default {
       customerInfo: {},
       showQRModal: false,
       qrCodeUrl: '',
+      checkBindingInterval: null
     };
   },
   methods: {
     async fetchCustomerInfo() {
       try {
-        // 首先检查是否有customer_id
         const customerId = localStorage.getItem('customer_id');
         if (!customerId) {
           this.$router.push('/customer-login');
@@ -89,9 +89,8 @@ export default {
         }
 
         const response = await axios.post(getApiUrl(API_PATHS.CUSTOMER_INFO), 
-          { customer_id: customerId },  // 添加 customer_id 到请求体
+          { customer_id: customerId },
           {
-            withCredentials: true,
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json'
@@ -101,6 +100,12 @@ export default {
 
         if (response.data.status === 'success') {
           this.customerInfo = response.data.data;
+          // 如果檢測到 line_account 有變化，關閉 QR code 視窗
+          if (this.customerInfo.line_account && this.showQRModal) {
+            this.closeQRModal();
+            // 顯示成功消息
+            alert('LINE帳號綁定成功！');
+          }
         } else {
           throw new Error(response.data.message || '獲取客戶資料失敗');
         }
@@ -111,45 +116,6 @@ export default {
         } else {
           alert('獲取客戶資料失敗：' + (error.response?.data?.message || error.message));
         }
-      }
-    },
-    async bindAccount() {
-      try {
-        const response = await axios.post(getApiUrl(API_PATHS.BIND_LINE), {}, {
-          withCredentials: true
-        });
-
-        if (response.data.status === 'success') {
-          window.location.href = response.data.data.url;
-        } else {
-          throw new Error(response.data.message || 'LINE帳號綁定失敗');
-        }
-      } catch (error) {
-        console.error('Error binding LINE account:', error);
-        alert('LINE帳號綁定失敗：' + (error.response?.data?.message || error.message));
-      }
-    },
-    async unbindAccount() {
-      if (!confirm('確定要解除LINE帳號綁定嗎？')) return;
-
-      try {
-        const customerId = localStorage.getItem('customer_id');
-        const response = await axios.post(getApiUrl(API_PATHS.UNBIND_LINE), 
-          { customer_id: customerId },  // 添加 customer_id 到请求体
-          {
-            withCredentials: true
-          }
-        );
-
-        if (response.data.status === 'success') {
-          alert('LINE帳號解除綁定成功');
-          this.fetchCustomerInfo();
-        } else {
-          throw new Error(response.data.message || '解除LINE帳號綁定失敗');
-        }
-      } catch (error) {
-        console.error('Error unbinding LINE account:', error);
-        alert('解除LINE帳號綁定失敗：' + (error.response?.data?.message || error.message));
       }
     },
     async showBindQRCode() {
@@ -170,6 +136,9 @@ export default {
             }
           });
           this.showQRModal = true;
+          
+          // 開始定期檢查綁定狀態
+          this.startBindingCheck();
         } else {
           throw new Error(response.data.message || '生成QR Code失敗');
         }
@@ -178,13 +147,56 @@ export default {
         alert('生成QR Code失敗：' + (err.response?.data?.message || err.message));
       }
     },
+    startBindingCheck() {
+      // 每3秒檢查一次綁定狀態
+      this.checkBindingInterval = setInterval(() => {
+        this.fetchCustomerInfo();
+      }, 3000);
+    },
     closeQRModal() {
       this.showQRModal = false;
       this.qrCodeUrl = '';
+      // 清除定時檢查
+      if (this.checkBindingInterval) {
+        clearInterval(this.checkBindingInterval);
+        this.checkBindingInterval = null;
+      }
+    },
+    async unbindAccount() {
+      if (!confirm('確定要解除LINE帳號綁定嗎？')) return;
+
+      try {
+        const customerId = localStorage.getItem('customer_id');
+        const response = await axios.post(getApiUrl(API_PATHS.UNBIND_LINE), 
+          { customer_id: customerId },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          }
+        );
+
+        if (response.data.status === 'success') {
+          alert('LINE帳號解除綁定成功');
+          await this.fetchCustomerInfo();  // 重新獲取客戶資料
+        } else {
+          throw new Error(response.data.message || '解除LINE帳號綁定失敗');
+        }
+      } catch (error) {
+        console.error('Error unbinding LINE account:', error);
+        alert('解除LINE帳號綁定失敗：' + (error.response?.data?.message || error.message));
+      }
     }
   },
   created() {
     this.fetchCustomerInfo();
+  },
+  beforeDestroy() {
+    // 組件銷毀前清除定時器
+    if (this.checkBindingInterval) {
+      clearInterval(this.checkBindingInterval);
+    }
   },
   mounted() {
     document.title = '客戶系統';
