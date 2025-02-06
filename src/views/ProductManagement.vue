@@ -17,7 +17,7 @@
       <div class="action-buttons">
         <button class="action-button" @click="navigateTo('AddProduct')">+ 新增產品</button>
         <button class="action-button" @click="batchDelete">- 批量刪除</button>
-        <button class="action-button" @click="exportReport">↓ 報表匯出</button>
+        <button class="action-button" @click="exportReport">↓ 產品匯出</button>
         <button class="action-button" @click="showLockDateDialog">🔒 鎖定日期</button>
         <div class="search-container">
           <input type="text" v-model="searchQuery" placeholder="搜尋產品..." class="search-input" />
@@ -244,27 +244,97 @@ export default {
         "最大訂購量",
         "單位",
         "出貨時間",
+        "產品圖片",
+        "產品DM",
         "建立時間",
         "更新時間",
       ];
 
-      const data = [
-        headers,
-        ...this.products.map(product => [
+      // 获取当前域名
+      const baseUrl = window.location.origin;
+
+      // 准备数据
+      const data = [headers];
+      const hyperlinks = {};
+
+      // 添加产品数据
+      this.products.forEach((product, index) => {
+        const rowIndex = index + 1;  // 跳过标题行
+        const row = [
           product.id,
           product.name,
           product.description,
           product.min_order_qty,
           product.max_order_qty,
-          product.unit,
+          product.product_unit,
           product.shipping_time,
+          product.image_url ? '點擊查看圖片' : '',
+          product.dm_url ? '點擊查看DM' : '',
           product.created_at,
           product.updated_at
-        ])
-      ];
+        ];
+        data.push(row);
 
+        // 添加图片链接
+        if (product.image_url) {
+          const imageCell = XLSX.utils.encode_cell({r: rowIndex, c: 7});
+          hyperlinks[imageCell] = {
+            l: {
+              Target: baseUrl + product.image_url,
+              Tooltip: "點擊查看產品圖片"
+            },
+            s: {
+              font: {
+                color: { rgb: "0563C1" },  // 蓝色
+                underline: true
+              }
+            }
+          };
+        }
+
+        // 添加DM链接
+        if (product.dm_url) {
+          const dmCell = XLSX.utils.encode_cell({r: rowIndex, c: 8});
+          hyperlinks[dmCell] = {
+            l: {
+              Target: baseUrl + product.dm_url,
+              Tooltip: "點擊查看DM"
+            },
+            s: {
+              font: {
+                color: { rgb: "0563C1" },  // 蓝色
+                underline: true
+              }
+            }
+          };
+        }
+      });
+
+      // 创建工作簿和工作表
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(data);
+
+      // 应用超链接和样式
+      Object.keys(hyperlinks).forEach(cell => {
+        if (!ws[cell]) ws[cell] = { v: ws[cell]?.v || '' };
+        ws[cell].l = hyperlinks[cell].l;
+        ws[cell].s = hyperlinks[cell].s;
+      });
+
+      // 设置列宽
+      ws['!cols'] = [
+        { wch: 10 }, // ID
+        { wch: 20 }, // 產品名稱
+        { wch: 30 }, // 產品描述
+        { wch: 15 }, // 最小訂購量
+        { wch: 15 }, // 最大訂購量
+        { wch: 10 }, // 單位
+        { wch: 15 }, // 出貨時間
+        { wch: 20 }, // 產品圖片
+        { wch: 20 }, // 產品DM
+        { wch: 20 }, // 建立時間
+        { wch: 20 }, // 更新時間
+      ];
 
       XLSX.utils.book_append_sheet(wb, ws, "產品清單");
       XLSX.writeFile(wb, "產品資料.xlsx");

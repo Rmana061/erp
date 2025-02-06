@@ -12,6 +12,7 @@
       <div class="content-wrapper">
         <div class="page-header">
           <h2>所有訂單</h2>
+          <button class="export-btn" @click="exportReport">↓ 訂單匯出</button>
         </div>
 
         <!-- 搜索欄位 -->
@@ -231,6 +232,7 @@ import { adminMixin } from '../mixins/adminMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
 import { API_BASE_URL, API_PATHS, getApiUrl } from '../config/api';
+import * as XLSX from 'xlsx';
 
 export default {
   name: 'AllOrders',
@@ -488,9 +490,62 @@ export default {
       this.showConfirmModal = false;
       this.selectedOrder = null;
     },
-    exportOrders() {
-      // TODO: 實現匯出功能
-      alert('匯出功能尚未實現');
+    exportReport() {
+      const headers = [
+        "建立日期",
+        "客戶",
+        "訂單編號",
+        "品項",
+        "數量",
+        "單位",
+        "出貨日期",
+        "備註",
+        "供應商備註",
+        "狀態"
+      ];
+
+      // 準備數據
+      const data = [headers];
+      
+      // 將訂單數據轉換為扁平結構
+      this.groupedOrders.forEach(order => {
+        order.items.forEach(item => {
+          const row = [
+            this.formatDateTime(order.date),
+            order.customer,
+            order.orderNumber,
+            item.item,
+            item.quantity,
+            item.unit,
+            this.formatDate(item.shipping_date),
+            item.remark || '-',
+            item.supplier_note || '-',
+            item.status
+          ];
+          data.push(row);
+        });
+      });
+
+      // 創建工作簿和工作表
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(data);
+
+      // 設置列寬
+      ws['!cols'] = [
+        { wch: 20 }, // 建立日期
+        { wch: 15 }, // 客戶
+        { wch: 15 }, // 訂單編號
+        { wch: 20 }, // 品項
+        { wch: 10 }, // 數量
+        { wch: 10 }, // 單位
+        { wch: 15 }, // 出貨日期
+        { wch: 20 }, // 備註
+        { wch: 20 }, // 供應商備註
+        { wch: 10 }  // 狀態
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, "訂單清單");
+      XLSX.writeFile(wb, "訂單資料.xlsx");
     },
     resetFilters() {
       this.searchFilters = {
