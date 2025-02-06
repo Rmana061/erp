@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, send_from_directory
-from backend.config.database import get_db_connection
+from backend.config.database import get_db_connection, release_db_connection
 from backend.utils.file_handlers import (
     create_product_folder, 
     allowed_image_file, 
@@ -13,6 +13,7 @@ product_bp = Blueprint('product', __name__)
 
 @product_bp.route('/products/list', methods=['POST'])
 def get_products():
+    conn = None
     try:
         data = request.json
         type = data.get('type', 'customer')
@@ -71,7 +72,6 @@ def get_products():
         products = [dict(zip(columns, row)) for row in cursor.fetchall()]
         
         cursor.close()
-        conn.close()
         
         return jsonify({
             "status": "success",
@@ -83,9 +83,13 @@ def get_products():
             "status": "error",
             "message": str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @product_bp.route('/products/add', methods=['POST'])
 def add_product():
+    conn = None
     try:
         data = request.json
         
@@ -135,7 +139,6 @@ def add_product():
         new_id = cursor.fetchone()[0]
         conn.commit()
         cursor.close()
-        conn.close()
         
         return jsonify({
             'status': 'success',
@@ -149,14 +152,17 @@ def add_product():
             conn.rollback()
             if 'cursor' in locals():
                 cursor.close()
-            conn.close()
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @product_bp.route('/products/update/<int:product_id>', methods=['POST'])
 def update_product(product_id):
+    conn = None
     try:
         data = request.json
         
@@ -175,7 +181,6 @@ def update_product(product_id):
         cursor.execute("SELECT id FROM products WHERE id = %s", (product_id,))
         if cursor.fetchone() is None:
             cursor.close()
-            conn.close()
             return jsonify({'error': 'Product not found'}), 404
             
         required_fields = ['name', 'description', 'min_order_qty', 'max_order_qty', 'product_unit']
@@ -211,7 +216,6 @@ def update_product(product_id):
         
         conn.commit()
         cursor.close()
-        conn.close()
         
         return jsonify({
             'status': 'success',
@@ -225,11 +229,14 @@ def update_product(product_id):
             conn.rollback()
             if 'cursor' in locals():
                 cursor.close()
-            conn.close()
         return jsonify({'error': str(e)}), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @product_bp.route('/products/delete/<int:product_id>', methods=['POST'])
 def delete_product(product_id):
+    conn = None
     try:
         conn = get_db_connection()
         if conn is None:
@@ -245,12 +252,10 @@ def delete_product(product_id):
             
         if cursor.rowcount == 0:
             cursor.close()
-            conn.close()
             return jsonify({'error': 'Product not found'}), 404
             
         conn.commit()
         cursor.close()
-        conn.close()
         
         return jsonify({'message': f'Product {product_id} status updated to inactive'})
     except Exception as e:
@@ -259,11 +264,14 @@ def delete_product(product_id):
             conn.rollback()
             if 'cursor' in locals():
                 cursor.close()
-            conn.close()
         return jsonify({'error': str(e)}), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @product_bp.route('/upload/image', methods=['POST'])
 def upload_image():
+    conn = None
     try:
         if 'file' not in request.files or 'productName' not in request.form:
             return jsonify({
@@ -307,9 +315,13 @@ def upload_image():
             'status': 'error',
             'message': str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @product_bp.route('/upload/document', methods=['POST'])
 def upload_document():
+    conn = None
     try:
         if 'file' not in request.files or 'productName' not in request.form:
             return jsonify({
@@ -353,13 +365,28 @@ def upload_document():
             'status': 'error',
             'message': str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @product_bp.route('/uploads/<path:filename>', methods=['POST'])
 def uploaded_file(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+    conn = None
+    try:
+        return send_from_directory(UPLOAD_FOLDER, filename)
+    except Exception as e:
+        print(f"Error in uploaded_file: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @product_bp.route('/products/viewable', methods=['POST'])
 def get_viewable_products():
+    conn = None
     try:
         data = request.json
         product_ids = data.get('ids')
@@ -388,8 +415,7 @@ def get_viewable_products():
         products = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
         cursor.close()
-        conn.close()
-
+        
         return jsonify({
             'status': 'success',
             'data': products
@@ -401,9 +427,13 @@ def get_viewable_products():
             'status': 'error',
             'message': str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @product_bp.route('/products/locked-dates', methods=['POST'])
 def get_locked_dates():
+    conn = None
     try:
         conn = get_db_connection()
         if conn is None:
@@ -420,7 +450,6 @@ def get_locked_dates():
         dates = [dict(zip(columns, row)) for row in cursor.fetchall()]
         
         cursor.close()
-        conn.close()
         
         return jsonify({
             "status": "success",
@@ -433,9 +462,13 @@ def get_locked_dates():
             "status": "error",
             "message": str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @product_bp.route('/products/lock-date', methods=['POST'])
 def lock_date():
+    conn = None
     try:
         data = request.json
         if not data.get('type') == 'admin':
@@ -478,7 +511,6 @@ def lock_date():
         new_id = cursor.fetchone()[0]
         conn.commit()
         cursor.close()
-        conn.close()
         
         return jsonify({
             'status': 'success',
@@ -492,14 +524,17 @@ def lock_date():
             conn.rollback()
             if 'cursor' in locals():
                 cursor.close()
-            conn.close()
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @product_bp.route('/products/unlock-date', methods=['POST'])
 def unlock_date():
+    conn = None
     try:
         data = request.json
         if not data.get('type') == 'admin':
@@ -535,7 +570,6 @@ def unlock_date():
         
         conn.commit()
         cursor.close()
-        conn.close()
         
         return jsonify({
             'status': 'success',
@@ -548,8 +582,10 @@ def unlock_date():
             conn.rollback()
             if 'cursor' in locals():
                 cursor.close()
-            conn.close()
         return jsonify({
             'status': 'error',
             'message': str(e)
-        }), 500 
+        }), 500
+    finally:
+        if conn:
+            release_db_connection(conn) 

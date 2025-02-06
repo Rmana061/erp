@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, session
-from backend.config.database import get_db_connection
+from backend.config.database import get_db_connection, release_db_connection
 from backend.utils.password_utils import hash_password
 import datetime
 import psycopg2.extras
@@ -8,6 +8,7 @@ admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/admin/list', methods=['POST'])
 def get_admin_list():
+    conn = None
     try:
         conn = get_db_connection()
         if conn is None:
@@ -34,7 +35,6 @@ def get_admin_list():
             admins.append(admin_dict)
         
         cursor.close()
-        conn.close()
         
         return jsonify({
             "status": "success",
@@ -42,17 +42,17 @@ def get_admin_list():
         })
     except Exception as e:
         print(f"Error in get_admin_list: {str(e)}")
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
         return jsonify({
             "status": "error",
             "message": f"獲取管理員列表失敗: {str(e)}"
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @admin_bp.route('/admin/add', methods=['POST'])
 def add_admin():
+    conn = None
     try:
         data = request.json
         conn = get_db_connection()
@@ -113,7 +113,6 @@ def add_admin():
         conn.commit()
         
         cursor.close()
-        conn.close()
         
         return jsonify({
             "status": "success",
@@ -125,15 +124,17 @@ def add_admin():
         print(f"Error in add_admin: {str(e)}")
         if 'cursor' in locals():
             cursor.close()
-        if 'conn' in locals():
-            conn.close()
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @admin_bp.route('/admin/update', methods=['POST'])
 def update_admin():
+    conn = None
     try:
         data = request.get_json()
         admin_id = data.get('id')
@@ -178,14 +179,7 @@ def update_admin():
         updated = cursor.fetchone()
         conn.commit()
         cursor.close()
-        conn.close()
-
-        if not updated:
-            return jsonify({
-                "status": "error",
-                "message": "找不到要更新的管理員"
-            }), 404
-
+        
         return jsonify({
             "status": "success",
             "message": "管理員資料更新成功"
@@ -195,15 +189,17 @@ def update_admin():
         print(f"Error in update_admin: {str(e)}")
         if 'cursor' in locals():
             cursor.close()
-        if 'conn' in locals():
-            conn.close()
         return jsonify({
             "status": "error",
             "message": f"更新管理員資料失敗: {str(e)}"
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @admin_bp.route('/admin/delete', methods=['POST'])
 def delete_admin():
+    conn = None
     try:
         data = request.json
         if 'id' not in data:
@@ -238,7 +234,6 @@ def delete_admin():
         
         conn.commit()
         cursor.close()
-        conn.close()
         
         return jsonify({
             "status": "success",
@@ -249,15 +244,17 @@ def delete_admin():
         print(f"Error in delete_admin: {str(e)}")
         if 'cursor' in locals():
             cursor.close()
-        if 'conn' in locals():
-            conn.close()
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @admin_bp.route('/admin/info', methods=['POST'])
 def get_admin_info():
+    conn = None
     try:
         admin_id = session.get('admin_id')
         if not admin_id:
@@ -274,11 +271,7 @@ def get_admin_info():
         
         admin_data = cursor.fetchone()
         cursor.close()
-        conn.close()
-
-        if not admin_data:
-            return jsonify({"status": "error", "message": "找不到管理員資訊"}), 404
-
+        
         return jsonify({
             "status": "success",
             "data": {
@@ -293,9 +286,13 @@ def get_admin_info():
     except Exception as e:
         print(f"Error in get_admin_info: {str(e)}")
         return jsonify({"status": "error", "message": "獲取管理員資訊失敗"}), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @admin_bp.route('/admin/info/<int:admin_id>', methods=['POST'])
 def get_admin_detail(admin_id):
+    conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -308,11 +305,7 @@ def get_admin_detail(admin_id):
         
         admin_data = cursor.fetchone()
         cursor.close()
-        conn.close()
-
-        if not admin_data:
-            return jsonify({"status": "error", "message": "找不到管理員資訊"}), 404
-
+        
         return jsonify({
             "status": "success",
             "data": {
@@ -326,4 +319,7 @@ def get_admin_detail(admin_id):
 
     except Exception as e:
         print(f"Error in get_admin_detail: {str(e)}")
-        return jsonify({"status": "error", "message": "獲取管理員資訊失敗"}), 500 
+        return jsonify({"status": "error", "message": "獲取管理員資訊失敗"}), 500
+    finally:
+        if conn:
+            release_db_connection(conn) 

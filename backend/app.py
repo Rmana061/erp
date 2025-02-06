@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 # Session 配置
 app.secret_key = 'your-super-secret-key-here'  # 使用固定的密钥
-app.config['SESSION_COOKIE_SECURE'] = False  # 暂时关闭 HTTPS 要求
+app.config['SESSION_COOKIE_SECURE'] = True  # 暂时关闭 HTTPS 要求
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # 修改为 Lax
 app.config['PERMANENT_SESSION_LIFETIME'] = 1800  # session 过期时间设为 30 分钟
@@ -28,7 +28,7 @@ app.config['SESSION_COOKIE_PATH'] = '/'  # Cookie路径
 CORS(app, resources={
     r"/*": {
         "origins": [
-            "http://localhost:5173",
+            # "http://localhost:5173",
             "https://732b-111-249-219-202.ngrok-free.app",
             "https://9c62-111-249-219-202.ngrok-free.app"
         ],
@@ -45,7 +45,7 @@ CORS(app, resources={
 def after_request(response):
     origin = request.headers.get('Origin')
     allowed_origins = [
-        "http://localhost:5173",
+        # "http://localhost:5173",
         "https://732b-111-249-219-202.ngrok-free.app",
         "https://9c62-111-249-219-202.ngrok-free.app"
     ]

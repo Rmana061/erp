@@ -1,11 +1,12 @@
 from flask import Blueprint, request, jsonify
-from backend.config.database import get_db_connection
+from backend.config.database import get_db_connection, release_db_connection
 from datetime import datetime
 
 order_bp = Blueprint('order', __name__, url_prefix='/api')
 
 @order_bp.route('/orders/create', methods=['POST'])
 def create_order():
+    conn = None
     try:
         data = request.json
         print("Received order data:", data)
@@ -83,17 +84,20 @@ def create_order():
         
         finally:
             cursor.close()
-            conn.close()
-        
+            
     except Exception as e:
         print(f"Error in create_order: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @order_bp.route('/orders/list', methods=['POST'])
 def get_orders():
+    conn = None
     try:
         data = request.json
         customer_id = data.get('customer_id')
@@ -167,11 +171,9 @@ def get_orders():
             })
         
         cursor.close()
-        conn.close()
         
         # 将字典转换为列表并返回
         orders_list = list(orders.values())
-        print("Returning orders:", orders_list)  # 添加调试日志
         
         return jsonify({
             'status': 'success',
@@ -179,15 +181,14 @@ def get_orders():
         })
         
     except Exception as e:
-        print(f"Error in get_orders: {str(e)}")  # 添加错误日志
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
+        print(f"Error in get_orders: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @order_bp.route('/orders/cancel', methods=['POST'])
 def cancel_order():

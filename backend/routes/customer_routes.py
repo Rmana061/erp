@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, session
-from backend.config.database import get_db_connection
+from backend.config.database import get_db_connection, release_db_connection
 from backend.utils.password_utils import hash_password
 import datetime
 
@@ -7,6 +7,7 @@ customer_bp = Blueprint('customer', __name__)
 
 @customer_bp.route('/customer/list', methods=['POST'])
 def get_customer_list():
+    conn = None
     try:
         conn = get_db_connection()
         if conn is None:
@@ -37,7 +38,6 @@ def get_customer_list():
                 del customer['contact_name']
         
         cursor.close()
-        conn.close()
         
         return jsonify({
             "status": "success",
@@ -49,9 +49,13 @@ def get_customer_list():
             "status": "error",
             "message": str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @customer_bp.route('/customer/add', methods=['POST'])
 def add_customer():
+    conn = None
     try:
         data = request.json
         conn = get_db_connection()
@@ -116,7 +120,6 @@ def add_customer():
         conn.commit()
         
         cursor.close()
-        conn.close()
         
         return jsonify({
             "status": "success",
@@ -134,9 +137,13 @@ def add_customer():
             "status": "error",
             "message": str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @customer_bp.route('/customer/update', methods=['PUT'])
 def update_customer():
+    conn = None
     try:
         data = request.json
         if 'id' not in data:
@@ -233,7 +240,6 @@ def update_customer():
         conn.commit()
         
         cursor.close()
-        conn.close()
         
         return jsonify({
             "status": "success",
@@ -250,9 +256,13 @@ def update_customer():
             "status": "error",
             "message": str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @customer_bp.route('/customer/delete', methods=['POST'])
 def delete_customer():
+    conn = None
     try:
         data = request.json
         if 'id' not in data:
@@ -287,7 +297,6 @@ def delete_customer():
         
         conn.commit()
         cursor.close()
-        conn.close()
         
         return jsonify({
             "status": "success",
@@ -304,9 +313,13 @@ def delete_customer():
             "status": "error",
             "message": str(e)
         }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @customer_bp.route('/customer/info', methods=['POST'])
 def get_customer_info():
+    conn = None
     try:
         # 从 session 中获取用户 ID
         customer_id = session.get('customer_id')
@@ -354,8 +367,7 @@ def get_customer_info():
         customer_data = dict(zip(columns, result))
 
         cursor.close()
-        conn.close()
-
+        
         return jsonify({
             "status": "success",
             "data": customer_data
@@ -370,10 +382,14 @@ def get_customer_info():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500 
+        }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @customer_bp.route('/customer/<int:customer_id>/info', methods=['POST'])
 def get_customer_detail(customer_id):
+    conn = None
     try:
         conn = get_db_connection()
         if conn is None:
@@ -407,8 +423,7 @@ def get_customer_detail(customer_id):
             del customer_data['contact_name']
 
         cursor.close()
-        conn.close()
-
+        
         return jsonify({
             "status": "success",
             "data": customer_data
@@ -423,10 +438,14 @@ def get_customer_detail(customer_id):
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500 
+        }), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @customer_bp.route('/line/unbind', methods=['POST'])
 def unbind_line():
+    conn = None
     try:
         # 尝试从 cookie 获取 customer_id
         customer_id = request.cookies.get('customer_id')
@@ -468,8 +487,7 @@ def unbind_line():
 
         conn.commit()
         cursor.close()
-        conn.close()
-
+        
         return jsonify({
             "status": "success",
             "message": "LINE帳號解除綁定成功"
@@ -484,4 +502,7 @@ def unbind_line():
         return jsonify({
             "status": "error",
             "message": str(e)
-        }), 500 
+        }), 500
+    finally:
+        if conn:
+            release_db_connection(conn) 

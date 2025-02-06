@@ -1,11 +1,12 @@
 from flask import Blueprint, request, jsonify, session
-from backend.config.database import get_db_connection
+from backend.config.database import get_db_connection, release_db_connection
 from backend.utils.password_utils import verify_password
 
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
+    conn = None
     try:
         data = request.json
         conn = get_db_connection()
@@ -29,7 +30,6 @@ def login():
             return jsonify({"error": "帳號或密碼錯誤"}), 401
             
         cursor.close()
-        conn.close()
         
         response = jsonify({
             "message": "Login successful",
@@ -40,14 +40,14 @@ def login():
         
     except Exception as e:
         print(f"Error in login: {str(e)}")
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
         return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @auth_bp.route('/customer-login', methods=['POST'])
 def customer_login():
+    conn = None
     try:
         data = request.json
         conn = get_db_connection()
@@ -71,7 +71,6 @@ def customer_login():
             return jsonify({"error": "帳號或密碼錯誤"}), 401
             
         cursor.close()
-        conn.close()
         
         # 设置 session
         session.clear()  # 清除旧的session
@@ -94,14 +93,14 @@ def customer_login():
         
     except Exception as e:
         print(f"Error in customer_login: {str(e)}")
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
         return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            release_db_connection(conn)
 
 @auth_bp.route('/admin-login', methods=['POST'])
 def admin_login():
+    conn = None
     try:
         data = request.json
         if not data or 'admin_account' not in data or 'admin_password' not in data:
@@ -124,7 +123,6 @@ def admin_login():
         
         if admin is None:
             cursor.close()
-            conn.close()
             return jsonify({
                 "status": "error",
                 "message": "帳號或密碼錯誤"
@@ -143,14 +141,12 @@ def admin_login():
         # 验证密码
         if not verify_password(data['admin_password'], admin_data['admin_password']):
             cursor.close()
-            conn.close()
             return jsonify({
                 "status": "error",
                 "message": "帳號或密碼錯誤"
             }), 401
 
         cursor.close()
-        conn.close()
 
         # 设置 session
         session['admin_id'] = admin_data['id']
@@ -171,11 +167,10 @@ def admin_login():
 
     except Exception as e:
         print(f"Error in admin_login: {str(e)}")
-        if 'cursor' in locals():
-            cursor.close()
-        if 'conn' in locals():
-            conn.close()
         return jsonify({
             "status": "error",
             "message": "登入失敗，請稍後再試"
-        }), 500 
+        }), 500
+    finally:
+        if conn:
+            release_db_connection(conn) 

@@ -6,9 +6,8 @@ from linebot.models import (
     TemplateSendMessage, ButtonsTemplate, PostbackTemplateAction,
     URIAction
 )
-from backend.config.line_bot_config import LINE_CONFIG
-from backend.config.database import get_db_connection
-import json
+from backend.config.config import LINE_CONFIG
+from backend.config.database import get_db_connection, release_db_connection
 from urllib.parse import quote
 import requests
 from flask_cors import CORS
@@ -156,6 +155,7 @@ def bind():
         }), 500
 
 def bind_line_account(customer_id, line_user_id):
+    conn = None
     try:
         conn = get_db_connection()
         if conn is None:
@@ -204,20 +204,23 @@ def bind_line_account(customer_id, line_user_id):
         })
         
     except Exception as e:
+        if conn:
+            conn.rollback()
         raise Exception(f"綁定失敗: {str(e)}")
         
     finally:
-        if 'cursor' in locals():
+        if cursor:
             cursor.close()
-        if 'conn' in locals():
-            conn.close()
+        if conn:
+            release_db_connection(conn)
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    user_message = event.message.text
-    user_id = event.source.user_id
-    
+    conn = None
     try:
+        user_message = event.message.text
+        user_id = event.source.user_id
+        
         conn = get_db_connection()
         cursor = conn.cursor()
         
@@ -410,7 +413,7 @@ def handle_message(event):
             TextSendMessage(text="抱歉，系統發生錯誤，請稍後再試。")
         )
     finally:
-        if 'cursor' in locals():
+        if cursor:
             cursor.close()
-        if 'conn' in locals():
-            conn.close() 
+        if conn:
+            release_db_connection(conn) 
