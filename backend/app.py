@@ -29,8 +29,8 @@ CORS(app, resources={
     r"/*": {
         "origins": [
             "http://localhost:5173",
-            "https://dba1-111-249-201-90.ngrok-free.app",
-            "https://0406-111-249-201-90.ngrok-free.app"
+            "https://732b-111-249-219-202.ngrok-free.app",
+            "https://9c62-111-249-219-202.ngrok-free.app"
         ],
         "supports_credentials": True,
         "allow_headers": ["Content-Type", "Authorization", "Accept", "X-Line-Signature"],
