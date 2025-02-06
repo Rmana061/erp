@@ -13,92 +13,94 @@
       </div>
       <div class="content-wrapper">
         <div class="scrollable-content">
-      <h2>產品管理</h2>
-      <div class="action-buttons">
-        <button class="action-button" @click="navigateTo('AddProduct')">+ 新增產品</button>
-        <button class="action-button" @click="batchDelete">- 批量刪除</button>
-        <button class="action-button" @click="exportReport">↓ 產品匯出</button>
-        <button class="action-button" @click="showLockDateDialog">🔒 鎖定日期</button>
-        <div class="search-container">
-          <input type="text" v-model="searchQuery" placeholder="搜尋產品..." class="search-input" />
-          <select v-model="searchType" class="search-select">
-            <option value="name">產品名稱</option>
-            <option value="description">產品描述</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- 锁定日期对话框 -->
-      <div v-if="showLockDateModal" class="modal">
-        <div class="modal-content">
-          <h3>鎖定日期管理</h3>
-          <div class="lock-date-form">
-            <input type="date" v-model="newLockDate" :min="today">
-            <button @click="lockDate">鎖定</button>
+          <div class="page-header">
+            <h2>產品管理</h2>
+            
           </div>
-          <div class="locked-dates-list">
-            <h4>已鎖定日期列表</h4>
-            <ul>
-              <li v-for="date in lockedDates" :key="date.id">
-                {{ formatDate(date.locked_date) }}
-                <button @click="unlockDate(date.id)" class="unlock-button">解鎖</button>
-              </li>
-            </ul>
-          </div>
-          <button class="close-button" @click="closeLockDateDialog">&times;</button>
-        </div>
-      </div>
-
-      <div class="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th><input type="checkbox" @click="selectAll" :checked="allSelected"></th>
-              <th>產品圖片</th>
-              <th>產品名稱</th>
-              <th>產品描述</th>
-              <th>最小訂購量</th>
-              <th>最大訂購量</th>
-              <th>單位</th>
-              <th>出貨時間</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="product in filteredProducts" :key="product.id">
-              <td><input type="checkbox" v-model="product.selected"></td>
-              <td>
-        <img 
-          :src="product.image_url" 
-                  class="product-thumbnail"
-          @click="showLargeImage(product.image_url)"
-                  alt="產品圖片"
-                >
-              </td>
-              <td>{{ product.name }}</td>
-              <td>{{ product.description }}</td>
-              <td>{{ product.min_order_qty }}</td>
-              <td>{{ product.max_order_qty }}</td>
-              <td>{{ product.product_unit }}</td>
-              <td>{{ product.shipping_time }}天</td>
-              <td>
-                <button class="table-button edit" @click="editProduct(product)">編輯</button>
-                <button class="table-button delete" @click="deleteProduct(product)">刪除</button>
-            <a v-if="product.dm_url" 
-               :href="product.dm_url" 
-               target="_blank" 
-                   class="table-button">查看 DM</a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+          <div class="action-buttons">
+            <button class="action-button" @click="navigateTo('AddProduct')">+ 新增產品</button>
+            <button class="action-button" @click="batchDelete">- 批量刪除</button>
+            <button class="export-btn" @click="exportReport">↓ 產品匯出</button>
+            <button class="action-button" @click="showLockDateDialog">🔒 鎖定日期</button>
+            <div class="search-container">
+              <input type="text" v-model="searchQuery" placeholder="搜尋產品..." class="search-input" />
+              <select v-model="searchType" class="search-select">
+                <option value="name">產品名稱</option>
+                <option value="description">產品描述</option>
+              </select>
+            </div>
           </div>
 
-        <div class="pagination">
-          <button @click="changePage(-1)" :disabled="currentPage === 1">上一頁</button>
-          <span>{{ currentPage }} / {{ totalPages }}</span>
-          <button @click="changePage(1)" :disabled="currentPage === totalPages">下一頁</button>
-        </div>
+          <!-- 锁定日期对话框 -->
+          <div v-if="showLockDateModal" class="modal">
+            <div class="modal-content">
+              <h3>鎖定日期管理</h3>
+              <div class="lock-date-form">
+                <input type="date" v-model="newLockDate" :min="today">
+                <button @click="lockDate">鎖定</button>
+              </div>
+              <div class="locked-dates-list">
+                <h4>已鎖定日期列表</h4>
+                <ul>
+                  <li v-for="date in lockedDates" :key="date.id">
+                    {{ formatDate(date.locked_date) }}
+                    <button @click="unlockDate(date.id)" class="unlock-button">解鎖</button>
+                  </li>
+                </ul>
+              </div>
+              <button class="close-button" @click="closeLockDateDialog">&times;</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th><input type="checkbox" @click="selectAll" :checked="allSelected"></th>
+                  <th>產品圖片</th>
+                  <th>產品名稱</th>
+                  <th>產品描述</th>
+                  <th>最小訂購量</th>
+                  <th>最大訂購量</th>
+                  <th>單位</th>
+                  <th>出貨時間</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="product in filteredProducts" :key="product.id">
+                  <td><input type="checkbox" v-model="product.selected"></td>
+                  <td>
+            <img 
+              :src="product.image_url" 
+                      class="product-thumbnail"
+              @click="showLargeImage(product.image_url)"
+                      alt="產品圖片"
+                    >
+                  </td>
+                  <td>{{ product.name }}</td>
+                  <td>{{ product.description }}</td>
+                  <td>{{ product.min_order_qty }}</td>
+                  <td>{{ product.max_order_qty }}</td>
+                  <td>{{ product.product_unit }}</td>
+                  <td>{{ product.shipping_time }}天</td>
+                  <td>
+                    <button class="table-button edit" @click="editProduct(product)">編輯</button>
+                    <button class="table-button delete" @click="deleteProduct(product)">刪除</button>
+                    <button v-if="product.dm_url" 
+                            @click="window.open(product.dm_url, '_blank')"
+                            class="table-button">查看 DM</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination">
+            <button @click="changePage(-1)" :disabled="currentPage === 1">上一頁</button>
+            <span>{{ currentPage }} / {{ totalPages }}</span>
+            <button @click="changePage(1)" :disabled="currentPage === totalPages">下一頁</button>
+          </div>
         </div>
       </div>
     </div>

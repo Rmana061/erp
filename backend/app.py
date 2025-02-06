@@ -28,6 +28,7 @@ app.config['SESSION_COOKIE_PATH'] = '/'  # Cookie路径
 CORS(app, resources={
     r"/*": {
         "origins": [
+            "http://localhost:5173",
             "https://732b-111-249-219-202.ngrok-free.app",
             "https://9c62-111-249-219-202.ngrok-free.app"
         ],
@@ -44,6 +45,7 @@ CORS(app, resources={
 def after_request(response):
     origin = request.headers.get('Origin')
     allowed_origins = [
+        "http://localhost:5173",
         "https://732b-111-249-219-202.ngrok-free.app",
         "https://9c62-111-249-219-202.ngrok-free.app"
     ]

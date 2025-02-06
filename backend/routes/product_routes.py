@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, send_from_directory
-from backend.config.database import get_db_connection, release_db_connection
+from backend.config.database import get_db_connection
 from backend.utils.file_handlers import (
     create_product_folder, 
     allowed_image_file, 
@@ -13,83 +13,72 @@ product_bp = Blueprint('product', __name__)
 
 @product_bp.route('/products/list', methods=['POST'])
 def get_products():
-    conn = None
     try:
         data = request.json
         type = data.get('type', 'customer')
         customer_id = data.get('customer_id')
 
-        conn = get_db_connection()
-        if conn is None:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+
+            if type == 'admin':
+                cursor.execute("""
+                    SELECT id, name, description, image_url, dm_url, 
+                           min_order_qty, max_order_qty, product_unit, 
+                           shipping_time, special_date, created_at, updated_at 
+                    FROM products
+                    WHERE status = 'active'
+                """)
+            else:
+                if not customer_id:
+                    return jsonify({
+                        "status": "error",
+                        "message": "Missing customer_id"
+                    }), 400
+
+                # 先獲取客戶可見的產品列表
+                cursor.execute("""
+                    SELECT viewable_products
+                    FROM customers
+                    WHERE id = %s AND status = 'active'
+                """, (customer_id,))
+                
+                result = cursor.fetchone()
+                if not result or not result[0]:
+                    return jsonify({
+                        "status": "error",
+                        "message": "No viewable products found for this customer"
+                    }), 404
+
+                product_ids = result[0].split(',')
+                placeholders = ','.join(['%s'] * len(product_ids))
+                
+                cursor.execute(f"""
+                    SELECT id, name, description, image_url, dm_url, 
+                           min_order_qty, max_order_qty, product_unit, 
+                           shipping_time, special_date, created_at, updated_at 
+                    FROM products
+                    WHERE status = 'active' AND id IN ({placeholders})
+                """, tuple(product_ids))
+
+            columns = [desc[0] for desc in cursor.description]
+            products = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+            cursor.close()
+            
             return jsonify({
-                "status": "error",
-                "message": "Database connection failed"
-            }), 500
-            
-        cursor = conn.cursor()
-
-        if type == 'admin':
-            cursor.execute("""
-                SELECT id, name, description, image_url, dm_url, 
-                       min_order_qty, max_order_qty, product_unit, 
-                       shipping_time, special_date, created_at, updated_at 
-                FROM products
-                WHERE status = 'active'
-            """)
-        else:
-            if not customer_id:
-                return jsonify({
-                    "status": "error",
-                    "message": "Missing customer_id"
-                }), 400
-
-            # 先獲取客戶可見的產品列表
-            cursor.execute("""
-                SELECT viewable_products
-                FROM customers
-                WHERE id = %s AND status = 'active'
-            """, (customer_id,))
-            
-            result = cursor.fetchone()
-            if not result or not result[0]:
-                return jsonify({
-                    "status": "error",
-                    "message": "No viewable products found for this customer"
-                }), 404
-
-            product_ids = result[0].split(',')
-            placeholders = ','.join(['%s'] * len(product_ids))
-            
-            cursor.execute(f"""
-                SELECT id, name, description, image_url, dm_url, 
-                       min_order_qty, max_order_qty, product_unit, 
-                       shipping_time, special_date, created_at, updated_at 
-                FROM products
-                WHERE status = 'active' AND id IN ({placeholders})
-            """, tuple(product_ids))
-        
-        columns = [desc[0] for desc in cursor.description]
-        products = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        
-        cursor.close()
-        
-        return jsonify({
-            "status": "success",
-            "data": products
-        })
+                "status": "success",
+                "data": products
+            })
     except Exception as e:
         print(f"Error in get_products: {str(e)}")
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
-    finally:
-        if conn:
-            release_db_connection(conn)
 
 @product_bp.route('/products/add', methods=['POST'])
 def add_product():
-    conn = None
     try:
         data = request.json
         
@@ -99,66 +88,56 @@ def add_product():
                 'message': 'Unauthorized access'
             }), 403
 
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
             
-        cursor = conn.cursor()
-        
-        required_fields = ['name', 'description', 'min_order_qty', 'max_order_qty', 'product_unit']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({
-                    'status': 'error',
-                    'message': f'Missing required field: {field}'
-                }), 400
-        
-        cursor.execute("""
-            INSERT INTO products (
-                name, description, image_url, dm_url,
-                min_order_qty, max_order_qty, product_unit,
-                shipping_time, special_date, status,
-                created_at, updated_at
-            ) VALUES (
-                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-            ) RETURNING id
-        """, (
-            data.get('name'),
-            data.get('description'),
-            data.get('image_url'),
-            data.get('dm_url'),
-            data.get('min_order_qty'),
-            data.get('max_order_qty'),
-            data.get('product_unit'),
-            data.get('shipping_time'),
-            data.get('special_date', False),
-            'active'
-        ))
-        
-        new_id = cursor.fetchone()[0]
-        conn.commit()
-        cursor.close()
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Product added successfully',
-            'id': new_id
-        })
-        
+            required_fields = ['name', 'description', 'min_order_qty', 'max_order_qty', 'product_unit']
+            for field in required_fields:
+                if not data.get(field):
+                    return jsonify({
+                        'status': 'error',
+                        'message': f'Missing required field: {field}'
+                    }), 400
+            
+            cursor.execute("""
+                INSERT INTO products (
+                    name, description, image_url, dm_url,
+                    min_order_qty, max_order_qty, product_unit,
+                    shipping_time, special_date, status,
+                    created_at, updated_at
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                ) RETURNING id
+            """, (
+                data.get('name'),
+                data.get('description'),
+                data.get('image_url'),
+                data.get('dm_url'),
+                data.get('min_order_qty'),
+                data.get('max_order_qty'),
+                data.get('product_unit'),
+                data.get('shipping_time'),
+                data.get('special_date', False),
+                'active'
+            ))
+            
+            new_id = cursor.fetchone()[0]
+            conn.commit()
+            cursor.close()
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Product added successfully',
+                'id': new_id
+            })
+            
     except Exception as e:
         print(f"Error in add_product: {str(e)}")
-        if 'conn' in locals():
-            conn.rollback()
-            if 'cursor' in locals():
-                cursor.close()
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 500
-    finally:
-        if conn:
-            release_db_connection(conn)
 
 @product_bp.route('/products/update/<int:product_id>', methods=['POST'])
 def update_product(product_id):
@@ -321,7 +300,6 @@ def upload_image():
 
 @product_bp.route('/upload/document', methods=['POST'])
 def upload_document():
-    conn = None
     try:
         if 'file' not in request.files or 'productName' not in request.form:
             return jsonify({
@@ -359,19 +337,16 @@ def upload_document():
             'status': 'error',
             'message': 'File type not allowed'
         }), 400
+            
     except Exception as e:
         print(f"Error in upload_document: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 500
-    finally:
-        if conn:
-            release_db_connection(conn)
 
 @product_bp.route('/uploads/<path:filename>', methods=['POST'])
 def uploaded_file(filename):
-    conn = None
     try:
         return send_from_directory(UPLOAD_FOLDER, filename)
     except Exception as e:
@@ -380,13 +355,9 @@ def uploaded_file(filename):
             'status': 'error',
             'message': str(e)
         }), 500
-    finally:
-        if conn:
-            release_db_connection(conn)
 
 @product_bp.route('/products/viewable', methods=['POST'])
 def get_viewable_products():
-    conn = None
     try:
         data = request.json
         product_ids = data.get('ids')
@@ -398,28 +369,25 @@ def get_viewable_products():
         # Create placeholders for SQL query
         placeholders = ','.join(['%s'] * len(id_list))
 
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"""
+                SELECT id, name, description, min_order_qty, max_order_qty, 
+                       product_unit, shipping_time, special_date, status
+                FROM products 
+                WHERE id IN ({placeholders})
+                AND status = 'active'
+            """, tuple(id_list))
 
-        cursor = conn.cursor()
-        cursor.execute(f"""
-            SELECT id, name, description, min_order_qty, max_order_qty, 
-                   product_unit, shipping_time, special_date, status
-            FROM products 
-            WHERE id IN ({placeholders})
-            AND status = 'active'
-        """, tuple(id_list))
+            columns = [desc[0] for desc in cursor.description]
+            products = [dict(zip(columns, row)) for row in cursor.fetchall()]
 
-        columns = [desc[0] for desc in cursor.description]
-        products = [dict(zip(columns, row)) for row in cursor.fetchall()]
-
-        cursor.close()
-        
-        return jsonify({
-            'status': 'success',
-            'data': products
-        })
+            cursor.close()
+            
+            return jsonify({
+                'status': 'success',
+                'data': products
+            })
 
     except Exception as e:
         print(f"Error in get_viewable_products: {str(e)}")
@@ -427,44 +395,34 @@ def get_viewable_products():
             'status': 'error',
             'message': str(e)
         }), 500
-    finally:
-        if conn:
-            release_db_connection(conn)
 
 @product_bp.route('/products/locked-dates', methods=['POST'])
 def get_locked_dates():
-    conn = None
     try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, locked_date, created_at
+                FROM locked_dates
+                ORDER BY locked_date ASC
+            """)
             
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id, locked_date, created_at
-            FROM locked_dates
-            ORDER BY locked_date ASC
-        """)
-        
-        columns = [desc[0] for desc in cursor.description]
-        dates = [dict(zip(columns, row)) for row in cursor.fetchall()]
-        
-        cursor.close()
-        
-        return jsonify({
-            "status": "success",
-            "data": dates
-        })
-        
+            columns = [desc[0] for desc in cursor.description]
+            dates = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
+            cursor.close()
+            
+            return jsonify({
+                "status": "success",
+                "data": dates
+            })
+            
     except Exception as e:
         print(f"Error in get_locked_dates: {str(e)}")
         return jsonify({
             "status": "error",
             "message": str(e)
         }), 500
-    finally:
-        if conn:
-            release_db_connection(conn)
 
 @product_bp.route('/products/lock-date', methods=['POST'])
 def lock_date():

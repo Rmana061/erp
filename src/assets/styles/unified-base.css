@@ -154,6 +154,8 @@ tr:hover {
   display: flex;
   align-items: center;
   gap: 5px;
+  margin-left: auto;
+  white-space: nowrap;
   transition: background-color 0.3s;
 }
     
@@ -166,6 +168,11 @@ tr:hover {
   border-radius: 4px;
   white-space: nowrap;
   transition: var(--transition);
+  margin-right: 8px;
+}
+
+.table-button:last-child {
+  margin-right: 0;
 }
 
 .table-button.edit {
@@ -489,15 +496,53 @@ tr.shipped {
     gap: 15px;
   }
 
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .action-buttons a {
+    width: 100%;
+  }
+
   .action-button {
-    width: 80%;
-    max-width: 300px;
+    width: 100%;
+    justify-content: center;
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+
+  .export-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .search-container {
-    width: 80%;
-    max-width: 300px;
-    margin: 15px auto;
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 8px 16px;
+    font-size: 14px;
+    height: 38px;
+    box-sizing: border-box;
+  }
+
+  .search-select {
+    width: auto;
+  }
+
+  /* 移除移動端 router-link 的下劃線和默認樣式 */
+  td a {
+    text-decoration: none;
+  }
+
+  td a.table-button {
+    text-decoration: none;
+    color: white;
   }
 }
 
@@ -525,7 +570,8 @@ tr.shipped {
 .search-container {
   display: flex;
   gap: 10px;
-  margin-left: auto;
+  flex: 1;
+  min-width: 200px;
 }
 
 .search-select {
@@ -631,7 +677,29 @@ tr.shipped {
 /* 操作按鈕樣式 */
 .action-buttons {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.action-button {
+  padding: 8px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  min-width: 100px;
+  justify-content: center;
+}
+
+.action-button:hover {
+  background-color: var(--primary-hover-color);
 }
 
 /* 響應式設計 */
@@ -820,16 +888,36 @@ tr.shipped {
 
 .page-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 20px;
-  padding: 0 20px;
+  padding: 10px 0;
 }
 
 .page-header h2 {
   margin: 0;
   font-size: 24px;
   color: var(--text-color);
+}
+
+.export-btn {
+  padding: 8px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  white-space: nowrap;
+  transition: background-color 0.3s;
+}
+
+.export-btn:hover {
+  background-color: var(--primary-hover-color);
 }
 
 .order-number {
@@ -1481,4 +1569,49 @@ tr.rejected {
   color: var(--text-light);
   margin-top: 5px;
   text-align: center;
+}
+
+@media screen and (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  .action-buttons a {
+    width: 100%;
+  }
+
+  .action-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .search-container {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .search-input {
+    flex: 1;
+  }
+
+  .search-select {
+    width: auto;
+  }
+
+  /* 移除移動端 router-link 的下劃線和默認樣式 */
+  td a {
+    text-decoration: none;
+  }
+
+  td a.table-button {
+    text-decoration: none;
+    color: white;
+  }
+}
+
+/* 移除 router-link 的下劃線 */
+.action-buttons a {
+  text-decoration: none;
 }
