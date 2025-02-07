@@ -17,6 +17,7 @@ export const API_PATHS = {
     UPDATE_ORDER_CONFIRMED: '/api/orders/update-confirmed',
     UPDATE_ORDER_SHIPPED: '/api/orders/update-shipped',
     CANCEL_ORDER: '/api/orders/cancel',
+    UPDATE_ORDER_QUANTITY: '/api/orders/update-quantity',
     
     // 产品相关
     LOGIN: '/api/login',

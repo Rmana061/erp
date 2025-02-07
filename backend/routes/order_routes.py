@@ -588,4 +588,68 @@ def update_order_shipped():
         return jsonify({
             'status': 'error',
             'message': str(e)
+        }), 500
+
+@order_bp.route('/orders/update-quantity', methods=['POST'])
+def update_order_quantity():
+    try:
+        data = request.get_json()
+        
+        if not data or 'order_detail_id' not in data or 'quantity' not in data:
+            return jsonify({
+                'status': 'error',
+                'message': '缺少必要參數'
+            }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # 先檢查訂單狀態是否為待確認
+            cursor.execute("""
+                SELECT od.id, o.order_confirmed, o.order_shipped
+                FROM order_details od
+                JOIN orders o ON od.order_id = o.id
+                WHERE od.id = %s
+            """, (data['order_detail_id'],))
+            
+            result = cursor.fetchone()
+            if not result:
+                return jsonify({
+                    'status': 'error',
+                    'message': '找不到訂單明細'
+                }), 404
+                
+            if result[1] or result[2]:
+                return jsonify({
+                    'status': 'error',
+                    'message': '只能修改待確認狀態的訂單'
+                }), 400
+
+            # 更新數量
+            cursor.execute("""
+                UPDATE order_details 
+                SET product_quantity = %s,
+                    updated_at = NOW()
+                WHERE id = %s AND order_status = '待確認'
+                RETURNING id
+            """, (data['quantity'], data['order_detail_id']))
+            
+            if not cursor.fetchone():
+                return jsonify({
+                    'status': 'error',
+                    'message': '更新失敗，可能訂單狀態已改變'
+                }), 400
+
+            conn.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'message': '數量更新成功'
+            })
+
+    except Exception as e:
+        print(f"Error in update_order_quantity: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
         }), 500 

@@ -162,7 +162,24 @@
             <tbody>
               <tr v-for="(item, index) in selectedOrder?.items" :key="index">
                 <td>{{ item.item }}</td>
-                <td>{{ item.quantity }}</td>
+                <td class="quantity-cell">
+                  <template v-if="item.isEditing">
+                    <input 
+                      type="number"
+                      v-model.number="item.tempQuantity"
+                      :min="1"
+                      class="quantity-input"
+                    >
+                    <div class="edit-buttons">
+                      <button class="save-btn" @click="saveQuantity(item)">保存</button>
+                      <button class="cancel-btn" @click="cancelEdit(item)">取消</button>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <span>{{ item.quantity }}</span>
+                    <button class="edit-btn" @click="startEdit(item)">修改</button>
+                  </template>
+                </td>
                 <td>{{ item.unit }}</td>
                 <td>
                   <input 
@@ -400,7 +417,11 @@ export default {
         items: order.items.map(item => ({
           ...item,
           tempStatus: '已確認',
-          tempShippingDate: item.shipping_date || ''
+          tempShippingDate: item.shipping_date || '',
+          tempSupplierNote: item.supplier_note || '',
+          isEditing: false,
+          tempQuantity: item.quantity,
+          originalQuantity: item.quantity
         }))
       };
       this.showConfirmModal = true;
@@ -471,6 +492,38 @@ export default {
         status: ''
       };
       this.currentPage = 1; // 重置時回到第一頁
+    },
+    startEdit(item) {
+      item.isEditing = true;
+      item.tempQuantity = item.quantity;
+      item.originalQuantity = item.quantity;
+    },
+    async saveQuantity(item) {
+      try {
+        const response = await axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_QUANTITY), {
+          order_detail_id: item.id,
+          quantity: item.tempQuantity
+        }, {
+          withCredentials: true
+        });
+
+        if (response.data.status === 'success') {
+          item.quantity = item.tempQuantity;
+          item.isEditing = false;
+          // 重新獲取訂單數據
+          await this.fetchPendingOrders();
+        } else {
+          throw new Error(response.data.message || '更新失敗');
+        }
+      } catch (error) {
+        console.error('Error updating quantity:', error);
+        alert('更新數量失敗：' + (error.response?.data?.message || error.message));
+        item.tempQuantity = item.originalQuantity;
+      }
+    },
+    cancelEdit(item) {
+      item.isEditing = false;
+      item.tempQuantity = item.originalQuantity;
     }
   },
   created() {
