@@ -10,10 +10,8 @@
       </div>
       <div class="content-wrapper">
         <div class="scrollable-content">
-          <h2>管理員（新增人員）</h2>
-          <div class="action-buttons">
-            <button class="action-button" @click="updatePersonnel">+ 更新</button>
-            <button class="action-button cancel" @click="navigateTo('Admin')">- 取消</button>
+          <div class="page-header">
+            <h2>管理員（新增人員）</h2>
           </div>
 
           <div class="form-container">
@@ -42,6 +40,11 @@
                 <option>基本權限</option>
                 <option>檢視權限</option>
               </select>
+            </div>
+
+            <div class="button-group">
+              <button class="submit-btn" @click="updatePersonnel">確認</button>
+              <button class="cancel-btn" @click="navigateTo('Admin')">取消</button>
             </div>
           </div>
 

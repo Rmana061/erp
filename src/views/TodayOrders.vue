@@ -136,7 +136,7 @@
         </div>
         
         <div class="notification">
-          結果會透過LINE發送
+          結果客戶可在LINE查詢
         </div>
       </div>
     </div>

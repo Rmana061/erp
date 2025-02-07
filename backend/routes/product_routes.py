@@ -141,7 +141,6 @@ def add_product():
 
 @product_bp.route('/products/update/<int:product_id>', methods=['POST'])
 def update_product(product_id):
-    conn = None
     try:
         data = request.json
         
@@ -151,106 +150,100 @@ def update_product(product_id):
                 'message': 'Unauthorized access'
             }), 403
 
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
             
-        cursor = conn.cursor()
-        
-        cursor.execute("SELECT id FROM products WHERE id = %s", (product_id,))
-        if cursor.fetchone() is None:
+            cursor.execute("SELECT id FROM products WHERE id = %s", (product_id,))
+            if cursor.fetchone() is None:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Product not found'
+                }), 404
+                
+            required_fields = ['name', 'description', 'min_order_qty', 'max_order_qty', 'product_unit']
+            for field in required_fields:
+                if not data.get(field):
+                    return jsonify({
+                        'status': 'error',
+                        'message': f'Missing required field: {field}'
+                    }), 400
+            
+            cursor.execute("""
+                UPDATE products 
+                SET name = %s,
+                    description = %s,
+                    image_url = %s,
+                    dm_url = %s,
+                    min_order_qty = %s,
+                    max_order_qty = %s,
+                    product_unit = %s,
+                    shipping_time = %s,
+                    special_date = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+            """, (
+                data.get('name'),
+                data.get('description'),
+                data.get('image_url'),
+                data.get('dm_url'),
+                data.get('min_order_qty'),
+                data.get('max_order_qty'),
+                data.get('product_unit'),
+                data.get('shipping_time'),
+                data.get('special_date', False),
+                product_id
+            ))
+            
+            conn.commit()
             cursor.close()
-            return jsonify({'error': 'Product not found'}), 404
             
-        required_fields = ['name', 'description', 'min_order_qty', 'max_order_qty', 'product_unit']
-        for field in required_fields:
-            if not data.get(field):
-                return jsonify({'error': f'Missing required field: {field}'}), 400
-        
-        cursor.execute("""
-            UPDATE products 
-            SET name = %s,
-                description = %s,
-                image_url = %s,
-                dm_url = %s,
-                min_order_qty = %s,
-                max_order_qty = %s,
-                product_unit = %s,
-                shipping_time = %s,
-                special_date = %s,
-                updated_at = CURRENT_TIMESTAMP
-            WHERE id = %s
-        """, (
-            data.get('name'),
-            data.get('description'),
-            data.get('image_url'),
-            data.get('dm_url'),
-            data.get('min_order_qty'),
-            data.get('max_order_qty'),
-            data.get('product_unit'),
-            data.get('shipping_time'),
-            data.get('special_date', False),
-            product_id
-        ))
-        
-        conn.commit()
-        cursor.close()
-        
-        return jsonify({
-            'status': 'success',
-            'message': f'Product {product_id} updated successfully',
-            'id': product_id
-        })
-        
+            return jsonify({
+                'status': 'success',
+                'message': f'Product {product_id} updated successfully',
+                'id': product_id
+            })
+            
     except Exception as e:
         print(f"Error in update_product: {str(e)}")
-        if 'conn' in locals():
-            conn.rollback()
-            if 'cursor' in locals():
-                cursor.close()
-        return jsonify({'error': str(e)}), 500
-    finally:
-        if conn:
-            release_db_connection(conn)
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @product_bp.route('/products/delete/<int:product_id>', methods=['POST'])
 def delete_product(product_id):
-    conn = None
     try:
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
-            
-        cursor = conn.cursor()
-        cursor.execute("""
-            UPDATE products 
-            SET status = 'inactive', 
-                updated_at = CURRENT_TIMESTAMP 
-            WHERE id = %s
-        """, (product_id,))
-            
-        if cursor.rowcount == 0:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE products 
+                SET status = 'inactive', 
+                    updated_at = CURRENT_TIMESTAMP 
+                WHERE id = %s
+            """, (product_id,))
+                
+            if cursor.rowcount == 0:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Product not found'
+                }), 404
+                
+            conn.commit()
             cursor.close()
-            return jsonify({'error': 'Product not found'}), 404
             
-        conn.commit()
-        cursor.close()
-        
-        return jsonify({'message': f'Product {product_id} status updated to inactive'})
+            return jsonify({
+                'status': 'success',
+                'message': f'Product {product_id} status updated to inactive'
+            })
     except Exception as e:
         print(f"Error in delete_product: {str(e)}")
-        if 'conn' in locals():
-            conn.rollback()
-            if 'cursor' in locals():
-                cursor.close()
-        return jsonify({'error': str(e)}), 500
-    finally:
-        if conn:
-            release_db_connection(conn)
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @product_bp.route('/upload/image', methods=['POST'])
 def upload_image():
-    conn = None
     try:
         if 'file' not in request.files or 'productName' not in request.form:
             return jsonify({
@@ -294,9 +287,6 @@ def upload_image():
             'status': 'error',
             'message': str(e)
         }), 500
-    finally:
-        if conn:
-            release_db_connection(conn)
 
 @product_bp.route('/upload/document', methods=['POST'])
 def upload_document():
@@ -426,7 +416,6 @@ def get_locked_dates():
 
 @product_bp.route('/products/lock-date', methods=['POST'])
 def lock_date():
-    conn = None
     try:
         data = request.json
         if not data.get('type') == 'admin':
@@ -440,59 +429,48 @@ def lock_date():
                 'status': 'error',
                 'message': 'Missing date parameter'
             }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
             
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
+            # 检查日期是否已经被锁定
+            cursor.execute("""
+                SELECT id FROM locked_dates
+                WHERE locked_date = %s
+            """, (data['date'],))
             
-        cursor = conn.cursor()
-        
-        # 检查日期是否已经被锁定
-        cursor.execute("""
-            SELECT id FROM locked_dates
-            WHERE locked_date = %s
-        """, (data['date'],))
-        
-        if cursor.fetchone():
+            if cursor.fetchone():
+                return jsonify({
+                    'status': 'error',
+                    'message': '该日期已被锁定'
+                }), 400
+            
+            # 插入新的锁定日期
+            cursor.execute("""
+                INSERT INTO locked_dates (locked_date, created_at)
+                VALUES (%s, CURRENT_TIMESTAMP)
+                RETURNING id
+            """, (data['date'],))
+            
+            new_id = cursor.fetchone()[0]
+            conn.commit()
+            cursor.close()
+            
             return jsonify({
-                'status': 'error',
-                'message': '该日期已被锁定'
-            }), 400
-        
-        # 插入新的锁定日期
-        cursor.execute("""
-            INSERT INTO locked_dates (locked_date, created_at)
-            VALUES (%s, CURRENT_TIMESTAMP)
-            RETURNING id
-        """, (data['date'],))
-        
-        new_id = cursor.fetchone()[0]
-        conn.commit()
-        cursor.close()
-        
-        return jsonify({
-            'status': 'success',
-            'message': '日期锁定成功',
-            'id': new_id
-        })
-        
+                'status': 'success',
+                'message': '日期锁定成功',
+                'id': new_id
+            })
+            
     except Exception as e:
         print(f"Error in lock_date: {str(e)}")
-        if 'conn' in locals():
-            conn.rollback()
-            if 'cursor' in locals():
-                cursor.close()
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 500
-    finally:
-        if conn:
-            release_db_connection(conn)
 
 @product_bp.route('/products/unlock-date', methods=['POST'])
 def unlock_date():
-    conn = None
     try:
         data = request.json
         if not data.get('type') == 'admin':
@@ -506,44 +484,34 @@ def unlock_date():
                 'status': 'error',
                 'message': 'Missing date_id parameter'
             }), 400
+
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
             
-        conn = get_db_connection()
-        if conn is None:
-            return jsonify({"error": "Database connection failed"}), 500
+            # 删除锁定日期
+            cursor.execute("""
+                DELETE FROM locked_dates
+                WHERE id = %s
+                RETURNING id
+            """, (data['date_id'],))
             
-        cursor = conn.cursor()
-        
-        # 删除锁定日期
-        cursor.execute("""
-            DELETE FROM locked_dates
-            WHERE id = %s
-            RETURNING id
-        """, (data['date_id'],))
-        
-        if not cursor.fetchone():
+            if not cursor.fetchone():
+                return jsonify({
+                    'status': 'error',
+                    'message': '找不到该锁定日期'
+                }), 404
+            
+            conn.commit()
+            cursor.close()
+            
             return jsonify({
-                'status': 'error',
-                'message': '找不到该锁定日期'
-            }), 404
-        
-        conn.commit()
-        cursor.close()
-        
-        return jsonify({
-            'status': 'success',
-            'message': '日期解鎖成功'
-        })
-        
+                'status': 'success',
+                'message': '日期解鎖成功'
+            })
+            
     except Exception as e:
         print(f"Error in unlock_date: {str(e)}")
-        if 'conn' in locals():
-            conn.rollback()
-            if 'cursor' in locals():
-                cursor.close()
         return jsonify({
             'status': 'error',
             'message': str(e)
-        }), 500
-    finally:
-        if conn:
-            release_db_connection(conn) 
+        }), 500 

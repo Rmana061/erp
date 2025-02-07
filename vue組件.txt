@@ -1,2 +1,3 @@
 npm install @vuepic/vue-datepicker
 npm install qrcode
+npm install @line/liff
