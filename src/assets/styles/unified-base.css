@@ -558,12 +558,12 @@ tr.shipped {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 6px;
+    gap: 8px;
   }
 
   .table-button {
-    margin-right: 0;
     width: 100%;
+    margin-right: 0;
     text-align: center;
   }
 }
@@ -702,6 +702,7 @@ tr.shipped {
   gap: 10px;
   flex-wrap: wrap;
   align-items: center;
+  margin-bottom: 20px;
 }
 
 .action-button {
@@ -914,12 +915,6 @@ tr.shipped {
   justify-content: space-between;
   margin-bottom: 20px;
   padding: 10px 0;
-}
-
-.page-header h2 {
-  margin: 0;
-  font-size: 24px;
-  color: var(--text-color);
 }
 
 .export-btn {
@@ -1697,4 +1692,62 @@ tr.rejected {
   padding: 4px;
   border: 1px solid #ddd;
   border-radius: 4px;
+}
+
+/* ProductManagement 樣式 */
+.lock-date-form {
+  margin: 20px 0;
+  display: flex;
+  gap: 10px;
+}
+
+.lock-date-form input[type="date"] {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.lock-date-form button {
+  padding: 8px 16px;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.lock-date-form button:hover {
+  background-color: var(--primary-hover-color);
+}
+
+.locked-dates-list {
+  margin-top: 20px;
+}
+
+.locked-dates-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.locked-dates-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.unlock-button {
+  padding: 4px 8px;
+  background-color: var(--error-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.unlock-button:hover {
+  background-color: #cc0000;
 }

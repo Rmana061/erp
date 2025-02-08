@@ -13,10 +13,7 @@
       </div>
       <div class="content-wrapper">
         <div class="scrollable-content">
-          <div class="page-header">
             <h2>產品管理</h2>
-            
-          </div>
           <div class="action-buttons">
             <button class="action-button" @click="navigateTo('AddProduct')">+ 新增產品</button>
             <button class="action-button" @click="batchDelete">- 批量刪除</button>
@@ -493,54 +490,5 @@ export default {
 <style>
 @import '../assets/styles/unified-base.css';
 
-.lock-date-form {
-  margin: 20px 0;
-  display: flex;
-  gap: 10px;
-}
-
-.lock-date-form input[type="date"] {
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.lock-date-form button {
-  padding: 8px 16px;
-  background-color: #40b883;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.locked-dates-list {
-  margin-top: 20px;
-}
-
-.locked-dates-list ul {
-  list-style: none;
-  padding: 0;
-}
-
-.locked-dates-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px;
-  border-bottom: 1px solid #eee;
-}
-
-.unlock-button {
-  padding: 4px 8px;
-  background-color: #ff4444;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.unlock-button:hover {
-  background-color: #cc0000;
-}
+/* 所有其他樣式已移至 unified-base */
 </style>

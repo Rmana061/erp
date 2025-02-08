@@ -11,11 +11,8 @@
       </div>
       
       <div class="content-wrapper">
-        <div class="page-header">
           <h2>訂貨系統</h2>
           <p>以下為過去兩週的訂貨紀錄</p>
-        </div>
-
         <div class="action-buttons">
           <button class="action-button" @click="navigateToAddOrder">+ 新增訂單</button>
           <button class="action-button" @click="handleCancelOrder" :disabled="!selectedOrder">

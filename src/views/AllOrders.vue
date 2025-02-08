@@ -10,9 +10,9 @@
       </div>
       
       <div class="content-wrapper">
-        <div class="page-header">
-          <h2>所有訂單</h2>
-          <button class="export-btn" @click="exportReport">↓ 訂單匯出</button>
+        <h2>所有訂單</h2>
+        <div class="action-buttons">
+          <button class="action-button" @click="exportReport">↓ 訂單匯出</button>
         </div>
 
         <!-- 搜索欄位 -->
@@ -67,79 +67,77 @@
           </div>
         </div>
 
-        <div class="scrollable-content">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>建立日期</th>
-                  <th>客戶</th>
-                  <th>訂單編號</th>
-                  <th>品項</th>
-                  <th>數量</th>
-                  <th>單位</th>
-                  <th>出貨日期</th>
-                  <th>備註</th>
-                  <th>供應商備註</th>
-                  <th>狀態</th>
-                  <th>操作</th>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>建立日期</th>
+                <th>客戶</th>
+                <th>訂單編號</th>
+                <th>品項</th>
+                <th>數量</th>
+                <th>單位</th>
+                <th>出貨日期</th>
+                <th>備註</th>
+                <th>供應商備註</th>
+                <th>狀態</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="(order, orderIndex) in paginatedOrders" :key="order.orderNumber">
+                <tr v-for="(item, itemIndex) in order.items" 
+                    :key="order.orderNumber + '-' + itemIndex"
+                    :class="{ 
+                      'first-product': itemIndex === 0,
+                      'approved': item.status === '已確認', 
+                      'rejected': item.status === '已取消',
+                      'shipped': item.status === '已出貨'
+                    }">
+                  <td>{{ itemIndex === 0 ? formatDateTime(order.date) : '' }}</td>
+                  <td>{{ itemIndex === 0 ? order.customer : '' }}</td>
+                  <td>{{ itemIndex === 0 ? order.orderNumber : '' }}</td>
+                  <td>{{ item.item }}</td>
+                  <td>{{ item.quantity }}</td>
+                  <td>{{ item.unit }}</td>
+                  <td>{{ formatDate(item.shipping_date) }}</td>
+                  <td>{{ item.remark || '-' }}</td>
+                  <td>{{ item.supplier_note || '-' }}</td>
+                  <td>
+                    <span class="status-badge" :class="item.status">{{ item.status }}</span>
+                  </td>
+                  <td>
+                    <div class="action-buttons" v-if="itemIndex === 0 && allItemsPending(order.items)">
+                      <button class="approve-btn" @click="handleApprove(order)">
+                        審核
+                      </button>
+                    </div>
+                    <div class="action-buttons" v-else-if="itemIndex === 0 && hasConfirmedItems(order.items)">
+                      <button class="complete-btn" @click="handleComplete(order)">
+                        完成
+                      </button>
+                    </div>
+                    <span v-else-if="itemIndex === 0">已完成</span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                <template v-for="(order, orderIndex) in paginatedOrders" :key="order.orderNumber">
-                  <tr v-for="(item, itemIndex) in order.items" 
-                      :key="order.orderNumber + '-' + itemIndex"
-                      :class="{ 
-                        'first-product': itemIndex === 0,
-                        'approved': item.status === '已確認', 
-                        'rejected': item.status === '已取消',
-                        'shipped': item.status === '已出貨'
-                      }">
-                    <td>{{ itemIndex === 0 ? formatDateTime(order.date) : '' }}</td>
-                    <td>{{ itemIndex === 0 ? order.customer : '' }}</td>
-                    <td>{{ itemIndex === 0 ? order.orderNumber : '' }}</td>
-                    <td>{{ item.item }}</td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ item.unit }}</td>
-                    <td>{{ formatDate(item.shipping_date) }}</td>
-                    <td>{{ item.remark || '-' }}</td>
-                    <td>{{ item.supplier_note || '-' }}</td>
-                    <td>
-                      <span class="status-badge" :class="item.status">{{ item.status }}</span>
-                    </td>
-                    <td>
-                      <div class="action-buttons" v-if="itemIndex === 0 && allItemsPending(order.items)">
-                        <button class="approve-btn" @click="handleApprove(order)">
-                          審核
-                        </button>
-                      </div>
-                      <div class="action-buttons" v-else-if="itemIndex === 0 && hasConfirmedItems(order.items)">
-                        <button class="complete-btn" @click="handleComplete(order)">
-                          完成
-                        </button>
-                      </div>
-                      <span v-else-if="itemIndex === 0">已完成</span>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-          
-          <!-- 分頁控制 -->
-          <div class="pagination" v-if="totalPages > 1">
-            <button 
-              @click="currentPage--" 
-              :disabled="currentPage === 1">
-              上一頁
-            </button>
-            <span>{{ currentPage }} / {{ totalPages }}</span>
-            <button 
-              @click="currentPage++" 
-              :disabled="currentPage === totalPages">
-              下一頁
-            </button>
-          </div>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- 分頁控制 -->
+        <div class="pagination" v-if="totalPages > 1">
+          <button 
+            @click="currentPage--" 
+            :disabled="currentPage === 1">
+            上一頁
+          </button>
+          <span>{{ currentPage }} / {{ totalPages }}</span>
+          <button 
+            @click="currentPage++" 
+            :disabled="currentPage === totalPages">
+            下一頁
+          </button>
         </div>
         
         <div class="notification">

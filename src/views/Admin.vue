@@ -33,8 +33,10 @@
                   <td>{{ admin.staff_no }}</td>
                   <td>{{ admin.permission_level }}</td>
                   <td>
-                    <button class="edit-btn" @click="editPersonnel(admin.id)">編輯</button>
-                    <button class="delete-btn" @click="deletePersonnel(admin.id)">刪除</button>
+                    <div class="table-button-group">
+                      <button class="table-button edit" @click="editPersonnel(admin.id)">編輯</button>
+                      <button class="table-button delete" @click="deletePersonnel(admin.id)">刪除</button>
+                    </div>
                   </td>
                 </tr>
               </tbody>

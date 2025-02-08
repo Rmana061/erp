@@ -11,10 +11,7 @@
       </div>
       
       <div class="content-wrapper">
-        <div class="page-header">
           <h2>帳號設定</h2>
-        </div>
-
         <div class="account-info">
           <div class="info-grid">
             <p><strong>公司名稱：</strong></p>

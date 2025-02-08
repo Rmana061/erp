@@ -10,9 +10,9 @@
       </div>
       
       <div class="content-wrapper">
-        <div class="page-header">
+
           <h2>待確認訂單</h2>
-        </div>
+
 
         <!-- 搜索欄位 -->
         <div class="search-panel compact">

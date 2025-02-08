@@ -11,10 +11,7 @@
       </div>
       
       <div class="content-wrapper">
-        <div class="page-header">
           <h2>訂貨紀錄</h2>
-        </div>
-        
         <div class="scrollable-content">
           <!-- 添加搜索框 -->
           <div class="search-panel compact">
