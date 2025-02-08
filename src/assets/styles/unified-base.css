@@ -99,6 +99,11 @@ body.customer-mode .header {
   width: 100%;
   overflow-x: auto;
   padding-bottom: 10px;
+  margin-top: 20px;
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: var(--box-shadow);
 }
 
 table {
@@ -124,18 +129,21 @@ tr:hover {
 }
 
 /* 通用按鈕樣式 */
-.action-button, .btn {
-  padding: 8px 16px;
+.action-button, .btn, .export-btn, .table-button {
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
-  font-size: 14px;
   transition: var(--transition);
-  background-color: var(--primary-color);
   color: white;
+  background-color: var(--primary-color);
 }
 
-.action-button:hover, .btn:hover {
+.action-button, .btn, .export-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.action-button:hover, .btn:hover, .export-btn:hover, .approve-btn:hover {
   background-color: var(--primary-hover-color);
 }
 
@@ -144,40 +152,22 @@ tr:hover {
 }
 
 .export-btn {
-  padding: 8px 16px;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
   display: flex;
   align-items: center;
   gap: 5px;
   margin-left: auto;
   white-space: nowrap;
-  transition: background-color 0.3s;
 }
-    
+
 .table-button {
   padding: 4px 8px;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  cursor: pointer;
-  border-radius: 4px;
-  white-space: nowrap;
-  transition: var(--transition);
-  margin-right: 2px;
   font-size: 14px;
+  margin-right: 2px;
+  white-space: nowrap;
 }
 
 .table-button:last-child {
   margin-right: 0;
-}
-
-.table-button.edit {
-  background-color: var(--primary-color);
 }
 
 .table-button.edit:hover {
@@ -225,7 +215,8 @@ td .table-button-group {
 
 .form-group input,
 .form-group select,
-.form-group textarea {
+.form-group textarea,
+.search-input {
   width: 100%;
   padding: 8px;
   border: 1px solid var(--border-color);
@@ -233,16 +224,13 @@ td .table-button-group {
   font-size: 14px;
 }
 
-/* 通用搜索框樣式 */
 .search-input {
-  padding: 8px;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
   min-width: 200px;
 }
 
 /* 通用狀態標籤樣式 */
-.status {
+.status,
+.status-badge {
   padding: 4px 8px;
   border-radius: var(--border-radius);
   font-size: 12px;
@@ -346,78 +334,6 @@ tr.shipped {
   flex-direction: column;
   align-items: center;
   width: 20px;
-}
-
-/* 登入頁面樣式 */
-.login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: var(--background-color);
-  padding: 20px;
-  width: 100%;
-}
-
-.login-box {
-  background-color: white;
-  padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 500px;
-  text-align: center;
-}
-
-.login-box h2 {
-  color: var(--text-color);
-  margin: 0 0 30px 0;
-  font-size: 24px;
-  text-align: center;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.login-form .form-group {
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.login-form .form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--text-color);
-  text-align: center;
-}
-
-.login-form .form-group input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  font-size: 16px;
-  text-align: center;
-}
-
-.login-button {
-  width: 100%;
-  padding: 12px;
-  background-color: var(--primary-color);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  margin-top: 10px;
-}
-
-.login-button:hover {
-  background-color: var(--primary-hover-color);
 }
 
 /* 響應式設計 */
@@ -541,7 +457,6 @@ tr.shipped {
     width: auto;
   }
 
-  /* 移除移動端 router-link 的下劃線和默認樣式 */
   td a {
     text-decoration: none;
   }
@@ -556,14 +471,13 @@ tr.shipped {
 @media screen and (max-width: 768px) {
   td .table-button-group {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    justify-content: center;
     gap: 8px;
   }
 
   .table-button {
-    width: 100%;
-    margin-right: 0;
+    flex: 1;
     text-align: center;
   }
 }
@@ -1332,15 +1246,6 @@ tr.shipped {
   cursor: not-allowed; /* 禁用状态的鼠标指针 */
 }
 
-/* 表格樣式更新 */
-.table-container {
-  margin-top: 20px;
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 /* 緊湊型搜索面板樣式 */
 .search-panel.compact {
   background-color: white;
@@ -1422,20 +1327,6 @@ tr.shipped {
   margin-right: 4px;
 }
 
-/* 審核按鈕樣式 */
-.approve-btn {
-  background-color: #28a745;
-  color: white;
-  padding: 6px 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.approve-btn:hover {
-  background-color: #218838;
-}
 
 /* 訂單審核對話框樣式 */
 .modal-content.order-review {
@@ -1639,52 +1530,34 @@ tr.rejected {
   min-width: 120px;
 }
 
-.quantity-cell .edit-btn {
-  margin-left: 8px;
-  padding: 2px 8px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.quantity-cell .edit-btn:hover {
-  background-color: #45a049;
-}
-
-.quantity-cell .edit-buttons {
-  display: flex;
-  gap: 4px;
-  margin-top: 4px;
-}
-
+.quantity-cell .edit-btn,
 .quantity-cell .save-btn,
 .quantity-cell .cancel-btn {
   padding: 2px 8px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--border-radius);
   cursor: pointer;
   font-size: 12px;
-}
-
-.quantity-cell .save-btn {
-  background-color: #4CAF50;
   color: white;
+  transition: var(--transition);
 }
 
+.quantity-cell .edit-btn,
+.quantity-cell .save-btn {
+  background-color: var(--primary-color);
+}
+
+.quantity-cell .edit-btn:hover,
 .quantity-cell .save-btn:hover {
-  background-color: #45a049;
+  background-color: var(--primary-hover-color);
 }
 
 .quantity-cell .cancel-btn {
-  background-color: #f44336;
-  color: white;
+  background-color: var(--error-color);
 }
 
 .quantity-cell .cancel-btn:hover {
-  background-color: #da190b;
+  background-color: #c82333;
 }
 
 .quantity-cell .quantity-input {

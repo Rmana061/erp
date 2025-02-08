@@ -107,7 +107,7 @@
                     </td>
                     <td>
                       <div class="action-buttons" v-if="itemIndex === 0 && allItemsPending(order.items)">
-                        <button class="approve-btn" @click="handleApprove(order)">
+                        <button class="table-button" @click="handleApprove(order)">
                           審核
                         </button>
                       </div>
