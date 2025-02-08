@@ -4,6 +4,30 @@
   </div>
 </template>
 
+<script>
+import { setupAutoLogout } from './utils/autoLogout';
+import { onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+
+export default {
+  name: 'App',
+  setup() {
+    const router = useRouter();
+    let cleanup;
+
+    onMounted(() => {
+      cleanup = setupAutoLogout(router);
+    });
+
+    onUnmounted(() => {
+      if (cleanup) cleanup();
+    });
+
+    return {};
+  }
+};
+</script>
+
 <style>
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;

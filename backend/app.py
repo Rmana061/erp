@@ -29,8 +29,8 @@ CORS(app, resources={
     r"/*": {
         "origins": [
             "http://localhost:5173",
-            "https://732b-111-249-219-202.ngrok-free.app",
-            "https://9c62-111-249-219-202.ngrok-free.app"
+            "https://6c2e-111-249-201-216.ngrok-free.app",
+            "https://6e12-111-249-201-216.ngrok-free.app"
         ],
         "supports_credentials": True,
         "allow_headers": ["Content-Type", "Authorization", "Accept", "X-Line-Signature"],
@@ -46,8 +46,8 @@ def after_request(response):
     origin = request.headers.get('Origin')
     allowed_origins = [
         "http://localhost:5173",
-        "https://732b-111-249-219-202.ngrok-free.app",
-        "https://9c62-111-249-219-202.ngrok-free.app"
+        "https://6c2e-111-249-201-216.ngrok-free.app",
+        "https://6e12-111-249-201-216.ngrok-free.app"
     ]
     if origin in allowed_origins:
         response.headers['Access-Control-Allow-Origin'] = origin
