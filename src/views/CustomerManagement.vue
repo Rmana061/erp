@@ -41,25 +41,27 @@
                   <td>{{ customer.address }}</td>
                   <td>{{ customer.created_at }}</td>
                   <td>
-                    <router-link :to="{ 
-                      path: '/add-customer', 
-                      query: { 
-                        mode: 'edit',
-                        id: customer.id,
-                        company_name: customer.company_name,
-                        username: customer.username,
-                        contact_person: customer.contact_person,
-                        phone: customer.phone,
-                        email: customer.email,
-                        address: customer.address,
-                        line_account: customer.line_account || '',
-                        viewable_products: customer.viewable_products || '',
-                        remark: customer.remark || ''
-                      }
-                    }">
-                      <button class="table-button edit">編輯</button>
-                    </router-link>
-                    <button class="table-button delete" @click="deleteCustomerRow(customer.id)">刪除</button>
+                    <div class="table-button-group">
+                      <router-link :to="{ 
+                        path: '/add-customer', 
+                        query: { 
+                          mode: 'edit',
+                          id: customer.id,
+                          company_name: customer.company_name,
+                          username: customer.username,
+                          contact_person: customer.contact_person,
+                          phone: customer.phone,
+                          email: customer.email,
+                          address: customer.address,
+                          line_account: customer.line_account || '',
+                          viewable_products: customer.viewable_products || '',
+                          remark: customer.remark || ''
+                        }
+                      }">
+                        <button class="table-button edit">編輯</button>
+                      </router-link>
+                      <button class="table-button delete" @click="deleteCustomerRow(customer.id)">刪除</button>
+                    </div>
                   </td>
                 </tr>
               </tbody>

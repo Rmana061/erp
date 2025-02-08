@@ -85,11 +85,13 @@
                   <td>{{ product.product_unit }}</td>
                   <td>{{ product.shipping_time }}天</td>
                   <td>
-                    <button class="table-button edit" @click="editProduct(product)">編輯</button>
-                    <button class="table-button delete" @click="deleteProduct(product)">刪除</button>
-                    <button v-if="product.dm_url" 
-                            @click="window.open(product.dm_url, '_blank')"
-                            class="table-button">查看 DM</button>
+                    <div class="table-button-group">
+                      <button class="table-button edit" @click="editProduct(product)">編輯</button>
+                      <button class="table-button delete" @click="deleteProduct(product)">刪除</button>
+                      <button v-if="product.dm_url" 
+                              @click="window.open(product.dm_url, '_blank')"
+                              class="table-button">查看 DM</button>
+                    </div>
                   </td>
                 </tr>
               </tbody>

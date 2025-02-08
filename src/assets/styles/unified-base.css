@@ -160,7 +160,7 @@ tr:hover {
 }
     
 .table-button {
-  padding: 8px 15px;
+  padding: 4px 8px;
   background-color: var(--primary-color);
   color: white;
   border: none;
@@ -168,7 +168,8 @@ tr:hover {
   border-radius: 4px;
   white-space: nowrap;
   transition: var(--transition);
-  margin-right: 8px;
+  margin-right: 2px;
+  font-size: 14px;
 }
 
 .table-button:last-child {
@@ -177,7 +178,6 @@ tr:hover {
 
 .table-button.edit {
   background-color: var(--primary-color);
-  margin-right: 10px;
 }
 
 .table-button.edit:hover {
@@ -186,11 +186,17 @@ tr:hover {
 
 .table-button.delete {
   background-color: var(--error-color);
-  margin-right: 10px;
 }
 
 .table-button.delete:hover {
   background-color: #c82333;
+}
+
+/* 表格操作列樣式 */
+td .table-button-group {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 /* 通用表單樣式 */
@@ -543,6 +549,22 @@ tr.shipped {
   td a.table-button {
     text-decoration: none;
     color: white;
+  }
+}
+
+/* 移動端樣式 */
+@media screen and (max-width: 768px) {
+  td .table-button-group {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .table-button {
+    margin-right: 0;
+    width: 100%;
+    text-align: center;
   }
 }
 
