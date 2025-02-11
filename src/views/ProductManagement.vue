@@ -86,7 +86,7 @@
                       <button class="table-button edit" @click="editProduct(product)">編輯</button>
                       <button class="table-button delete" @click="deleteProduct(product)">刪除</button>
                       <button v-if="product.dm_url" 
-                              @click="window.open(product.dm_url, '_blank')"
+                              @click="openDM(product.dm_url)"
                               class="table-button">查看 DM</button>
                     </div>
                   </td>
@@ -478,6 +478,16 @@ export default {
         console.error('Error unlocking date:', error);
         alert('解鎖日期失敗：' + (error.response?.data?.message || error.message));
       }
+    },
+    openDM(url) {
+      if (!url) return;
+      // 如果 URL 不是以 http 開頭，假設它是相對路徑
+      if (!url.startsWith('http')) {
+        // 使用當前域名拼接完整URL
+        const baseUrl = window.location.origin;
+        url = `${baseUrl}${url}`;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
     },
   },
   mounted() {
