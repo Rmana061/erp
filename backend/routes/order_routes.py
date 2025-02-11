@@ -10,10 +10,11 @@ def create_order():
         data = request.json
         print("Received order data:", data)
         
-        # 验证必填字段
+        # 驗證必填字段
         required_fields = ['order_number', 'customer_id']
         for field in required_fields:
             if field not in data:
+
                 return jsonify({
                     'status': 'error',
                     'message': f'缺少必填欄位: {field}'
@@ -23,11 +24,12 @@ def create_order():
             cursor = conn.cursor()
             
             try:
-                # 1. 首先创建主订单
+                # 1. 首先創建主訂單
                 order_sql = """
                     INSERT INTO orders (order_number, customer_id, created_at)
                     VALUES (%s, %s, %s)
                     RETURNING id;
+
                 """
                 
                 cursor.execute(order_sql, (
@@ -37,8 +39,8 @@ def create_order():
                 ))
                 
                 order_id = cursor.fetchone()[0]
-                
-                # 2. 然后创建订单详情
+
+                # 2. 然後創建訂單詳情
                 details_sql = """
                     INSERT INTO order_details (
                         order_id, product_id, product_quantity,
@@ -46,8 +48,8 @@ def create_order():
                         remark, created_at
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
                 """
-                
-                # 遍历所有产品并创建详情记录
+
+                # 遍歷所有產品並創建詳情記錄
                 for product in data['products']:
                     cursor.execute(details_sql, (
                         order_id,
@@ -99,7 +101,7 @@ def get_orders():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             
-            # 查询订单和订单详情数据
+            # 查詢訂單和訂單詳情數據
             sql = """
                 SELECT 
                     o.id as order_id,
@@ -125,11 +127,11 @@ def get_orders():
             
             cursor.execute(sql, (customer_id,))
             
-            # 获取列名
+            # 獲取列名
             columns = [desc[0] for desc in cursor.description]
             rows = [dict(zip(columns, row)) for row in cursor.fetchall()]
             
-            # 重组数据结构
+            # 重組數據結構
             orders = {}
             for row in rows:
                 order_id = row['order_id']
@@ -155,7 +157,7 @@ def get_orders():
             
             cursor.close()
             
-            # 将字典转换为列表并返回
+            # 將字典轉換為列表並返回
             orders_list = list(orders.values())
             
             return jsonify({
@@ -369,7 +371,7 @@ def get_pending_orders():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             
-            # 查询所有待确认状态的订单
+            # 查詢所有待確認狀態的訂單
             sql = """
                 SELECT 
                     o.id,
@@ -394,9 +396,10 @@ def get_pending_orders():
             
             cursor.execute(sql)
             
-            # 获取列名
+            # 獲取列名
             columns = [desc[0] for desc in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            
             
             # 处理日期格式
             for row in results:
@@ -425,7 +428,7 @@ def get_all_orders():
         with get_db_connection() as conn:
             cursor = conn.cursor()
             
-            # 查询所有订单
+            # 查詢所有訂單
             sql = """
                 SELECT 
                     o.id,
@@ -449,11 +452,11 @@ def get_all_orders():
             
             cursor.execute(sql)
             
-            # 获取列名
+            # 獲取列名
             columns = [desc[0] for desc in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
             
-            # 处理日期格式
+            # 處理日期格式
             for row in results:
                 if row['date']:
                     row['date'] = row['date'].strftime('%Y-%m-%d %H:%M:%S')
