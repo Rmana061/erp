@@ -155,51 +155,67 @@ export default {
       if (!this.validateForm()) return;
 
       try {
-        const personnelData = {
-          admin_account: this.personnelAccount,
-          admin_name: this.personnelName,
-          staff_no: this.personnelStaffNo,
-          permission_level_id: this.getPermissionId(this.personnelPermission)
-        };
+        // 获取认证信息
+        const adminId = localStorage.getItem('admin_id');
+        const adminInfo = sessionStorage.getItem('adminInfo');
 
-        if (!this.isEditMode || this.personnelPassword) {
-          personnelData.admin_password = this.personnelPassword;
-        }
-
-        if (this.isEditMode) {
-          personnelData.id = this.editId;
-        }
-
-        // 确保当前管理员已登录
-        const currentAdminId = localStorage.getItem('admin_id');
-        if (!currentAdminId) {
+        if (!adminId || !adminInfo) {
+          console.log('未登录或会话已过期');
+          localStorage.removeItem('admin_id');
+          sessionStorage.removeItem('adminInfo');
+          sessionStorage.removeItem('isAuthenticated');
           this.$router.push('/admin-login');
           return;
         }
 
+        // 准备提交数据
+        const personnelData = {
+          admin_account: this.personnelAccount,
+          admin_name: this.personnelName,
+          staff_no: this.personnelStaffNo,
+          permission_level_id: this.getPermissionId(this.personnelPermission),
+          current_admin_id: adminId  // 添加当前管理员ID
+        };
+
+        // 如果是新增或有修改密码，则添加密码字段
+        if (!this.isEditMode || this.personnelPassword) {
+          personnelData.admin_password = this.personnelPassword;
+        }
+
+        // 如果是编辑模式，添加ID
+        if (this.isEditMode) {
+          personnelData.id = this.editId;
+        }
+
+        // 发送请求
         const response = await axiosInstance.post(
           this.isEditMode ? API_PATHS.ADMIN_UPDATE : API_PATHS.ADMIN_ADD,
-          personnelData
+          personnelData,
+          {
+            headers: {
+              'Authorization': `Bearer ${adminId}`
+            }
+          }
         );
 
         if (response.data.status === 'success') {
           alert(this.isEditMode ? '管理員更新成功！' : '管理員新增成功！');
-          this.$router.push({ name: 'Admin' });
+          await this.$router.push({ name: 'Admin' });
         } else {
           throw new Error(response.data.message || '操作失敗');
         }
       } catch (error) {
         console.error('Error submitting personnel:', error);
+        
         if (error.response?.status === 401) {
-          // 如果是认证错误，先检查本地存储
-          const adminInfo = sessionStorage.getItem('adminInfo');
-          if (!adminInfo) {
-            localStorage.removeItem('admin_id');
-            sessionStorage.removeItem('adminInfo');
-            this.$router.push('/admin-login');
-            return;
-          }
+          console.log('Session expired or unauthorized');
+          localStorage.removeItem('admin_id');
+          sessionStorage.removeItem('adminInfo');
+          sessionStorage.removeItem('isAuthenticated');
+          this.$router.push('/admin-login');
+          return;
         }
+        
         alert('操作失敗：' + (error.response?.data?.message || error.message));
       }
     },
