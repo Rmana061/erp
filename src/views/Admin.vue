@@ -2,7 +2,11 @@
 <template>
   <body class="admin-mode">
   <div class="container">
-    <SideBar menu-type="admin" />
+    <button class="bookmark-toggle" @click="toggleSidebar">
+      <span class="bookmark-text">選單</span>
+    </button>
+    <div class="sidebar-overlay" :class="{ active: isSidebarActive }" @click="closeSidebar"></div>
+    <SideBar menu-type="admin" :class="{ active: isSidebarActive }" />
     <div class="main-content">
       <div class="header">
         <span>Hi {{ adminName }}您好,</span>
@@ -12,7 +16,12 @@
         <div class="scrollable-content">
           <h2>管理員</h2>
           <div class="action-buttons">
-            <button class="action-button" @click="navigateTo('AddPersonnel')">+ 新增人員</button>
+            <button 
+              class="action-button" 
+              @click="navigateTo('AddPersonnel')"
+              v-permission="'can_add_personnel'">
+              + 新增人員
+            </button>
           </div>
 
           <div class="table-container">
@@ -34,8 +43,18 @@
                   <td>{{ admin.permission_level }}</td>
                   <td>
                     <div class="table-button-group">
-                      <button class="table-button edit" @click="editPersonnel(admin.id)">編輯</button>
-                      <button class="table-button delete" @click="deletePersonnel(admin.id)">刪除</button>
+                      <button 
+                        class="table-button edit" 
+                        @click="editPersonnel(admin.id)"
+                        v-permission="'can_add_personnel'">
+                        編輯
+                      </button>
+                      <button 
+                        class="table-button delete" 
+                        @click="deletePersonnel(admin.id)"
+                        v-permission="'can_add_personnel'">
+                        刪除
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -55,6 +74,7 @@ import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
 import { timeMixin } from '../mixins/timeMixin';
 import { API_PATHS, getApiUrl } from '../config/api';
+import axiosInstance from '../config/axios';
 
 export default {
   name: 'Admin',
@@ -64,71 +84,67 @@ export default {
   },
   data() {
     return {
-      admins: []
+      admins: [],
+      isSidebarActive: false
     };
   },
   methods: {
+    toggleSidebar() {
+      this.isSidebarActive = !this.isSidebarActive;
+    },
+    closeSidebar() {
+      this.isSidebarActive = false;
+    },
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
     },
-    // deletePersonnel(adminId) {
-    //   if (confirm('確定要刪除此人員嗎？')) {
-    //     axios.delete(getApiUrl(API_PATHS.ADMIN_DELETE), {
-    //       data: { id: adminId },
-    //       withCredentials: true,
-    //       headers: {
-    //         'Content-Type': 'application/json'
-    //       }
-    //     })
-    //     .then(response => {
-    //       if (response.data.status === 'success') {
-    //         this.fetchAdmins();
-    //         alert('人員已成功刪除');
-    //       } else {
-    //         throw new Error(response.data.message || '刪除人員失敗');
-    //       }
-    //     })
-    //     .catch(error => {
-    //       console.error('Error deleting admin:', error);
-    //       alert('刪除人員時發生錯誤：' + (error.response?.data?.message || error.message));
-    //     });
-    //   }
+ 
     async deletePersonnel(adminId) {
-      if (!confirm('確定要刪除此人員嗎？')) return;
+      if (!confirm('確定要刪除此管理員嗎？')) return;
 
       try {
-        const response = await axios.post(
-          getApiUrl(API_PATHS.ADMIN_DELETE),
-          { id: adminId },
-          {
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+        const response = await axiosInstance.post(API_PATHS.ADMIN_DELETE, {
+          id: adminId
+        });
 
         if (response.data.status === 'success') {
-          alert('人員已成功刪除');
-          this.fetchAdmins();  // 重新获取客户列表
+          alert('管理員刪除成功');
+          await this.fetchAdmins();
         } else {
-          throw new Error(response.data.message || '刪除人員失敗');
+          throw new Error(response.data.message || '刪除失敗');
         }
       } catch (error) {
-        console.error('Error deleting customer:', error);
-        alert('刪除人員失敗：' + (error.response?.data?.message || error.message));
+        console.error('Error deleting admin:', error);
+        if (error.response?.status === 401) {
+          localStorage.removeItem('admin_id');
+          sessionStorage.removeItem('adminInfo');
+          this.$router.push('/admin-login');
+          return;
+        }
+        alert('刪除失敗：' + (error.response?.data?.message || error.message));
       }
     },
     editPersonnel(adminId) {
+      // 檢查是否有管理員 ID 和權限
+      const adminInfo = sessionStorage.getItem('adminInfo');
+      if (!adminInfo || !localStorage.getItem('admin_id')) {
+        alert('請重新登入');
+        this.$router.push('/admin-login');
+        return;
+      }
+
       this.$router.push({
         name: 'AddPersonnel',
-        query: { id: adminId }
+        query: { 
+          id: adminId,
+          mode: 'edit'
+        }
       });
     },
     async fetchAdmins() {
       try {
-        const response = await axios.post(getApiUrl(API_PATHS.ADMIN_LIST), {}, {
-          withCredentials: true
+        const response = await axiosInstance.post(API_PATHS.ADMIN_LIST, {
+          type: 'admin'
         });
         
         if (response.data.status === 'success') {
@@ -144,6 +160,12 @@ export default {
         }
       } catch (error) {
         console.error('Error fetching admins:', error);
+        if (error.response?.status === 401) {
+          localStorage.removeItem('admin_id');
+          sessionStorage.removeItem('adminInfo');
+          this.$router.push('/admin-login');
+          return;
+        }
         alert('獲取管理員列表失敗：' + (error.response?.data?.message || error.message));
       }
     },
@@ -166,32 +188,4 @@ export default {
 
 <style>
 @import '../assets/styles/unified-base.css';
-
-/* 所有其他樣式已移至 unified-base */
-.edit-btn, .delete-btn {
-  padding: 4px 8px;
-  margin: 0 4px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.edit-btn {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.edit-btn:hover {
-  background-color: #45a049;
-}
-
-.delete-btn {
-  background-color: #f44336;
-  color: white;
-}
-
-.delete-btn:hover {
-  background-color: #da190b;
-}
 </style>

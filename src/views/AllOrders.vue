@@ -12,7 +12,12 @@
       <div class="content-wrapper">
         <h2>所有訂單</h2>
         <div class="action-buttons">
-          <button class="action-button" @click="exportReport">↓ 訂單匯出</button>
+          <button 
+            class="action-button" 
+            @click="exportReport"
+            v-permission="'can_approve_orders'">
+            ↓ 訂單匯出
+          </button>
         </div>
 
         <!-- 搜索欄位 -->
@@ -108,12 +113,18 @@
                   </td>
                   <td>
                     <div class="action-buttons" v-if="itemIndex === 0 && allItemsPending(order.items)">
-                      <button class="table-button" @click="handleApprove(order)">
+                      <button 
+                        class="table-button" 
+                        @click="handleApprove(order)"
+                        v-permission="'can_approve_orders'">
                         審核
                       </button>
                     </div>
                     <div class="action-buttons" v-else-if="itemIndex === 0 && hasConfirmedItems(order.items)">
-                      <button class="complete-btn" @click="handleComplete(order)">
+                      <button 
+                        class="complete-btn" 
+                        @click="handleComplete(order)"
+                        v-permission="'can_approve_orders'">
                         完成
                       </button>
                     </div>

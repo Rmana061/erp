@@ -288,6 +288,7 @@ tr.shipped {
   left: 0;
   top: 0;
   background: var(--primary-color);
+  z-index: 1001;
 }
 
 .menu {
@@ -323,7 +324,7 @@ tr.shipped {
   top: 40%;
   left: 0;
   transform: translateY(-50%);
-  z-index: 1000;
+  z-index: 1002;
   border: none;
   cursor: pointer;
   padding: 15px 10px;
@@ -334,6 +335,18 @@ tr.shipped {
   flex-direction: column;
   align-items: center;
   width: 20px;
+}
+
+/* 添加遮罩層樣式 */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
 }
 
 /* 響應式設計 */
@@ -375,6 +388,10 @@ tr.shipped {
     transform: translateX(0);
   }
 
+  .sidebar-overlay.active {
+    display: block;
+  }
+
   .bookmark-toggle {
     display: flex;
     width: 30px;
@@ -388,7 +405,6 @@ tr.shipped {
     top: 50%;
     transform: translateY(-50%);
     cursor: pointer;
-    z-index: 100;
     justify-content: center;
     align-items: center;
     padding: 10px 5px;
@@ -1623,4 +1639,60 @@ tr.rejected {
 
 .unlock-button:hover {
   background-color: #cc0000;
+}
+
+/* 管理員列表樣式 */
+.admin-list {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.admin-list th,
+.admin-list td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-list th {
+  background-color: var(--background-color);
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.admin-list tr:hover {
+  background-color: var(--background-color);
+}
+
+.admin-list .table-button-group {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-list .table-button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 14px;
+  transition: var(--transition);
+}
+
+.admin-list .table-button.edit {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.admin-list .table-button.edit:hover {
+  background-color: var(--primary-hover-color);
+}
+
+.admin-list .table-button.delete {
+  background-color: var(--error-color);
+  color: white;
+}
+
+.admin-list .table-button.delete:hover {
+  background-color: #c82333;
 }

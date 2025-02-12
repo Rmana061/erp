@@ -12,10 +12,18 @@
         <div class="scrollable-content">
           <h2>客戶管理</h2>
           <div class="action-buttons">
-            <router-link to="/add-customer">
-              <button class="action-button">+ 新增客戶</button>
-            </router-link>
-            <button class="action-button" @click="exportCustomers">📊 資料匯出</button>
+            <button 
+              class="action-button" 
+              @click="navigateTo('AddCustomer')"
+              v-permission="'can_add_customer'">
+              + 新增客戶
+            </button>
+            <button 
+              class="action-button" 
+              @click="exportCustomers"
+              v-permission="'can_add_customer'">
+              📊 資料匯出
+            </button>
             <input type="text" v-model="searchQuery" placeholder="搜尋客戶..." class="search-input">
           </div>
 
@@ -42,25 +50,18 @@
                   <td>{{ customer.created_at }}</td>
                   <td>
                     <div class="table-button-group">
-                      <router-link :to="{ 
-                        path: '/add-customer', 
-                        query: { 
-                          mode: 'edit',
-                          id: customer.id,
-                          company_name: customer.company_name,
-                          username: customer.username,
-                          contact_person: customer.contact_person,
-                          phone: customer.phone,
-                          email: customer.email,
-                          address: customer.address,
-                          line_account: customer.line_account || '',
-                          viewable_products: customer.viewable_products || '',
-                          remark: customer.remark || ''
-                        }
-                      }">
-                        <button class="table-button edit">編輯</button>
-                      </router-link>
-                      <button class="table-button delete" @click="deleteCustomerRow(customer.id)">刪除</button>
+                      <button 
+                        class="table-button edit" 
+                        @click="editCustomer(customer.id)"
+                        v-permission="'can_add_customer'">
+                        編輯
+                      </button>
+                      <button 
+                        class="table-button delete" 
+                        @click="deleteCustomer(customer.id)"
+                        v-permission="'can_add_customer'">
+                        刪除
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -233,6 +234,21 @@ export default {
 
       XLSX.utils.book_append_sheet(wb, ws, '客戶清單');
       XLSX.writeFile(wb, '客戶資料.xlsx');
+    },
+    navigateTo(routeName) {
+      this.$router.push({ name: routeName });
+    },
+    editCustomer(customerId) {
+      this.$router.push({
+        name: 'AddCustomer',
+        query: {
+          id: customerId,
+          mode: 'edit'
+        }
+      });
+    },
+    deleteCustomer(customerId) {
+      this.deleteCustomerRow(customerId);
     }
   },
   mounted() {

@@ -107,7 +107,10 @@
                     </td>
                     <td>
                       <div class="action-buttons" v-if="itemIndex === 0 && allItemsPending(order.items)">
-                        <button class="table-button" @click="handleApprove(order)">
+                        <button 
+                          class="table-button" 
+                          @click="handleApprove(order)"
+                          v-permission="'can_approve_orders'">
                           審核
                         </button>
                       </div>
@@ -227,8 +230,8 @@
 import { timeMixin } from '../mixins/timeMixin';
 import { adminMixin } from '../mixins/adminMixin';
 import SideBar from '../components/SideBar.vue';
-import axios from 'axios';
-import { API_BASE_URL, API_PATHS, getApiUrl } from '../config/api';
+import axiosInstance from '../config/axios';
+import { API_PATHS } from '../config/api';
 
 export default {
   name: 'TodayOrders',
@@ -346,9 +349,7 @@ export default {
     async fetchPendingOrders() {
       try {
         console.log('開始獲取待確認訂單...');
-        const response = await axios.post(getApiUrl(API_PATHS.PENDING_ORDERS), {}, {
-          withCredentials: true
-        });
+        const response = await axiosInstance.post(API_PATHS.PENDING_ORDERS);
 
         console.log('API 響應:', response);
 
@@ -371,9 +372,9 @@ export default {
         }
       } catch (error) {
         console.error('獲取待確認訂單失敗:', error);
-        if (error.response) {
-          console.error('錯誤響應:', error.response.data);
-          console.error('狀態碼:', error.response.status);
+        if (error.response?.status === 401) {
+          this.$router.push('/admin-login');
+          return;
         }
         alert('獲取待確認訂單失敗：' + (error.response?.data?.message || error.message));
       }
@@ -446,29 +447,29 @@ export default {
       try {
         // 1. 首先更新所有产品状态
         const updatePromises = this.selectedOrder.items.map(item => 
-          axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
+          axiosInstance.post(API_PATHS.UPDATE_ORDER_STATUS, {
             order_id: item.id,
             status: item.tempStatus,
             shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
             supplier_note: item.tempSupplierNote || ''
-          }, {
-            withCredentials: true
           })
         );
 
         await Promise.all(updatePromises);
 
         // 2. 然后更新订单确认状态
-        await axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_CONFIRMED), {
+        await axiosInstance.post(API_PATHS.UPDATE_ORDER_CONFIRMED, {
           order_number: this.selectedOrder.orderNumber
-        }, {
-          withCredentials: true
         });
 
         alert('訂單處理完成');
         this.fetchPendingOrders();
       } catch (error) {
         console.error('Error updating order:', error);
+        if (error.response?.status === 401) {
+          this.$router.push('/admin-login');
+          return;
+        }
         alert('訂單處理失敗：' + (error.response?.data?.message || error.message));
       } finally {
         this.closeConfirmModal();
@@ -500,11 +501,9 @@ export default {
     },
     async saveQuantity(item) {
       try {
-        const response = await axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_QUANTITY), {
+        const response = await axiosInstance.post(API_PATHS.UPDATE_ORDER_QUANTITY, {
           order_detail_id: item.id,
           quantity: item.tempQuantity
-        }, {
-          withCredentials: true
         });
 
         if (response.data.status === 'success') {
@@ -517,6 +516,10 @@ export default {
         }
       } catch (error) {
         console.error('Error updating quantity:', error);
+        if (error.response?.status === 401) {
+          this.$router.push('/admin-login');
+          return;
+        }
         alert('更新數量失敗：' + (error.response?.data?.message || error.message));
         item.tempQuantity = item.originalQuantity;
       }

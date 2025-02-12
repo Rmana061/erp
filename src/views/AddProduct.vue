@@ -172,9 +172,8 @@ export default {
     async fetchProductDetails(id) {
       try {
         console.log('Fetching product details for ID:', id);
-        const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
-          type: 'admin',
-          product_id: id
+        const response = await axios.post(getApiUrl(API_PATHS.PRODUCT_DETAIL(id)), {
+          type: 'admin'
         }, {
           withCredentials: true,
           headers: {
@@ -185,12 +184,7 @@ export default {
         console.log('Product details response:', response.data);
         
         if (response.data.status === 'success' && response.data.data) {
-          // 从返回的产品列表中找到对应的产品
-          const productData = response.data.data.find(p => p.id === parseInt(id));
-          if (!productData) {
-            throw new Error('找不到該產品');
-          }
-          
+          const productData = response.data.data;
           this.product = {
             name: productData.name,
             description: productData.description,
@@ -208,6 +202,10 @@ export default {
         }
       } catch (error) {
         console.error('Error fetching product details:', error);
+        if (error.response?.status === 401) {
+          this.$router.push('/admin-login');
+          return;
+        }
         alert('獲取產品資料失敗：' + (error.response?.data?.message || error.message));
         this.$router.push('/product-management');
       }

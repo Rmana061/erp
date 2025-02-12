@@ -75,7 +75,8 @@
 import axios from 'axios';
 import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
-import { API_PATHS, getApiUrl } from '../config/api';
+import { API_PATHS } from '../config/api';
+import axiosInstance from '../config/axios';
 
 export default {
   name: 'AddCustomer',
@@ -104,44 +105,16 @@ export default {
       editingId: null
     };
   },
-  created() {
+  async created() {
     // 检查是否是编辑模式
-    const query = this.$route.query;
-    if (query.mode === 'edit' && query.id) {
+    const customerId = this.$route.query.id;
+    if (customerId) {
       this.isEditing = true;
-      this.editingId = query.id;
-      
-      // 处理可见产品列表
-      let selectedProducts = [];
-      if (query.viewable_products) {
-        selectedProducts = query.viewable_products.split(',')
-          .map(p => p.trim())
-          .filter(p => p !== '');
-      }
-      
-      // 直接使用 URL 中的数据初始化表单
-      this.newCustomer = {
-        companyName: query.company_name || '',
-        account: query.username || '',
-        password: '', // 密码不回填
-        selectedProducts: selectedProducts,
-        lineAccount: query.line_account || '',
-        contactPerson: query.contact_person || '',
-        phone: query.phone || '',
-        email: query.email || '',
-        address: query.address || '',
-        notes: query.remark || ''
-      };
-      
-      console.log('Initialized customer data:', {
-        viewable_products: query.viewable_products,
-        selectedProducts: this.newCustomer.selectedProducts,
-        lineAccount: this.newCustomer.lineAccount,
-        notes: this.newCustomer.notes
-      });
+      this.editingId = customerId;
+      await this.fetchCustomerDetails(customerId);
     }
     
-    this.fetchProducts(); // 获取产品列表
+    await this.fetchProducts();
   },
   methods: {
     toggleMenu() {
@@ -151,6 +124,38 @@ export default {
     closeMenu() {
       this.isMenuOpen = false;
       document.body.style.overflow = '';
+    },
+    async fetchCustomerDetails(customerId) {
+      try {
+        const response = await axiosInstance.post(
+          API_PATHS.CUSTOMER_DETAIL(customerId)
+        );
+
+        if (response.data.status === 'success') {
+          const customerData = response.data.data;
+          this.newCustomer = {
+            companyName: customerData.company_name || '',
+            account: customerData.username || '',
+            password: '', // 密码不回填
+            selectedProducts: customerData.viewable_products ? customerData.viewable_products.split(',').map(p => p.trim()).filter(p => p !== '') : [],
+            lineAccount: customerData.line_account || '',
+            contactPerson: customerData.contact_person || '',
+            phone: customerData.phone || '',
+            email: customerData.email || '',
+            address: customerData.address || '',
+            notes: customerData.remark || ''
+          };
+        } else {
+          throw new Error(response.data.message || '獲取客戶資料失敗');
+        }
+      } catch (error) {
+        console.error('Error fetching customer details:', error);
+        if (error.response?.status === 401) {
+          this.$router.push('/admin-login');
+          return;
+        }
+        alert('獲取客戶資料失敗：' + (error.response?.data?.message || error.message));
+      }
     },
     async submitCustomer() {
       try {
@@ -185,7 +190,7 @@ export default {
           email: this.newCustomer.email,
           address: this.newCustomer.address,
           line_account: this.newCustomer.lineAccount,
-          viewable_products: this.newCustomer.selectedProducts.length > 0 ? this.newCustomer.selectedProducts.join(',') : '',
+          viewable_products: this.newCustomer.selectedProducts.join(','),
           remark: this.newCustomer.notes || ''
         };
 
@@ -198,14 +203,10 @@ export default {
         if (this.isEditing) {
           // 编辑现有客户
           customerData.id = this.editingId;
-          response = await axios.put(getApiUrl(API_PATHS.CUSTOMER_UPDATE), customerData, {
-            withCredentials: true
-          });
+          response = await axiosInstance.put(API_PATHS.CUSTOMER_UPDATE, customerData);
         } else {
           // 新增客户
-          response = await axios.post(getApiUrl(API_PATHS.CUSTOMER_ADD), customerData, {
-            withCredentials: true
-          });
+          response = await axiosInstance.post(API_PATHS.CUSTOMER_ADD, customerData);
         }
 
         if (response.data.status === 'success') {
@@ -216,6 +217,10 @@ export default {
         }
       } catch (error) {
         console.error('Error submitting customer:', error);
+        if (error.response?.status === 401) {
+          this.$router.push('/admin-login');
+          return;
+        }
         alert(error.response?.data?.message || '操作失敗，請稍後再試');
       }
     },
@@ -243,10 +248,8 @@ export default {
     },
     async fetchProducts() {
       try {
-        const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
+        const response = await axiosInstance.post(API_PATHS.PRODUCTS, {
           type: 'admin'
-        }, {
-          withCredentials: true
         });
 
         if (response.data.status === 'success') {
@@ -259,43 +262,11 @@ export default {
         }
       } catch (error) {
         console.error('Error fetching products:', error);
-        alert('獲取產品列表失敗：' + (error.response?.data?.message || error.message));
-      }
-    },
-    async fetchCustomerDetails(customerId) {
-      try {
-        const response = await axios.post(
-          getApiUrl(API_PATHS.CUSTOMER_DETAIL(customerId)),
-          {},
-          {
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            }
-          }
-        );
-
-        if (response.data.status === 'success') {
-          const customerData = response.data.data;
-          this.newCustomer = {
-            companyName: customerData.company_name || '',
-            account: customerData.username || '',
-            password: '', // 密码不回填
-            selectedProducts: customerData.viewable_products ? customerData.viewable_products.split(',') : [],
-            lineAccount: customerData.line_account || '',
-            contactPerson: customerData.contact_person || '',
-            phone: customerData.phone || '',
-            email: customerData.email || '',
-            address: customerData.address || '',
-            notes: customerData.remark || ''
-          };
-        } else {
-          throw new Error(response.data.message || '獲取客戶資料失敗');
+        if (error.response?.status === 401) {
+          this.$router.push('/admin-login');
+          return;
         }
-      } catch (error) {
-        console.error('Error fetching customer details:', error);
-        alert('獲取客戶資料失敗：' + (error.response?.data?.message || error.message));
+        alert('獲取產品列表失敗：' + (error.response?.data?.message || error.message));
       }
     }
   },

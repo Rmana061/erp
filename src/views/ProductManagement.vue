@@ -15,10 +15,29 @@
         <div class="scrollable-content">
             <h2>產品管理</h2>
           <div class="action-buttons">
-            <button class="action-button" @click="navigateTo('AddProduct')">+ 新增產品</button>
-            <button class="action-button" @click="batchDelete">- 批量刪除</button>
-            <button class="export-btn" @click="exportReport">↓ 產品匯出</button>
-            <button class="action-button" @click="showLockDateDialog">🔒 鎖定日期</button>
+            <button 
+              class="action-button" 
+              @click="navigateTo('AddProduct')"
+              v-permission="'can_add_product'">
+              + 新增產品
+            </button>
+            <button 
+              class="action-button" 
+              v-permission="'can_add_product'"
+              @click="batchDelete">
+              - 批量刪除
+            </button>
+            <button 
+              class="export-btn" 
+              @click="exportReport">
+              ↓ 產品匯出
+            </button>
+            <button 
+              class="action-button" 
+              v-permission="'can_close_order_dates'"
+              @click="showLockDateDialog">
+              🔒 鎖定日期
+            </button>
             <div class="search-container">
               <input type="text" v-model="searchQuery" placeholder="搜尋產品..." class="search-input" />
               <select v-model="searchType" class="search-select">
@@ -83,11 +102,24 @@
                   <td>{{ product.shipping_time }}天</td>
                   <td>
                     <div class="table-button-group">
-                      <button class="table-button edit" @click="editProduct(product)">編輯</button>
-                      <button class="table-button delete" @click="deleteProduct(product)">刪除</button>
-                      <button v-if="product.dm_url" 
-                              @click="openDM(product.dm_url)"
-                              class="table-button">查看 DM</button>
+                      <button 
+                        class="table-button edit" 
+                        @click="editProduct(product.id)"
+                        v-permission="'can_add_product'">
+                        編輯
+                      </button>
+                      <button 
+                        class="table-button delete" 
+                        @click="deleteProduct(product.id)"
+                        v-permission="'can_add_product'">
+                        刪除
+                      </button>
+                      <button 
+                        class="table-button" 
+                        @click="openDM(product.dm_url)"
+                        v-permission="'can_decide_product_view'">
+                        DM
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -209,31 +241,40 @@ export default {
         }
       }
     },
-    async deleteProduct(product) {
+    async deleteProduct(productId) {
+      const product = this.products.find(p => p.id === productId);
+      if (!product) return;
+      
       if (confirm(`確定要刪除產品：${product.name}？`)) {
         try {
-          await axios.post(getApiUrl(API_PATHS.PRODUCT_DELETE(product.id)), null, {
+          const response = await axios.post(getApiUrl(API_PATHS.PRODUCT_DELETE(productId)), {
+            type: 'admin'
+          }, {
             withCredentials: true,
             headers: {
               'Content-Type': 'application/json'
             }
           });
-          
-          alert("產品已成功刪除");
-          this.fetchProducts();
+
+          if (response.data.status === 'success') {
+            alert("產品已成功刪除");
+            await this.fetchProducts();
+          } else {
+            throw new Error(response.data.message || '刪除失敗');
+          }
         } catch (error) {
           console.error("Error deleting product:", error);
           alert("刪除產品時發生錯誤：" + (error.response?.data?.message || error.message));
         }
       }
     },
-    editProduct(product) {
+    editProduct(productId) {
       this.$router.push({
-        name: "AddProduct",
+        name: 'AddProduct',
         query: {
-          mode: "edit",
-          id: product.id,
-        },
+          id: productId,
+          mode: 'edit'
+        }
       });
     },
     exportReport() {

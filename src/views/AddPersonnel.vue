@@ -43,7 +43,7 @@
             </div>
 
             <div class="button-group">
-              <button class="submit-btn" @click="updatePersonnel">確認</button>
+              <button class="submit-btn" @click="submitPersonnel">確認</button>
               <button class="cancel-btn" @click="navigateTo('Admin')">取消</button>
             </div>
           </div>
@@ -70,6 +70,7 @@ import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
 import { timeMixin } from '../mixins/timeMixin';
 import { API_PATHS, getApiUrl } from '../config/api';
+import axiosInstance from '../config/axios';
 
 export default {
   name: 'AddPersonnel',
@@ -88,6 +89,9 @@ export default {
       editId: null
     };
   },
+  async created() {
+    await this.fetchAdminDetails();
+  },
   methods: {
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
@@ -99,22 +103,34 @@ export default {
       this.editId = this.$route.query.id;
       
       try {
-        const response = await axios.post(getApiUrl(API_PATHS.ADMIN_DETAIL(this.editId)), {}, {
-          withCredentials: true
+        const adminId = localStorage.getItem('admin_id');
+        if (!adminId) {
+          this.$router.push('/admin-login');
+          return;
+        }
+
+        const response = await axiosInstance.post(API_PATHS.ADMIN_INFO, {
+          admin_id: this.editId
         });
 
         if (response.data.status === 'success') {
           const admin = response.data.data;
           this.personnelAccount = admin.admin_account;
           this.personnelName = admin.admin_name;
-          this.personnelStaffNo = admin.staff_no;
+          this.personnelStaffNo = admin.staff_no || '';
           this.personnelPermission = this.getPermissionName(admin.permission_level_id);
         } else {
-          throw new Error(response.data.message || '獲取管理員資料失敗');
+          throw new Error(response.data.message || '获取管理员资料失败');
         }
       } catch (error) {
         console.error('Error fetching admin details:', error);
-        alert('獲取管理員資料失敗：' + (error.response?.data?.message || error.message));
+        if (error.response?.status === 401) {
+          localStorage.removeItem('admin_id');
+          sessionStorage.removeItem('adminInfo');
+          this.$router.push('/admin-login');
+          return;
+        }
+        alert('获取管理员资料失败：' + (error.response?.data?.message || error.message));
       }
     },
     getPermissionName(level_id) {
@@ -135,60 +151,74 @@ export default {
       };
       return permissions[permissionName] || 2;
     },
-    async updatePersonnel() {
-      if (!this.personnelAccount || !this.personnelName || !this.personnelStaffNo || !this.personnelPermission) {
-        alert('請填寫所有必要欄位');
-        return;
-      }
+    async submitPersonnel() {
+      if (!this.validateForm()) return;
 
       try {
-        let response;
-        const requestData = {
+        const personnelData = {
           admin_account: this.personnelAccount,
           admin_name: this.personnelName,
           staff_no: this.personnelStaffNo,
           permission_level_id: this.getPermissionId(this.personnelPermission)
         };
 
-        if (this.personnelPassword) {
-          requestData.admin_password = this.personnelPassword;
+        if (!this.isEditMode || this.personnelPassword) {
+          personnelData.admin_password = this.personnelPassword;
         }
 
         if (this.isEditMode) {
-          // 編輯模式
-          requestData.id = this.editId;
-          response = await axios.post(getApiUrl(API_PATHS.ADMIN_UPDATE), requestData, {
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-        } else {
-          // 新增模式
-          requestData.status = 'active';
-          response = await axios.post(getApiUrl(API_PATHS.ADMIN_ADD), requestData, {
-            withCredentials: true,
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
+          personnelData.id = this.editId;
         }
 
+        // 确保当前管理员已登录
+        const currentAdminId = localStorage.getItem('admin_id');
+        if (!currentAdminId) {
+          this.$router.push('/admin-login');
+          return;
+        }
+
+        const response = await axiosInstance.post(
+          this.isEditMode ? API_PATHS.ADMIN_UPDATE : API_PATHS.ADMIN_ADD,
+          personnelData
+        );
+
         if (response.data.status === 'success') {
-          alert(this.isEditMode ? '人員更新成功！' : '人員新增成功！');
-          this.$router.push('/admin');
+          alert(this.isEditMode ? '管理員更新成功！' : '管理員新增成功！');
+          this.$router.push({ name: 'Admin' });
         } else {
-          throw new Error(response.data.message || (this.isEditMode ? '更新失敗' : '新增失敗'));
+          throw new Error(response.data.message || '操作失敗');
         }
       } catch (error) {
-        console.error('Error updating/adding personnel:', error);
-        alert((this.isEditMode ? '更新' : '新增') + '失敗：' + (error.response?.data?.message || error.message));
+        console.error('Error submitting personnel:', error);
+        if (error.response?.status === 401) {
+          // 如果是认证错误，先检查本地存储
+          const adminInfo = sessionStorage.getItem('adminInfo');
+          if (!adminInfo) {
+            localStorage.removeItem('admin_id');
+            sessionStorage.removeItem('adminInfo');
+            this.$router.push('/admin-login');
+            return;
+          }
+        }
+        alert('操作失敗：' + (error.response?.data?.message || error.message));
       }
+    },
+    validateForm() {
+      const requiredFields = ['personnelAccount', 'personnelName', 'personnelStaffNo', 'personnelPermission'];
+      
+      if (!this.isEditMode && !this.personnelPassword) {
+        alert('請填寫密碼');
+        return false;
+      }
+      
+      for (const field of requiredFields) {
+        if (!this[field]) {
+          alert('請填寫所有必要欄位');
+          return false;
+        }
+      }
+      return true;
     }
-  },
-  mounted() {
-    document.title = '管理者系統';
-    this.fetchAdminDetails();
   }
 };
 </script>
