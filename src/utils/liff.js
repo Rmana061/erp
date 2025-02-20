@@ -1,5 +1,10 @@
 import liff from '@line/liff'
 
+// 从环境变量获取配置
+const LINE_BOT_BASIC_ID = import.meta.env.VITE_LINE_BOT_BASIC_ID
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const LIFF_ID = import.meta.env.VITE_LIFF_ID
+
 export const initializeLiff = async () => {
   try {
     console.log('Starting LIFF initialization...')
@@ -11,7 +16,7 @@ export const initializeLiff = async () => {
     
     // 基础LIFF初始化
     await liff.init({
-      liffId: '2006853614-o8b5wmgq',
+      liffId: LIFF_ID,
       withLoginOnExternalBrowser: true
     }).catch(err => {
       console.error('LIFF initialization error:', err)
@@ -46,7 +51,7 @@ export const initializeLiff = async () => {
         console.log('Got user profile:', profile)
         
         // 调用绑定API
-        const response = await fetch('https://a789-111-249-212-122.ngrok-free.app/api/line/bind', {
+        const response = await fetch(`${API_BASE_URL}/api/line/bind`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -71,8 +76,7 @@ export const initializeLiff = async () => {
         if (result.status === 'success') {
           alert('帳號綁定成功！請點擊確定後加入官方帳號。')
           // 绑定成功后，引导用户加入 LINE Bot 好友
-          const botBasicId = '@936quota' // 从环境变量获取的 LINE Bot Basic ID
-          const addFriendLink = `https://line.me/R/ti/p/${botBasicId}`
+          const addFriendLink = `https://line.me/R/ti/p/${LINE_BOT_BASIC_ID}`
           
           if (liff.isInClient()) {
             // 在 LINE APP 内，直接打开加好友页面
