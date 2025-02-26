@@ -232,7 +232,9 @@ export default {
       if (!detail) return '無變更內容';
       
       try {
+        console.log('原始detail:', detail);
         let detailObj = typeof detail === 'string' ? JSON.parse(detail) : detail;
+        console.log('解析后的detailObj:', detailObj);
         
         // 處理所有操作類型（新增、刪除、修改、審核）
         if (detailObj.message) {
@@ -242,7 +244,7 @@ export default {
           html += `
             <div class="change-item">
               <div class="field-name">訂單號：</div>
-              <div class="new-value">${detailObj.message.order_number}</div>
+              <div class="new-value">${detailObj.message.order_number || ''}</div>
             </div>`;
 
           // 顯示狀態信息
@@ -268,6 +270,7 @@ export default {
 
           // 顯示產品信息
           if (Array.isArray(detailObj.message.products)) {
+            console.log(`處理${detailObj.message.products.length}個產品的變更記錄`);
             detailObj.message.products.forEach((product, index) => {
               html += `
                 <div class="change-item">
@@ -279,6 +282,7 @@ export default {
               if (product.changes) {
                 html += `<div class="product-changes">`;
                 
+                // 檢查並顯示數量變更
                 if (product.changes.quantity) {
                   html += `
                     <div class="change-row">
@@ -293,6 +297,7 @@ export default {
                   html += `<div class="change-row"><div class="field-name">數量：</div><div>${product.quantity || ''}</div></div>`;
                 }
 
+                // 檢查並顯示出貨日期變更
                 if (product.changes.shipping_date) {
                   html += `
                     <div class="change-row">
@@ -307,22 +312,22 @@ export default {
                   html += `<div class="change-row"><div class="field-name">出貨日期：</div><div>${product.shipping_date || '待確認'}</div></div>`;
                 }
 
-                if (product.changes.note) {
+                // 檢查並顯示客戶備註變更
+                if (product.changes.remark) {
                   html += `
                     <div class="change-row">
-                      <div class="field-name">備註：</div>
+                      <div class="field-name">客戶備註：</div>
                       <div class="change-values">
-                        <span class="old-value">${product.changes.note.before}</span>
+                        <span class="old-value">${product.changes.remark.before}</span>
                         <span class="arrow">→</span>
-                        <span class="new-value">${product.changes.note.after}</span>
+                        <span class="new-value">${product.changes.remark.after}</span>
                       </div>
                     </div>`;
-                } else if (product.changes.remark) {
-                  // 不显示客户备注的变更内容
-                } else {
-                  // 不显示客户备注
+                } else if (product.remark) {
+                  html += `<div class="change-row"><div class="field-name">客戶備註：</div><div>${product.remark || '-'}</div></div>`;
                 }
 
+                // 檢查並顯示供應商備註變更
                 if (product.changes.supplier_note) {
                   html += `
                     <div class="change-row">
@@ -335,6 +340,19 @@ export default {
                     </div>`;
                 } else {
                   html += `<div class="change-row"><div class="field-name">供應商備註：</div><div>${product.supplier_note || '-'}</div></div>`;
+                }
+                
+                // 檢查並顯示狀態變更
+                if (product.changes.status) {
+                  html += `
+                    <div class="change-row">
+                      <div class="field-name">狀態：</div>
+                      <div class="change-values">
+                        <span class="old-value">${product.changes.status.before}</span>
+                        <span class="arrow">→</span>
+                        <span class="new-value">${product.changes.status.after}</span>
+                      </div>
+                    </div>`;
                 }
                 
                 html += `</div>`;
@@ -363,6 +381,62 @@ export default {
 
               html += `</div></div>`;
             });
+          } else if (typeof detailObj.message === 'string') {
+            // 嘗試解析字符串格式的消息
+            try {
+              const messageParts = detailObj.message.split('、');
+              const parsedMessage = {};
+              
+              for (const part of messageParts) {
+                if (part.includes(':')) {
+                  const [key, value] = part.split(':');
+                  parsedMessage[key.trim()] = value.trim();
+                }
+              }
+              
+              // 如果解析成功，顯示產品信息
+              if (parsedMessage['產品']) {
+                html += `
+                  <div class="change-item">
+                    <div class="field-name">產品：</div>
+                    <div class="product-details">
+                      <div>名稱：${parsedMessage['產品'] || ''}</div>
+                      <div class="product-changes">
+                        <div class="change-row">
+                          <div class="field-name">數量：</div>
+                          <div>${parsedMessage['數量'] || ''}</div>
+                        </div>
+                        <div class="change-row">
+                          <div class="field-name">出貨日期：</div>
+                          <div>${parsedMessage['出貨日期'] || '待確認'}</div>
+                        </div>
+                        <div class="change-row">
+                          <div class="field-name">客戶備註：</div>
+                          <div>${parsedMessage['備註'] || '-'}</div>
+                        </div>
+                        <div class="change-row">
+                          <div class="field-name">供應商備註：</div>
+                          <div>${parsedMessage['供應商備註'] || '-'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>`;
+              } else {
+                // 如果無法解析為產品信息，直接顯示原始消息
+                html += `
+                  <div class="change-item">
+                    <div class="field-name">詳細信息：</div>
+                    <div class="simple-message">${detailObj.message}</div>
+                  </div>`;
+              }
+            } catch (e) {
+              console.error('解析消息字符串失敗:', e);
+              html += `
+                <div class="change-item">
+                  <div class="field-name">詳細信息：</div>
+                  <div class="simple-message">${detailObj.message}</div>
+                </div>`;
+            }
           }
 
           html += `</div>`;
