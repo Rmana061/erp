@@ -304,10 +304,30 @@ export default {
                 if (product.changes.note) {
                   html += `
                     <div class="change-content">
-                      <div class="field-name">供應商備註：</div>
+                      <div class="field-name">備註：</div>
                       <span class="old-value">${product.changes.note.before}</span>
                       <span class="arrow">→</span>
                       <span class="new-value">${product.changes.note.after}</span>
+                    </div>`;
+                } else if (product.changes.remark) {
+                  html += `
+                    <div class="change-content">
+                      <div class="field-name">客戶備註：</div>
+                      <span class="old-value">${product.changes.remark.before}</span>
+                      <span class="arrow">→</span>
+                      <span class="new-value">${product.changes.remark.after}</span>
+                    </div>`;
+                } else {
+                  html += `<div>客戶備註：${product.remark || '-'}</div>`;
+                }
+
+                if (product.changes.supplier_note) {
+                  html += `
+                    <div class="change-content">
+                      <div class="field-name">供應商備註：</div>
+                      <span class="old-value">${product.changes.supplier_note.before}</span>
+                      <span class="arrow">→</span>
+                      <span class="new-value">${product.changes.supplier_note.after}</span>
                     </div>`;
                 } else {
                   html += `<div>供應商備註：${product.supplier_note || '-'}</div>`;
@@ -317,6 +337,7 @@ export default {
                 html += `
                   <div>數量：${product.quantity || ''}</div>
                   <div>出貨日期：${product.shipping_date || '待確認'}</div>
+                  <div>客戶備註：${product.remark || '-'}</div>
                   <div>供應商備註：${product.supplier_note || '-'}</div>`;
               }
 
@@ -343,17 +364,18 @@ export default {
         'shipping_date': '出貨日期',
         'quantity': '數量',
         'supplier_note': '供應商備註',
+        'remark': '客戶備註',
+        'note': '備註',
         'before': '原始值',
         'after': '變更後',
         'product': '產品',
-        'customer': '客戶',
-        'note': '供應商備註'
+        'customer': '客戶'
       };
       return fieldMap[field] || field;
     },
     getRecordDetail(log) {
-      // 如果是刪除訂單的操作
-      if (log.table_name === 'orders' && log.operation_type === '刪除') {
+      // 對於所有訂單操作（包括新增、修改、刪除、審核）
+      if (log.table_name === 'orders') {
         try {
           // 嘗試解析 operation_detail
           const detail = typeof log.operation_detail === 'string' ? 
@@ -368,7 +390,7 @@ export default {
         }
       }
       
-      // 如果不是刪除訂單操作或解析失敗，返回原始的 record_detail 或 record_id
+      // 如果不是訂單操作或解析失敗，返回原始的 record_detail 或 record_id
       return log.record_detail || log.record_id;
     }
   },

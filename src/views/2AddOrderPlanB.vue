@@ -288,10 +288,27 @@ export default {
         if (response.data.status === 'success') {
           // 準備日誌信息
           const customerId = localStorage.getItem('customer_id');
-          const logMessage = orderData.products.map(product => {
+          
+          // 确保产品信息中包含客户备注和供应商备注
+          const productsList = orderData.products.map(product => {
             const selectedProd = this.selectedProduct(product.product_id);
-            return `訂單號:${this.generatedOrderNumber}、狀態:待確認、產品:${selectedProd.name}、數量:${product.product_quantity}、出貨日期:${this.formatDate(product.shipping_date) || '待確認'}、備註:${product.remark.trim() || '-'}`
-          }).join('、');
+            return {
+              name: selectedProd.name,
+              quantity: product.product_quantity,
+              shipping_date: this.formatDate(product.shipping_date) || '待確認',
+              remark: product.remark || '-',
+              supplier_note: product.supplier_note || '-'
+            };
+          });
+          
+          console.log('Products for log message:', productsList);
+          
+          // 构建日志消息
+          const logMessage = JSON.stringify({
+            order_number: this.generatedOrderNumber,
+            status: '待確認',
+            products: productsList
+          });
 
           const logData = {
             table_name: 'orders',
@@ -303,6 +320,9 @@ export default {
             performed_by: parseInt(customerId),
             user_type: '客戶'
           };
+
+          // 输出日志消息到控制台，用于调试
+          console.log('Generated log message:', logMessage);
 
           // 如果沒有 order_id，使用其他方式獲取
           if (!logData.record_id) {
