@@ -271,45 +271,83 @@ export default {
       this.orderProducts.splice(index, 1);
     },
     async submitOrder() {
-      if (!this.isFormValid) return;
-      
       try {
-        // 获取当前客户ID
-        const customerId = localStorage.getItem('customer_id');
-        if (!customerId) {
-          throw new Error('未找到客戶ID，請重新登入');
+        if (!this.validateOrder()) {
+          return;
         }
 
-        // 过滤掉未选择产品的项目
-        const validProducts = this.orderProducts.filter(p => p.product_id && p.quantity > 0);
+        const orderData = this.prepareOrderData();
+        console.log('Submitting order data:', orderData);
         
-        // 准备订单数据
-        const orderData = {
-          order_number: this.generatedOrderNumber,
-          customer_id: parseInt(customerId),
-          products: validProducts.map(product => {
-            const selectedProd = this.selectedProduct(product.product_id);
-            return {
-              product_id: product.product_id,
-              product_quantity: product.quantity,
-              product_unit: selectedProd.unit,
-              order_status: '待確認',
-              shipping_date: selectedProd.special_date ? null : product.shipping_date,
-              remark: product.remark.trim()
-            };
-          })
-        };
-
-        // 发送订单到后端
         const response = await axios.post(getApiUrl(API_PATHS.CREATE_ORDER), orderData, {
           withCredentials: true
         });
 
-        console.log('訂單提交成功:', response.data);
-        alert('訂單已成功提交');
-        this.$router.push('/order-system');
+        console.log('Create order response:', response.data);
+
+        if (response.data.status === 'success') {
+          // 準備日誌信息
+          const customerId = localStorage.getItem('customer_id');
+          const logMessage = orderData.products.map(product => {
+            const selectedProd = this.selectedProduct(product.product_id);
+            return `訂單號:${this.generatedOrderNumber}、狀態:待確認、產品:${selectedProd.name}、數量:${product.product_quantity}、出貨日期:${this.formatDate(product.shipping_date) || '待確認'}、備註:${product.remark.trim() || '-'}`
+          }).join('、');
+
+          const logData = {
+            table_name: 'orders',
+            operation_type: '新增',
+            record_id: response.data.order_id || response.data.data?.id || null,
+            new_data: {
+              message: logMessage
+            },
+            performed_by: parseInt(customerId),
+            user_type: '客戶'
+          };
+
+          // 如果沒有 order_id，使用其他方式獲取
+          if (!logData.record_id) {
+            try {
+              // 嘗試通過訂單號查詢訂單ID
+              const orderResponse = await axios.post(getApiUrl(API_PATHS.ORDERS), {
+                order_number: this.generatedOrderNumber
+              }, {
+                withCredentials: true
+              });
+              if (orderResponse.data.status === 'success' && orderResponse.data.data?.length > 0) {
+                logData.record_id = orderResponse.data.data[0].id;
+              }
+            } catch (error) {
+              console.error('Error fetching order id:', error);
+            }
+          }
+
+          if (logData.record_id) {
+            console.log('Preparing to send log data:', logData);
+
+            // 記錄操作日誌
+            try {
+              const logResponse = await axios.post(getApiUrl(API_PATHS.LOG_OPERATION), logData, {
+                withCredentials: true
+              });
+              console.log('Log operation response:', logResponse.data);
+            } catch (logError) {
+              console.error('Error logging operation:', logError);
+              console.error('Log error details:', logError.response?.data);
+            }
+          }
+
+          alert('訂單提交成功！');
+          this.$router.push('/order-record');
+        } else {
+          throw new Error(response.data.message || '訂單提交失敗');
+        }
       } catch (error) {
-        console.error('提交訂單失敗:', error);
+        console.error('Error submitting order:', error);
+        if (error.response?.status === 401) {
+          alert('請重新登入');
+          this.$router.push('/customer-login');
+          return;
+        }
         alert('提交訂單失敗：' + (error.response?.data?.message || error.message));
       }
     },
@@ -439,6 +477,46 @@ export default {
     },
     getDisabledDatesArray() {
       return this.lockedDates.map(date => new Date(date.locked_date));
+    },
+    validateOrder() {
+      if (!this.isFormValid) {
+        alert('請檢查訂單資料是否完整');
+        return false;
+      }
+      
+      const customerId = localStorage.getItem('customer_id');
+      if (!customerId) {
+        alert('未找到客戶ID，請重新登入');
+        return false;
+      }
+      
+      return true;
+    },
+    prepareOrderData() {
+      const customerId = localStorage.getItem('customer_id');
+      // 过滤掉未选择产品的项目
+      const validProducts = this.orderProducts.filter(p => p.product_id && p.quantity > 0);
+      
+      // 准备订单数据
+      const orderData = {
+        order_number: this.generatedOrderNumber,
+        customer_id: parseInt(customerId),
+        products: validProducts.map(product => {
+          const selectedProd = this.selectedProduct(product.product_id);
+          return {
+            product_id: product.product_id,
+            product_quantity: product.quantity,
+            product_unit: selectedProd.unit,
+            order_status: '待確認',
+            shipping_date: selectedProd.special_date ? null : product.shipping_date,
+            remark: product.remark ? product.remark.trim() : '',
+            supplier_note: ''
+          };
+        })
+      };
+
+      console.log('Prepared order data:', JSON.stringify(orderData, null, 2));
+      return orderData;
     }
   },
   created() {

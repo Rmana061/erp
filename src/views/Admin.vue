@@ -22,6 +22,12 @@
               v-permission="'can_add_personnel'">
               + 新增人員
             </button>
+            <button 
+              class="action-button" 
+              @click="navigateTo('LogRecords')"
+              v-permission="'can_view_system_logs'">
+              查詢操作紀錄
+            </button>
           </div>
 
           <div class="table-container">

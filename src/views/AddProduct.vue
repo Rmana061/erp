@@ -175,10 +175,7 @@ export default {
         const response = await axios.post(getApiUrl(API_PATHS.PRODUCT_DETAIL(id)), {
           type: 'admin'
         }, {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          withCredentials: true
         });
         
         console.log('Product details response:', response.data);

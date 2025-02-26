@@ -166,22 +166,12 @@
               <tr v-for="(item, index) in selectedOrder?.items" :key="index">
                 <td>{{ item.item }}</td>
                 <td class="quantity-cell">
-                  <template v-if="item.isEditing">
-                    <input 
-                      type="number"
-                      v-model.number="item.tempQuantity"
-                      :min="1"
-                      class="quantity-input"
-                    >
-                    <div class="edit-buttons">
-                      <button class="save-btn" @click="saveQuantity(item)">保存</button>
-                      <button class="cancel-btn" @click="cancelEdit(item)">取消</button>
-                    </div>
-                  </template>
-                  <template v-else>
-                    <span>{{ item.quantity }}</span>
-                    <button class="edit-btn" @click="startEdit(item)">修改</button>
-                  </template>
+                  <input 
+                    type="number"
+                    v-model.number="item.tempQuantity"
+                    :min="1"
+                    class="quantity-input"
+                  >
                 </td>
                 <td>{{ item.unit }}</td>
                 <td>
@@ -307,12 +297,14 @@ export default {
             orderNumber: order.order_number,
             date: order.date,
             customer: order.customer,
+            order_id: order.id,
             items: []
           };
         }
         grouped[order.order_number].items.push({
           item: order.item,
           quantity: order.quantity,
+          tempQuantity: order.quantity,
           unit: order.unit,
           remark: order.remark,
           supplier_note: order.supplier_note,
@@ -363,8 +355,8 @@ export default {
           this.orders = response.data.data;
           console.log('待確認訂單數據:', this.orders);
           if (this.orders.length > 0) {
-            console.log('第一筆訂單的備註:', this.orders[0].remark);
-            console.log('第一筆訂單的供應商備註:', this.orders[0].supplier_note);
+            console.log('第一筆訂單的order_id:', this.orders[0].order_id);
+            console.log('第一筆訂單的完整數據:', JSON.stringify(this.orders[0], null, 2));
           }
         } else {
           console.error('API 返回狀態不是 success:', response.data);
@@ -413,18 +405,20 @@ export default {
       return items.every(item => item.status === '待確認');
     },
     handleApprove(order) {
+      console.log('處理訂單審核:', order);
       this.selectedOrder = {
         ...order,
+        orderNumber: order.orderNumber,
         items: order.items.map(item => ({
           ...item,
           tempStatus: '已確認',
           tempShippingDate: item.shipping_date || '',
           tempSupplierNote: item.supplier_note || '',
-          isEditing: false,
-          tempQuantity: item.quantity,
-          originalQuantity: item.quantity
+          tempQuantity: item.quantity
         }))
       };
+      console.log('選中的訂單數據:', this.selectedOrder);
+      console.log('訂單ID:', this.selectedOrder.order_id);
       this.showConfirmModal = true;
     },
     handleReject(order) {
@@ -443,45 +437,86 @@ export default {
         alert('核准時必須選擇出貨日期');
       }
     },
-    async confirmOrderUpdate() {
+    async saveQuantity(item) {
       try {
-        // 1. 首先更新所有产品状态
-        const updatePromises = this.selectedOrder.items.map(item => 
-          axiosInstance.post(API_PATHS.UPDATE_ORDER_STATUS, {
-            order_id: item.id,
-            status: item.tempStatus,
-            shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
-            supplier_note: item.tempSupplierNote || ''
-          })
-        );
+        const adminId = localStorage.getItem('admin_id');
+        if (!adminId) {
+          this.$router.push('/admin-login');
+          return;
+        }
 
-        await Promise.all(updatePromises);
+        // 檢查是否真的有修改數量
+        if (item.tempQuantity === item.originalQuantity) {
+          return; // 如果數量沒有改變，直接返回
+        }
 
-        // 2. 然后更新订单确认状态
-        await axiosInstance.post(API_PATHS.UPDATE_ORDER_CONFIRMED, {
-          order_number: this.selectedOrder.orderNumber
+        const response = await axiosInstance.post(API_PATHS.UPDATE_ORDER_QUANTITY, {
+          order_detail_id: item.id,
+          quantity: item.tempQuantity
         });
 
-        alert('訂單處理完成');
-        this.fetchPendingOrders();
+        if (response.data.status === 'success') {
+          // 只有在實際修改數量時才記錄日誌
+          const logResponse = await axiosInstance.post(API_PATHS.LOG_RECORD, {
+            table_name: 'order_details',
+            operation_type: '修改',
+            record_id: item.id,
+            old_data: {
+              quantity: item.originalQuantity
+            },
+            new_data: {
+              quantity: item.tempQuantity
+            },
+            performed_by: parseInt(adminId),
+            user_type: '管理員'
+          });
+
+          item.quantity = item.tempQuantity;
+          item.isEditing = false;
+          await this.fetchPendingOrders();
+        } else {
+          throw new Error(response.data.message || '更新失敗');
+        }
       } catch (error) {
-        console.error('Error updating order:', error);
+        console.error('Error updating quantity:', error);
         if (error.response?.status === 401) {
           this.$router.push('/admin-login');
           return;
         }
-        alert('訂單處理失敗：' + (error.response?.data?.message || error.message));
-      } finally {
-        this.closeConfirmModal();
+        alert('更新數量失敗：' + (error.response?.data?.message || error.message));
+        item.tempQuantity = item.originalQuantity;
       }
+    },
+    async updateAllOrderStatus() {
+      try {
+        const updatePromises = this.selectedOrder.items.map(async item => {
+          // 合併狀態、數量和供應商備註的更新
+          const statusUpdate = {
+            order_id: item.id,
+            status: item.tempStatus,
+            shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
+            supplier_note: item.tempSupplierNote || '',
+            quantity: item.tempQuantity  // 添加數量更新
+          };
+
+          // 更新狀態和數量
+          await axiosInstance.post(API_PATHS.UPDATE_ORDER_STATUS, statusUpdate);
+        });
+
+        await Promise.all(updatePromises);
+      } catch (error) {
+        console.error('Error updating order status:', error);
+        throw error;
+      }
+    },
+    async updateOrderConfirmed() {
+      await axiosInstance.post(API_PATHS.UPDATE_ORDER_CONFIRMED, {
+        order_number: this.selectedOrder.orderNumber
+      });
     },
     closeConfirmModal() {
       this.showConfirmModal = false;
       this.selectedOrder = null;
-    },
-    exportOrders() {
-      // TODO: 實現匯出功能
-      alert('匯出功能尚未實現');
     },
     resetFilters() {
       this.searchFilters = {
@@ -499,34 +534,53 @@ export default {
       item.tempQuantity = item.quantity;
       item.originalQuantity = item.quantity;
     },
-    async saveQuantity(item) {
-      try {
-        const response = await axiosInstance.post(API_PATHS.UPDATE_ORDER_QUANTITY, {
-          order_detail_id: item.id,
-          quantity: item.tempQuantity
-        });
-
-        if (response.data.status === 'success') {
-          item.quantity = item.tempQuantity;
-          item.isEditing = false;
-          // 重新獲取訂單數據
-          await this.fetchPendingOrders();
-        } else {
-          throw new Error(response.data.message || '更新失敗');
-        }
-      } catch (error) {
-        console.error('Error updating quantity:', error);
-        if (error.response?.status === 401) {
-          this.$router.push('/admin-login');
-          return;
-        }
-        alert('更新數量失敗：' + (error.response?.data?.message || error.message));
-        item.tempQuantity = item.originalQuantity;
-      }
-    },
     cancelEdit(item) {
       item.isEditing = false;
       item.tempQuantity = item.originalQuantity;
+    },
+    async confirmOrderUpdate() {
+      try {
+        const adminId = localStorage.getItem('admin_id');
+        if (!adminId) {
+          this.$router.push('/admin-login');
+          return;
+        }
+
+        // 更新訂單狀態和數量
+        await this.updateAllOrderStatus();
+        
+        // 更新訂單確認狀態
+        await this.updateOrderConfirmed();
+
+        // 記錄審核日誌
+        const logResponse = await axiosInstance.post(API_PATHS.LOG_RECORD, {
+          table_name: 'orders',
+          operation_type: '審核',
+          record_id: this.selectedOrder.order_id,
+          old_data: {
+            message: `訂單號:${this.selectedOrder.orderNumber}、狀態:待確認`
+          },
+          new_data: {
+            message: `訂單號:${this.selectedOrder.orderNumber}、狀態:已確認`,
+            shipping_dates: this.selectedOrder.items.map(item => ({
+              product: item.item,
+              shipping_date: item.tempShippingDate,
+              status: item.tempStatus
+            }))
+          },
+          performed_by: parseInt(adminId),
+          user_type: '管理員'
+        });
+
+        console.log('日志记录响应:', logResponse);
+
+        this.showConfirmModal = false;
+        alert('訂單處理完成');
+        await this.fetchPendingOrders();
+      } catch (error) {
+        console.error('Error in confirmOrderUpdate:', error);
+        alert('處理訂單時發生錯誤：' + (error.response?.data?.message || error.message));
+      }
     }
   },
   created() {

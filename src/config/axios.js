@@ -13,29 +13,28 @@ const axiosInstance = axios.create({
 
 // 请求拦截器
 axiosInstance.interceptors.request.use(
-    config => {
+    (config) => {
         const adminId = localStorage.getItem('admin_id');
         if (adminId) {
             config.headers['Authorization'] = `Bearer ${adminId}`;
         }
         return config;
     },
-    error => {
+    (error) => {
+        console.error('Request error:', error);
         return Promise.reject(error);
     }
 );
 
 // 响应拦截器
 axiosInstance.interceptors.response.use(
-    response => {
+    (response) => {
         return response;
     },
-    error => {
+    (error) => {
+        console.error('Response error:', error);
         if (error.response?.status === 401) {
-            // 清除本地存储的认证信息
             localStorage.removeItem('admin_id');
-            sessionStorage.removeItem('adminInfo');
-            // 使用 router 进行导航
             window.location.href = '/admin-login';
         }
         return Promise.reject(error);

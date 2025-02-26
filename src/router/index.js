@@ -18,6 +18,7 @@ import OrderRecord from '../views/2OrderRecord.vue';
 import AdminLogin from '../views/AdminLogin.vue';
 import CustomerLogin from '../views/2CustomerLogin.vue';
 import LineBinding from '../views/LineBinding.vue'
+import LogRecords from '../views/LogRecords.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -124,6 +125,12 @@ const router = createRouter({
       path: '/line-binding',
       name: 'LineBinding',
       component: LineBinding
+    },
+    {
+      path: '/admin/log-records',
+      name: 'LogRecords',
+      component: LogRecords,
+      meta: { requiresAuth: true }
     }
   ]
 });

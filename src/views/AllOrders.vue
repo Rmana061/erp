@@ -103,7 +103,20 @@
                   <td>{{ itemIndex === 0 ? order.customer : '' }}</td>
                   <td>{{ itemIndex === 0 ? order.orderNumber : '' }}</td>
                   <td>{{ item.item }}</td>
-                  <td>{{ item.quantity }}</td>
+                  <td>
+                    <template v-if="selectedOrder && selectedOrder.orderNumber === order.orderNumber">
+                      <input 
+                        type="number" 
+                        v-model.number="item.tempQuantity"
+                        :min="1"
+                        class="quantity-input"
+                        style="width: 80px;"
+                      >
+                    </template>
+                    <template v-else>
+                      {{ item.quantity }}
+                    </template>
+                  </td>
                   <td>{{ item.unit }}</td>
                   <td>{{ formatDate(item.shipping_date) }}</td>
                   <td>{{ item.remark || '-' }}</td>
@@ -178,23 +191,13 @@
             <tbody>
               <tr v-for="(item, index) in selectedOrder?.items" :key="index">
                 <td>{{ item.item }}</td>
-                <td class="quantity-cell">
-                  <template v-if="item.isEditing">
-                    <input 
-                      type="number"
-                      v-model.number="item.tempQuantity"
-                      :min="1"
-                      class="quantity-input"
-                    >
-                    <div class="edit-buttons">
-                      <button class="save-btn" @click="saveQuantity(item)">保存</button>
-                      <button class="cancel-btn" @click="cancelEdit(item)">取消</button>
-                    </div>
-                  </template>
-                  <template v-else>
-                    <span>{{ item.quantity }}</span>
-                    <button class="edit-btn" @click="startEdit(item)" v-if="item.status === '待確認'">修改</button>
-                  </template>
+                <td>
+                  <input 
+                    type="number"
+                    v-model.number="item.tempQuantity"
+                    :min="1"
+                    class="quantity-input"
+                  >
                 </td>
                 <td>{{ item.unit }}</td>
                 <td>

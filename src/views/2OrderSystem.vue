@@ -142,6 +142,14 @@ export default {
     },
     async confirmCancelOrder() {
       try {
+        const customerId = localStorage.getItem('customer_id');
+        if (!customerId) {
+          alert('請重新登入');
+          this.$router.push('/customer-login');
+          return;
+        }
+
+        // 取消订单
         const response = await axios.post(getApiUrl(API_PATHS.CANCEL_ORDER), {
           order_number: this.selectedOrder
         }, {
@@ -153,7 +161,7 @@ export default {
           this.orders = this.orders.filter(order => order.order_number !== this.selectedOrder);
           alert('訂單已成功取消');
         } else {
-          alert(response.data.message || '取消訂單失敗');
+          throw new Error(response.data.message || '取消訂單失敗');
         }
       } catch (error) {
         console.error('取消訂單時發生錯誤:', error);

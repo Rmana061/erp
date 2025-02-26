@@ -1,5 +1,5 @@
 // API配置文件
-export const API_BASE_URL = 'http://localhost:5000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 // API路径配置
 export const API_PATHS = {
@@ -26,6 +26,7 @@ export const API_PATHS = {
     PRODUCT_ADD: '/api/products/add',
     PRODUCT_UPDATE: (id) => `/api/products/update/${id}`,
     PRODUCT_DELETE: (id) => `/api/products/delete/${id}`,
+    PRODUCT_DETAIL: (id) => `/api/products/${id}/detail`,
     VIEWABLE_PRODUCTS: '/api/products/viewable',
     LOCKED_DATES: '/api/products/locked-dates',
     LOCK_DATE: '/api/products/lock-date',
@@ -54,7 +55,12 @@ export const API_PATHS = {
     
     // 文件上传
     UPLOAD_IMAGE: '/api/upload/image',
-    UPLOAD_DOCUMENT: '/api/upload/document'
+    UPLOAD_DOCUMENT: '/api/upload/document',
+    
+    // 日誌相關
+    LOG_RECORDS: '/api/log/logs',
+    LOG_STATS: '/api/log/logs/stats',
+    LOG_RECORD: '/api/log/record'
 };
 
 // 完整API URL生成函数
