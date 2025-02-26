@@ -277,68 +277,88 @@ export default {
 
               // 如果是修改或審核操作，顯示變更內容
               if (product.changes) {
+                html += `<div class="product-changes">`;
+                
                 if (product.changes.quantity) {
                   html += `
-                    <div class="change-content">
+                    <div class="change-row">
                       <div class="field-name">數量：</div>
-                      <span class="old-value">${product.changes.quantity.before}</span>
-                      <span class="arrow">→</span>
-                      <span class="new-value">${product.changes.quantity.after}</span>
+                      <div class="change-values">
+                        <span class="old-value">${product.changes.quantity.before}</span>
+                        <span class="arrow">→</span>
+                        <span class="new-value">${product.changes.quantity.after}</span>
+                      </div>
                     </div>`;
                 } else {
-                  html += `<div>數量：${product.quantity || ''}</div>`;
+                  html += `<div class="change-row"><div class="field-name">數量：</div><div>${product.quantity || ''}</div></div>`;
                 }
 
                 if (product.changes.shipping_date) {
                   html += `
-                    <div class="change-content">
+                    <div class="change-row">
                       <div class="field-name">出貨日期：</div>
-                      <span class="old-value">${product.changes.shipping_date.before}</span>
-                      <span class="arrow">→</span>
-                      <span class="new-value">${product.changes.shipping_date.after}</span>
+                      <div class="change-values">
+                        <span class="old-value">${product.changes.shipping_date.before}</span>
+                        <span class="arrow">→</span>
+                        <span class="new-value">${product.changes.shipping_date.after}</span>
+                      </div>
                     </div>`;
                 } else {
-                  html += `<div>出貨日期：${product.shipping_date || '待確認'}</div>`;
+                  html += `<div class="change-row"><div class="field-name">出貨日期：</div><div>${product.shipping_date || '待確認'}</div></div>`;
                 }
 
                 if (product.changes.note) {
                   html += `
-                    <div class="change-content">
+                    <div class="change-row">
                       <div class="field-name">備註：</div>
-                      <span class="old-value">${product.changes.note.before}</span>
-                      <span class="arrow">→</span>
-                      <span class="new-value">${product.changes.note.after}</span>
+                      <div class="change-values">
+                        <span class="old-value">${product.changes.note.before}</span>
+                        <span class="arrow">→</span>
+                        <span class="new-value">${product.changes.note.after}</span>
+                      </div>
                     </div>`;
                 } else if (product.changes.remark) {
-                  html += `
-                    <div class="change-content">
-                      <div class="field-name">客戶備註：</div>
-                      <span class="old-value">${product.changes.remark.before}</span>
-                      <span class="arrow">→</span>
-                      <span class="new-value">${product.changes.remark.after}</span>
-                    </div>`;
+                  // 不显示客户备注的变更内容
                 } else {
-                  html += `<div>客戶備註：${product.remark || '-'}</div>`;
+                  // 不显示客户备注
                 }
 
                 if (product.changes.supplier_note) {
                   html += `
-                    <div class="change-content">
+                    <div class="change-row">
                       <div class="field-name">供應商備註：</div>
-                      <span class="old-value">${product.changes.supplier_note.before}</span>
-                      <span class="arrow">→</span>
-                      <span class="new-value">${product.changes.supplier_note.after}</span>
+                      <div class="change-values">
+                        <span class="old-value">${product.changes.supplier_note.before}</span>
+                        <span class="arrow">→</span>
+                        <span class="new-value">${product.changes.supplier_note.after}</span>
+                      </div>
                     </div>`;
                 } else {
-                  html += `<div>供應商備註：${product.supplier_note || '-'}</div>`;
+                  html += `<div class="change-row"><div class="field-name">供應商備註：</div><div>${product.supplier_note || '-'}</div></div>`;
                 }
+                
+                html += `</div>`;
               } else {
                 // 如果是新增或刪除操作，直接顯示值
                 html += `
-                  <div>數量：${product.quantity || ''}</div>
-                  <div>出貨日期：${product.shipping_date || '待確認'}</div>
-                  <div>客戶備註：${product.remark || '-'}</div>
-                  <div>供應商備註：${product.supplier_note || '-'}</div>`;
+                  <div class="product-changes">
+                    <div class="change-row">
+                      <div class="field-name">數量：</div>
+                      <div>${product.quantity || ''}</div>
+                    </div>
+                    <div class="change-row">
+                      <div class="field-name">出貨日期：</div>
+                      <div>${product.shipping_date || '待確認'}</div>
+                    </div>
+                    <div class="change-row">
+                      <div class="field-name">客戶備註：</div>
+                      <div>${product.remark || '-'}</div>
+                    </div>
+                    <div class="change-row">
+                      <div class="field-name">供應商備註：</div>
+                      <div>${product.supplier_note || '-'}</div>
+                    </div>
+                  </div>`;
               }
 
               html += `</div></div>`;
@@ -440,6 +460,32 @@ export default {
   gap: 8px;
   margin-top: 4px;
   justify-content: center;
+}
+
+/* 新增垂直排列样式 */
+.product-changes {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.change-row {
+  display: flex;
+  align-items: center;
+  padding: 4px 0;
+  border-bottom: 1px dashed #eee;
+}
+
+.change-row:last-child {
+  border-bottom: none;
+}
+
+.change-values {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .old-value {
