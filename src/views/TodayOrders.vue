@@ -427,7 +427,9 @@ export default {
         items: order.items.map(item => ({
           ...item,
           tempStatus: '已取消',
-          tempShippingDate: item.shipping_date || ''
+          tempShippingDate: item.shipping_date || '',
+          tempSupplierNote: item.supplier_note || '',
+          tempQuantity: item.quantity
         }))
       };
       this.showConfirmModal = true;
@@ -494,7 +496,7 @@ export default {
           const statusUpdate = {
             order_id: item.id,
             status: item.tempStatus,
-            shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
+            shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null, // 驳回时不设置出货日期
             supplier_note: item.tempSupplierNote || '',
             quantity: item.tempQuantity  // 添加數量更新
           };
@@ -552,7 +554,11 @@ export default {
         // 更新訂單確認狀態
         await this.updateOrderConfirmed();
 
-        // 記錄審核日誌
+        // 判断是审核通过还是驳回
+        const isRejected = this.selectedOrder.items.some(item => item.tempStatus === '已取消');
+        const newStatus = isRejected ? '已取消' : '已確認';
+
+        // 记录审核日志
         const logResponse = await axiosInstance.post(API_PATHS.LOG_RECORD, {
           table_name: 'orders',
           operation_type: '審核',
@@ -561,12 +567,54 @@ export default {
             message: `訂單號:${this.selectedOrder.orderNumber}、狀態:待確認`
           },
           new_data: {
-            message: `訂單號:${this.selectedOrder.orderNumber}、狀態:已確認`,
-            shipping_dates: this.selectedOrder.items.map(item => ({
-              product: item.item,
-              shipping_date: item.tempShippingDate,
-              status: item.tempStatus
-            }))
+            message: {
+              order_number: this.selectedOrder.orderNumber,
+              status: newStatus,
+              products: this.selectedOrder.items.map(item => {
+                // 只记录实际修改的内容
+                const changes = {};
+                
+                // 状态变更是审核的核心，始终记录
+                changes.status = {
+                  before: '待確認',
+                  after: item.tempStatus  // 使用每个项目的实际状态，确保正确记录"已取消"
+                };
+                
+                // 只有当供应商备注实际发生变化时才记录
+                if (item.tempSupplierNote && item.tempSupplierNote !== item.supplier_note) {
+                  changes.supplier_note = {
+                    before: item.supplier_note || '-',
+                    after: item.tempSupplierNote
+                  };
+                }
+                
+                // 只有当数量实际发生变化时才记录
+                if (item.tempQuantity !== item.quantity) {
+                  changes.quantity = {
+                    before: item.quantity,
+                    after: item.tempQuantity
+                  };
+                }
+                
+                // 只有在状态为"已確認"且有出货日期时才记录出货日期
+                if (item.tempStatus === '已確認' && item.tempShippingDate) {
+                  const oldShippingDate = item.shipping_date || '待確認';
+                  changes.shipping_date = {
+                    before: oldShippingDate,
+                    after: item.tempShippingDate
+                  };
+                }
+                
+                return {
+                  name: item.item,
+                  quantity: item.tempQuantity,
+                  shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
+                  remark: item.note || '-',
+                  supplier_note: item.tempSupplierNote || '-',
+                  changes: changes
+                };
+              })
+            }
           },
           performed_by: parseInt(adminId),
           user_type: '管理員'
