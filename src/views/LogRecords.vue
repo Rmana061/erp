@@ -242,7 +242,7 @@ export default {
           
           // 顯示訂單基本信息
           html += `
-            <div class="change-item">
+            <div class="change-item order-info">
               <div class="field-name">訂單號：</div>
               <div class="new-value">${detailObj.message.order_number || ''}</div>
             </div>`;
@@ -251,13 +251,13 @@ export default {
           if (detailObj.message.status) {
             if (typeof detailObj.message.status === 'string') {
               html += `
-                <div class="change-item">
+                <div class="change-item order-info">
                   <div class="field-name">狀態：</div>
                   <div class="new-value">${detailObj.message.status}</div>
                 </div>`;
             } else {
               html += `
-                <div class="change-item">
+                <div class="change-item order-info">
                   <div class="field-name">狀態：</div>
                   <div class="change-content">
                     <span class="old-value">${detailObj.message.status.before}</span>
@@ -274,9 +274,8 @@ export default {
             detailObj.message.products.forEach((product, index) => {
               html += `
                 <div class="change-item">
-                  <div class="field-name">產品 ${index + 1}：</div>
-                  <div class="product-details">
-                    <div>名稱：${product.name || ''}</div>`;
+                  <div class="product-header">產品 ${index + 1}：${product.name || ''}</div>
+                  <div class="product-details">`;
 
               // 如果是修改或審核操作，顯示變更內容
               if (product.changes) {
@@ -286,7 +285,7 @@ export default {
                 if (product.changes.quantity) {
                   html += `
                     <div class="change-row">
-                      <div class="field-name">數量：</div>
+                      <div class="field-name">數量</div>
                       <div class="change-values">
                         <span class="old-value">${product.changes.quantity.before}</span>
                         <span class="arrow">→</span>
@@ -294,14 +293,18 @@ export default {
                       </div>
                     </div>`;
                 } else {
-                  html += `<div class="change-row"><div class="field-name">數量：</div><div>${product.quantity || ''}</div></div>`;
+                  html += `
+                    <div class="change-row">
+                      <div class="field-name">數量</div>
+                      <div class="field-value">${product.quantity || ''}</div>
+                    </div>`;
                 }
 
                 // 檢查並顯示出貨日期變更
                 if (product.changes.shipping_date) {
                   html += `
                     <div class="change-row">
-                      <div class="field-name">出貨日期：</div>
+                      <div class="field-name">出貨日期</div>
                       <div class="change-values">
                         <span class="old-value">${product.changes.shipping_date.before}</span>
                         <span class="arrow">→</span>
@@ -309,14 +312,18 @@ export default {
                       </div>
                     </div>`;
                 } else {
-                  html += `<div class="change-row"><div class="field-name">出貨日期：</div><div>${product.shipping_date || '待確認'}</div></div>`;
+                  html += `
+                    <div class="change-row">
+                      <div class="field-name">出貨日期</div>
+                      <div class="field-value">${product.shipping_date || '待確認'}</div>
+                    </div>`;
                 }
 
                 // 檢查並顯示客戶備註變更
                 if (product.changes.remark) {
                   html += `
                     <div class="change-row">
-                      <div class="field-name">客戶備註：</div>
+                      <div class="field-name">客戶備註</div>
                       <div class="change-values">
                         <span class="old-value">${product.changes.remark.before}</span>
                         <span class="arrow">→</span>
@@ -324,14 +331,18 @@ export default {
                       </div>
                     </div>`;
                 } else if (product.remark) {
-                  html += `<div class="change-row"><div class="field-name">客戶備註：</div><div>${product.remark || '-'}</div></div>`;
+                  html += `
+                    <div class="change-row">
+                      <div class="field-name">客戶備註</div>
+                      <div class="field-value">${product.remark || '-'}</div>
+                    </div>`;
                 }
 
                 // 檢查並顯示供應商備註變更
                 if (product.changes.supplier_note) {
                   html += `
                     <div class="change-row">
-                      <div class="field-name">供應商備註：</div>
+                      <div class="field-name">供應商備註</div>
                       <div class="change-values">
                         <span class="old-value">${product.changes.supplier_note.before}</span>
                         <span class="arrow">→</span>
@@ -339,14 +350,18 @@ export default {
                       </div>
                     </div>`;
                 } else {
-                  html += `<div class="change-row"><div class="field-name">供應商備註：</div><div>${product.supplier_note || '-'}</div></div>`;
+                  html += `
+                    <div class="change-row">
+                      <div class="field-name">供應商備註</div>
+                      <div class="field-value">${product.supplier_note || '-'}</div>
+                    </div>`;
                 }
                 
                 // 檢查並顯示狀態變更
                 if (product.changes.status) {
                   html += `
                     <div class="change-row">
-                      <div class="field-name">狀態：</div>
+                      <div class="field-name">狀態</div>
                       <div class="change-values">
                         <span class="old-value">${product.changes.status.before}</span>
                         <span class="arrow">→</span>
@@ -361,20 +376,20 @@ export default {
                 html += `
                   <div class="product-changes">
                     <div class="change-row">
-                      <div class="field-name">數量：</div>
-                      <div>${product.quantity || ''}</div>
+                      <div class="field-name">數量</div>
+                      <div class="field-value">${product.quantity || ''}</div>
                     </div>
                     <div class="change-row">
-                      <div class="field-name">出貨日期：</div>
-                      <div>${product.shipping_date || '待確認'}</div>
+                      <div class="field-name">出貨日期</div>
+                      <div class="field-value">${product.shipping_date || '待確認'}</div>
                     </div>
                     <div class="change-row">
-                      <div class="field-name">客戶備註：</div>
-                      <div>${product.remark || '-'}</div>
+                      <div class="field-name">客戶備註</div>
+                      <div class="field-value">${product.remark || '-'}</div>
                     </div>
                     <div class="change-row">
-                      <div class="field-name">供應商備註：</div>
-                      <div>${product.supplier_note || '-'}</div>
+                      <div class="field-name">供應商備註</div>
+                      <div class="field-value">${product.supplier_note || '-'}</div>
                     </div>
                   </div>`;
               }
@@ -398,25 +413,24 @@ export default {
               if (parsedMessage['產品']) {
                 html += `
                   <div class="change-item">
-                    <div class="field-name">產品：</div>
+                    <div class="product-header">產品：${parsedMessage['產品'] || ''}</div>
                     <div class="product-details">
-                      <div>名稱：${parsedMessage['產品'] || ''}</div>
                       <div class="product-changes">
                         <div class="change-row">
-                          <div class="field-name">數量：</div>
-                          <div>${parsedMessage['數量'] || ''}</div>
+                          <div class="field-name">數量</div>
+                          <div class="field-value">${parsedMessage['數量'] || ''}</div>
                         </div>
                         <div class="change-row">
-                          <div class="field-name">出貨日期：</div>
-                          <div>${parsedMessage['出貨日期'] || '待確認'}</div>
+                          <div class="field-name">出貨日期</div>
+                          <div class="field-value">${parsedMessage['出貨日期'] || '待確認'}</div>
                         </div>
                         <div class="change-row">
-                          <div class="field-name">客戶備註：</div>
-                          <div>${parsedMessage['備註'] || '-'}</div>
+                          <div class="field-name">客戶備註</div>
+                          <div class="field-value">${parsedMessage['備註'] || '-'}</div>
                         </div>
                         <div class="change-row">
-                          <div class="field-name">供應商備註：</div>
-                          <div>${parsedMessage['供應商備註'] || '-'}</div>
+                          <div class="field-name">供應商備註</div>
+                          <div class="field-value">${parsedMessage['供應商備註'] || '-'}</div>
                         </div>
                       </div>
                     </div>
@@ -424,7 +438,7 @@ export default {
               } else {
                 // 如果無法解析為產品信息，直接顯示原始消息
                 html += `
-                  <div class="change-item">
+                  <div class="change-item order-info">
                     <div class="field-name">詳細信息：</div>
                     <div class="simple-message">${detailObj.message}</div>
                   </div>`;
@@ -432,7 +446,7 @@ export default {
             } catch (e) {
               console.error('解析消息字符串失敗:', e);
               html += `
-                <div class="change-item">
+                <div class="change-item order-info">
                   <div class="field-name">詳細信息：</div>
                   <div class="simple-message">${detailObj.message}</div>
                 </div>`;
@@ -501,18 +515,26 @@ export default {
   padding: 10px;
   background-color: #f8f9fa;
   border-radius: 6px;
-  text-align: center;
+  text-align: left;
 }
 
 .change-item {
-  margin: 8px 0;
-  padding: 8px;
+  margin: 12px 0;
+  padding: 12px;
   background-color: white;
   border-radius: 4px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* 訂單號和狀態項目特殊樣式 */
+.change-item.order-info {
+  flex-direction: row;
   justify-content: center;
   align-items: center;
+  text-align: center;
 }
 
 .change-header {
@@ -526,6 +548,8 @@ export default {
   color: #666;
   font-weight: 500;
   margin-right: 8px;
+  min-width: 100px;
+  text-align: right;
 }
 
 .change-content {
@@ -536,7 +560,21 @@ export default {
   justify-content: center;
 }
 
-/* 新增垂直排列样式 */
+/* 新增表格式布局 */
+.product-details {
+  width: 100%;
+  padding: 8px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.product-details > div:first-child {
+  font-weight: 500;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
 .product-changes {
   display: flex;
   flex-direction: column;
@@ -548,7 +586,7 @@ export default {
 .change-row {
   display: flex;
   align-items: center;
-  padding: 4px 0;
+  padding: 6px 0;
   border-bottom: 1px dashed #eee;
 }
 
@@ -560,6 +598,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
 }
 
 .old-value {
@@ -630,26 +669,35 @@ export default {
 
 .field-value {
   color: #2c3e50;
+  flex: 1;
+}
+
+.product-header {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 10px;
+  font-size: 1.05em;
+  background-color: #e8f4f8;
+  padding: 8px 12px;
+  border-radius: 4px;
+  width: 100%;
+  border-left: 3px solid #2196F3;
 }
 
 .product-details {
-  margin-left: 20px;
+  width: 100%;
   padding: 8px;
   background-color: #f8f9fa;
   border-radius: 4px;
 }
 
-.product-details > div {
-  margin: 4px 0;
-}
-
-.new-value {
-  color: #27ae60;
+.product-details > div:first-child {
   font-weight: 500;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
 }
-</style>
 
-<style scoped>
 .search-container {
   background-color: #f5f5f5;
   padding: 20px;
