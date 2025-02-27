@@ -554,9 +554,13 @@ export default {
         // 更新訂單確認狀態
         await this.updateOrderConfirmed();
 
-        // 判断是审核通过还是驳回
-        const isRejected = this.selectedOrder.items.some(item => item.tempStatus === '已取消');
-        const newStatus = isRejected ? '已取消' : '已確認';
+        // 判断整张订单的状态
+        const hasConfirmed = this.selectedOrder.items.some(item => item.tempStatus === '已確認');
+        const allCancelled = this.selectedOrder.items.every(item => item.tempStatus === '已取消');
+        
+        // 如果有任何一个产品是已确认，整张订单状态为已确认
+        // 只有当所有产品都是已取消时，整张订单状态才是已取消
+        const orderStatus = hasConfirmed ? '已確認' : (allCancelled ? '已取消' : '已確認');
 
         // 记录审核日志
         const logResponse = await axiosInstance.post(API_PATHS.LOG_RECORD, {
@@ -569,7 +573,7 @@ export default {
           new_data: {
             message: {
               order_number: this.selectedOrder.orderNumber,
-              status: newStatus,
+              status: orderStatus,  // 使用整张订单的状态
               products: this.selectedOrder.items.map(item => {
                 // 只记录实际修改的内容
                 const changes = {};
@@ -577,7 +581,7 @@ export default {
                 // 状态变更是审核的核心，始终记录
                 changes.status = {
                   before: '待確認',
-                  after: item.tempStatus  // 使用每个项目的实际状态，确保正确记录"已取消"
+                  after: item.tempStatus  // 使用每个项目的实际状态
                 };
                 
                 // 只有当供应商备注实际发生变化时才记录
@@ -611,6 +615,7 @@ export default {
                   shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
                   remark: item.note || '-',
                   supplier_note: item.tempSupplierNote || '-',
+                  status: item.tempStatus,  // 添加每个产品的状态
                   changes: changes
                 };
               })
