@@ -106,7 +106,7 @@
                       <span class="status-badge" :class="item.status">{{ item.status }}</span>
                     </td>
                     <td>
-                      <div class="action-buttons" v-if="itemIndex === 0 && allItemsPending(order.items)">
+                      <div class="table-button-group" v-if="itemIndex === 0 && allItemsPending(order.items)">
                         <button 
                           class="table-button" 
                           @click="handleApprove(order)"
@@ -114,7 +114,7 @@
                           審核
                         </button>
                       </div>
-                      <span v-else-if="itemIndex === 0">已處理</span>
+                      <span v-else-if="itemIndex === 0" class="completed-text">已處理</span>
                     </td>
                   </tr>
                 </template>
@@ -644,5 +644,10 @@ export default {
 
 <style>
 @import '../assets/styles/unified-base.css';
+
+.completed-text {
+  display: inline-block;
+  padding: 6px 0;
+}
 </style>
 

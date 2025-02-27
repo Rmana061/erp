@@ -125,7 +125,7 @@
                     <span class="status-badge" :class="item.status">{{ item.status }}</span>
                   </td>
                   <td>
-                    <div class="action-buttons" v-if="itemIndex === 0 && allItemsPending(order.items)">
+                    <div class="table-button-group" v-if="itemIndex === 0 && allItemsPending(order.items)">
                       <button 
                         class="table-button" 
                         @click="handleApprove(order)"
@@ -133,15 +133,15 @@
                         審核
                       </button>
                     </div>
-                    <div class="action-buttons" v-else-if="itemIndex === 0 && hasConfirmedItems(order.items)">
+                    <div class="table-button-group" v-else-if="itemIndex === 0 && hasConfirmedItems(order.items)">
                       <button 
-                        class="complete-btn" 
+                        class="table-button" 
                         @click="handleComplete(order)"
                         v-permission="'can_approve_orders'">
                         完成
                       </button>
                     </div>
-                    <span v-else-if="itemIndex === 0">已完成</span>
+                    <span v-else-if="itemIndex === 0" class="completed-text">已完成</span>
                   </td>
                 </tr>
               </template>
@@ -339,6 +339,7 @@ export default {
             orderNumber: order.order_number,
             date: order.date,
             customer: order.customer,
+            order_id: order.id,
             items: []
           };
         }
@@ -488,13 +489,20 @@ export default {
     },
     async confirmOrderUpdate() {
       try {
+        const adminId = localStorage.getItem('admin_id');
+        if (!adminId) {
+          this.$router.push('/admin-login');
+          return;
+        }
+
         // 1. 首先更新所有产品状态
         const updatePromises = this.selectedOrder.items.map(item => 
           axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
             order_id: item.id,
             status: item.tempStatus,
             shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
-            supplier_note: item.tempSupplierNote || ''
+            supplier_note: item.tempSupplierNote || '',
+            quantity: item.tempQuantity
           }, {
             withCredentials: true
           })
@@ -509,11 +517,87 @@ export default {
           withCredentials: true
         });
 
+        // 3. 判断整张订单的状态
+        const hasConfirmed = this.selectedOrder.items.some(item => item.tempStatus === '已確認');
+        const allCancelled = this.selectedOrder.items.every(item => item.tempStatus === '已取消');
+        
+        // 如果有任何一个产品是已确认，整张订单状态为已确认
+        // 只有当所有产品都是已取消时，整张订单状态才是已取消
+        const orderStatus = hasConfirmed ? '已確認' : (allCancelled ? '已取消' : '已確認');
+
+        // 4. 记录审核日志
+        const logResponse = await axios.post(getApiUrl(API_PATHS.LOG_RECORD), {
+          table_name: 'orders',
+          operation_type: '審核',
+          record_id: this.selectedOrder.order_id,
+          old_data: {
+            message: `訂單號:${this.selectedOrder.orderNumber}、狀態:待確認`
+          },
+          new_data: {
+            message: {
+              order_number: this.selectedOrder.orderNumber,
+              status: orderStatus,  // 使用整张订单的状态
+              products: this.selectedOrder.items.map(item => {
+                // 只记录实际修改的内容
+                const changes = {};
+                
+                // 状态变更是审核的核心，始终记录
+                changes.status = {
+                  before: '待確認',
+                  after: item.tempStatus  // 使用每个项目的实际状态，确保正确记录"已取消"
+                };
+                
+                // 只有当供应商备注实际发生变化时才记录
+                if (item.tempSupplierNote && item.tempSupplierNote !== item.supplier_note) {
+                  changes.supplier_note = {
+                    before: item.supplier_note || '-',
+                    after: item.tempSupplierNote
+                  };
+                }
+                
+                // 只有当数量实际发生变化时才记录
+                if (item.tempQuantity !== item.quantity) {
+                  changes.quantity = {
+                    before: item.quantity,
+                    after: item.tempQuantity
+                  };
+                }
+                
+                // 只有在状态为"已確認"且有出货日期时才记录出货日期
+                if (item.tempStatus === '已確認' && item.tempShippingDate) {
+                  const oldShippingDate = item.shipping_date || '待確認';
+                  changes.shipping_date = {
+                    before: oldShippingDate,
+                    after: item.tempShippingDate
+                  };
+                }
+                
+                return {
+                  name: item.item,
+                  detail_id: item.id,  // 添加detail_id作为唯一标识符，确保相同名称的产品能被区分
+                  quantity: item.tempQuantity,
+                  shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
+                  remark: item.remark || '-',
+                  supplier_note: item.tempSupplierNote || '-',
+                  status: item.tempStatus,  // 添加每个产品的状态
+                  changes: changes
+                };
+              })
+            }
+          },
+          performed_by: parseInt(adminId),
+          user_type: '管理員'
+        }, {
+          withCredentials: true
+        });
+
+        console.log('日志记录响应:', logResponse);
+
         alert('訂單處理完成');
-        this.fetchAllOrders();
+        await this.fetchAllOrders();
       } catch (error) {
-        console.error('Error updating order:', error);
-        alert('訂單處理失敗：' + (error.response?.data?.message || error.message));
+        console.error('Error in confirmOrderUpdate:', error);
+        alert('處理訂單時發生錯誤：' + (error.response?.data?.message || error.message));
       } finally {
         this.closeConfirmModal();
       }
@@ -672,24 +756,9 @@ export default {
 <style>
 @import '../assets/styles/unified-base.css';
 
-.complete-btn {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
-}
-
-.complete-btn:hover {
-  background-color: #45a049;
-}
-
-.complete-btn:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
+.completed-text {
+  display: inline-block;
+  padding: 6px 0;
 }
 
 .modal-content {
