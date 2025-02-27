@@ -680,13 +680,20 @@ export default {
     },
     async confirmComplete() {
       try {
+        const adminId = localStorage.getItem('admin_id');
+        if (!adminId) {
+          this.$router.push('/admin-login');
+          return;
+        }
+
         // 更新所有已确认状态的产品为已出货
         const updatePromises = this.selectedOrder.items
           .filter(item => item.status === '已確認')
           .map(item => 
             axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
               order_id: item.id,
-              status: '已出貨'
+              status: '已出貨',
+              supplier_note: item.supplier_note || '' // 保留原有的供应商备注
             }, {
               withCredentials: true
             })
@@ -699,6 +706,27 @@ export default {
           order_number: this.selectedOrder.orderNumber
         }, {
           withCredentials: true
+        });
+
+        // 记录审核日志 - 从"已确认"变更为"已出货"
+        await axios.post(getApiUrl(API_PATHS.LOG_RECORD), {
+          table_name: 'orders',
+          operation_type: '審核',
+          record_id: this.selectedOrder.order_id,
+          old_data: {
+            message: `訂單號:${this.selectedOrder.orderNumber}、狀態:已確認`
+          },
+          new_data: {
+            message: {
+              order_number: this.selectedOrder.orderNumber,
+              status: {
+                before: '已確認',
+                after: '已出貨'
+              }
+            }
+          },
+          performed_by: parseInt(adminId),
+          user_type: '管理員'
         });
 
         alert('訂單已標記為出貨完成');
