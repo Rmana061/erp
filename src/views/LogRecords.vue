@@ -192,8 +192,10 @@ export default {
         });
 
         if (response.data.status === 'success') {
-          this.logs = response.data.data.logs;
-          this.totalPages = response.data.data.total_pages;
+          console.log('後端返回的日誌數據:', response.data);
+          this.logs = response.data.data;
+          this.totalPages = Math.ceil(response.data.total_count / 50);
+          this.currentPage = this.searchParams.page;
         } else {
           throw new Error(response.data.message || '获取日志失败');
         }
@@ -296,7 +298,7 @@ export default {
                   html += `
                     <div class="change-row">
                       <div class="field-name">數量</div>
-                      <div class="field-value">${product.quantity || ''}</div>
+                      <div class="field-value">${product.quantity || '-'}</div>
                     </div>`;
                 }
 
@@ -315,7 +317,7 @@ export default {
                   html += `
                     <div class="change-row">
                       <div class="field-name">出貨日期</div>
-                      <div class="field-value">${product.shipping_date || '待確認'}</div>
+                      <div class="field-value">${product.shipping_date || '-'}</div>
                     </div>`;
                 }
 

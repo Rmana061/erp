@@ -495,7 +495,7 @@ export default {
           return;
         }
 
-        // 1. 首先更新所有产品状态
+        // 1. 為每個產品單獨發送請求
         const updatePromises = this.selectedOrder.items.map(item => 
           axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
             order_id: item.id,
@@ -525,10 +525,10 @@ export default {
         // 只有当所有产品都是已取消时，整张订单状态才是已取消
         const orderStatus = hasConfirmed ? '已確認' : (allCancelled ? '已取消' : '已確認');
 
-        // 4. 记录审核日志
-        const logResponse = await axios.post(getApiUrl(API_PATHS.LOG_RECORD), {
+        // 4. 记录审核日志 - 包含订单状态变更和产品详细信息
+        await axios.post(getApiUrl(API_PATHS.LOG_RECORD), {
           table_name: 'orders',
-          operation_type: '審核',
+          operation_type: '審核',  // 使用審核類型
           record_id: this.selectedOrder.order_id,
           old_data: {
             message: `訂單號:${this.selectedOrder.orderNumber}、狀態:待確認`
@@ -536,53 +536,37 @@ export default {
           new_data: {
             message: {
               order_number: this.selectedOrder.orderNumber,
-              status: orderStatus,  // 使用整张订单的状态
-              products: this.selectedOrder.items.map(item => {
-                // 只记录实际修改的内容
-                const changes = {};
-                
-                // 状态变更是审核的核心，始终记录
-                changes.status = {
-                  before: '待確認',
-                  after: item.tempStatus  // 使用每个项目的实际状态，确保正确记录"已取消"
-                };
-                
-                // 只有当供应商备注实际发生变化时才记录
-                if (item.tempSupplierNote && item.tempSupplierNote !== item.supplier_note) {
-                  changes.supplier_note = {
-                    before: item.supplier_note || '-',
-                    after: item.tempSupplierNote
-                  };
-                }
-                
-                // 只有当数量实际发生变化时才记录
-                if (item.tempQuantity !== item.quantity) {
-                  changes.quantity = {
+              status: {
+                before: '待確認',
+                after: orderStatus
+              },
+              products: this.selectedOrder.items.map(item => ({
+                name: item.item,
+                detail_id: item.id,
+                quantity: item.tempQuantity,
+                shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
+                remark: item.remark || '-',
+                supplier_note: item.tempSupplierNote || '-',
+                status: item.tempStatus,
+                changes: {
+                  status: {
+                    before: '待確認',
+                    after: item.tempStatus
+                  },
+                  quantity: item.tempQuantity !== item.quantity ? {
                     before: item.quantity,
                     after: item.tempQuantity
-                  };
-                }
-                
-                // 只有在状态为"已確認"且有出货日期时才记录出货日期
-                if (item.tempStatus === '已確認' && item.tempShippingDate) {
-                  const oldShippingDate = item.shipping_date || '待確認';
-                  changes.shipping_date = {
-                    before: oldShippingDate,
+                  } : undefined,
+                  shipping_date: item.tempStatus === '已確認' && item.tempShippingDate ? {
+                    before: item.shipping_date || '待確認',
                     after: item.tempShippingDate
-                  };
+                  } : undefined,
+                  supplier_note: item.tempSupplierNote !== item.supplier_note ? {
+                    before: item.supplier_note || '-',
+                    after: item.tempSupplierNote || '-'
+                  } : undefined
                 }
-                
-                return {
-                  name: item.item,
-                  detail_id: item.id,  // 添加detail_id作为唯一标识符，确保相同名称的产品能被区分
-                  quantity: item.tempQuantity,
-                  shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
-                  remark: item.remark || '-',
-                  supplier_note: item.tempSupplierNote || '-',
-                  status: item.tempStatus,  // 添加每个产品的状态
-                  changes: changes
-                };
-              })
+              }))
             }
           },
           performed_by: parseInt(adminId),
@@ -590,8 +574,6 @@ export default {
         }, {
           withCredentials: true
         });
-
-        console.log('日志记录响应:', logResponse);
 
         alert('訂單處理完成');
         await this.fetchAllOrders();
@@ -686,18 +668,27 @@ export default {
           return;
         }
 
-        // 更新所有已确认状态的产品为已出货
-        const updatePromises = this.selectedOrder.items
-          .filter(item => item.status === '已確認')
-          .map(item => 
-            axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
-              order_id: item.id,
-              status: '已出貨',
-              supplier_note: item.supplier_note || '' // 保留原有的供应商备注
-            }, {
-              withCredentials: true
-            })
-          );
+        // 獲取所有已確認狀態的產品
+        const confirmedProducts = this.selectedOrder.items
+          .filter(item => item.status === '已確認');
+
+        // 如果沒有已確認的產品，提示用戶並返回
+        if (confirmedProducts.length === 0) {
+          alert('沒有可以標記為已出貨的產品');
+          this.closeCompleteModal();
+          return;
+        }
+
+        // 為每個產品單獨發送請求
+        const updatePromises = confirmedProducts.map(item => 
+          axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
+            order_id: item.id,
+            status: '已出貨',
+            supplier_note: item.supplier_note || ''
+          }, {
+            withCredentials: true
+          })
+        );
 
         await Promise.all(updatePromises);
 
@@ -708,10 +699,10 @@ export default {
           withCredentials: true
         });
 
-        // 记录审核日志 - 从"已确认"变更为"已出货"
+        // 记录审核日志 - 包含订单状态变更和产品详细信息
         await axios.post(getApiUrl(API_PATHS.LOG_RECORD), {
           table_name: 'orders',
-          operation_type: '審核',
+          operation_type: '審核',  // 使用審核類型
           record_id: this.selectedOrder.order_id,
           old_data: {
             message: `訂單號:${this.selectedOrder.orderNumber}、狀態:已確認`
@@ -722,11 +713,28 @@ export default {
               status: {
                 before: '已確認',
                 after: '已出貨'
-              }
+              },
+              products: confirmedProducts.map(item => ({
+                name: item.item,
+                detail_id: item.id,
+                quantity: item.quantity,
+                shipping_date: item.shipping_date,
+                remark: item.remark || '-',
+                supplier_note: item.supplier_note || '-',
+                status: '已出貨',
+                changes: {
+                  status: {
+                    before: '已確認',
+                    after: '已出貨'
+                  }
+                }
+              }))
             }
           },
           performed_by: parseInt(adminId),
           user_type: '管理員'
+        }, {
+          withCredentials: true
         });
 
         alert('訂單已標記為出貨完成');
