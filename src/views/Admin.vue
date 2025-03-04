@@ -178,7 +178,7 @@ export default {
     getPermissionName(level_id) {
       const permissions = {
         1: '最高權限',
-        2: '普通權限',
+        2: '審核權限',
         3: '基本權限',
         4: '檢視權限'
       };

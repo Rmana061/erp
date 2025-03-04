@@ -28,7 +28,7 @@
               <input type="text" v-model="personnelName" placeholder="（管理員自填）">
             </div>
             <div class="form-group">
-              <label>員工工號：</label>
+              <label>人員工號：</label>
               <input type="text" v-model="personnelStaffNo" placeholder="（管理員自填）">
             </div>
             <div class="form-group">
@@ -36,7 +36,7 @@
               <select v-model="personnelPermission">
                 <option disabled value="">（選擇）</option>
                 <option>最高權限</option>
-                <option>普通權限</option>
+                <option>審核權限</option>
                 <option>基本權限</option>
                 <option>檢視權限</option>
               </select>
@@ -52,7 +52,7 @@
             <h3>權限說明如下：</h3>
             <ul>
               <li>最高權限：可以檢視訂單、新增客戶、新增產品、新增操作人員、查看所有管理員操作紀錄</li>
-              <li>普通權限：可以檢視訂單、新增客戶、新增產品</li>
+              <li>審核權限：可以檢視訂單、新增客戶、新增產品</li>
               <li>基本權限：可以新增客戶、新增產品</li>
               <li>檢視權限：僅供檢視</li>
             </ul>
@@ -136,7 +136,7 @@ export default {
     getPermissionName(level_id) {
       const permissions = {
         1: '最高權限',
-        2: '普通權限',
+        2: '審核權限',
         3: '基本權限',
         4: '檢視權限'
       };
@@ -145,7 +145,7 @@ export default {
     getPermissionId(permissionName) {
       const permissions = {
         '最高權限': 1,
-        '普通權限': 2,
+        '審核權限': 2,
         '基本權限': 3,
         '檢視權限': 4
       };
