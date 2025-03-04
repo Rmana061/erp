@@ -495,20 +495,21 @@ export default {
           return;
         }
 
-        // 1. 為每個產品單獨發送請求
-        const updatePromises = this.selectedOrder.items.map(item => 
-          axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
-            order_id: item.id,
-            status: item.tempStatus,
-            shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
-            supplier_note: item.tempSupplierNote || '',
-            quantity: item.tempQuantity
-          }, {
-            withCredentials: true
-          })
-        );
+        // 1. 使用批量更新API一次性更新所有产品状态
+        const productsData = this.selectedOrder.items.map(item => ({
+          detail_id: item.id,
+          status: item.tempStatus,
+          shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
+          supplier_note: item.tempSupplierNote || '',
+          quantity: item.tempQuantity
+        }));
 
-        await Promise.all(updatePromises);
+        await axios.post(getApiUrl(API_PATHS.BATCH_UPDATE_ORDER_STATUS), {
+          order_number: this.selectedOrder.orderNumber,
+          products: productsData
+        }, {
+          withCredentials: true
+        });
 
         // 2. 然后更新订单确认状态
         await axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_CONFIRMED), {
@@ -679,18 +680,20 @@ export default {
           return;
         }
 
-        // 為每個產品單獨發送請求
-        const updatePromises = confirmedProducts.map(item => 
-          axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_STATUS), {
-            order_id: item.id,
-            status: '已出貨',
-            supplier_note: item.supplier_note || ''
-          }, {
-            withCredentials: true
-          })
-        );
+        // 准备所有产品的数据，用于批量更新
+        const productsData = confirmedProducts.map(item => ({
+          detail_id: item.id,
+          status: '已出貨',
+          supplier_note: item.supplier_note || ''
+        }));
 
-        await Promise.all(updatePromises);
+        // 使用批量更新API一次性更新所有产品状态
+        await axios.post(getApiUrl(API_PATHS.BATCH_UPDATE_ORDER_STATUS), {
+          order_number: this.selectedOrder.orderNumber,
+          products: productsData
+        }, {
+          withCredentials: true
+        });
 
         // 更新订单出货状态
         await axios.post(getApiUrl(API_PATHS.UPDATE_ORDER_SHIPPED), {

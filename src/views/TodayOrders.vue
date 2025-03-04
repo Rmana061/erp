@@ -489,28 +489,6 @@ export default {
         item.tempQuantity = item.originalQuantity;
       }
     },
-    async updateAllOrderStatus() {
-      try {
-        const updatePromises = this.selectedOrder.items.map(async item => {
-          // 合併狀態、數量和供應商備註的更新
-          const statusUpdate = {
-            order_id: item.id,
-            status: item.tempStatus,
-            shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null, // 驳回时不设置出货日期
-            supplier_note: item.tempSupplierNote || '',
-            quantity: item.tempQuantity  // 添加數量更新
-          };
-
-          // 更新狀態和數量
-          await axiosInstance.post(API_PATHS.UPDATE_ORDER_STATUS, statusUpdate);
-        });
-
-        await Promise.all(updatePromises);
-      } catch (error) {
-        console.error('Error updating order status:', error);
-        throw error;
-      }
-    },
     async updateOrderConfirmed() {
       await axiosInstance.post(API_PATHS.UPDATE_ORDER_CONFIRMED, {
         order_number: this.selectedOrder.orderNumber
@@ -548,8 +526,20 @@ export default {
           return;
         }
 
-        // 更新訂單狀態和數量
-        await this.updateAllOrderStatus();
+        // 收集所有产品的变更数据
+        const productsData = this.selectedOrder.items.map(item => ({
+          detail_id: item.id,
+          status: item.tempStatus,
+          shipping_date: item.tempStatus === '已確認' ? item.tempShippingDate : null,
+          supplier_note: item.tempSupplierNote || '',
+          quantity: item.tempQuantity
+        }));
+
+        // 使用批量更新API一次性更新所有产品
+        await axiosInstance.post(API_PATHS.BATCH_UPDATE_ORDER_STATUS, {
+          order_number: this.selectedOrder.orderNumber,
+          products: productsData
+        });
         
         // 更新訂單確認狀態
         await this.updateOrderConfirmed();
