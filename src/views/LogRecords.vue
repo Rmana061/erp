@@ -167,7 +167,48 @@ export default {
       totalPages: 0,
       currentPage: 1,
       showModal: false,
-      selectedLog: null
+      selectedLog: null,
+      // 定義需要顯示的客戶欄位及其顯示名稱
+      customerFields: {
+        'company_name': '公司名稱',
+        'username': '帳號',
+        'password': '密碼',
+        'viewable_products': '可購產品',
+        'line_account': 'LINE帳號',
+        'contact_person': '聯絡人',
+        'phone': '電話',
+        'email': 'Email',
+        'address': '地址',
+        'remark': '備註'
+      },
+      // 表名顯示映射
+      tableNames: {
+        'orders': '訂單',
+        'customers': '客戶',
+        'products': '產品',
+        'administrators': '管理員'
+      },
+      // 字段顯示名稱映射
+      fieldDisplayMap: {
+        'order_confirmed': '訂單確認狀態',
+        'status': '狀態',
+        'shipping_date': '出貨日期',
+        'quantity': '數量',
+        'supplier_note': '供應商備註',
+        'remark': '客戶備註',
+        'note': '備註',
+        'before': '原始值',
+        'after': '變更後',
+        'product': '產品',
+        'customer': '客戶'
+      },
+      // 權限ID映射
+      permissionMap: {
+        '1': '最高權限',
+        '2': '審核權限',
+        '3': '普通權限',
+        '4': '檢視權限'
+      }
     };
   },
   methods: {
@@ -222,13 +263,7 @@ export default {
       return new Date(dateStr).toLocaleString('zh-TW');
     },
     getTableDisplayName(tableName) {
-      const tableNames = {
-        'orders': '訂單',
-        'customers': '客戶',
-        'products': '產品',
-        'administrators': '管理員'
-      };
-      return tableNames[tableName] || tableName;
+      return this.tableNames[tableName] || tableName;
     },
     formatChanges(detail) {
       if (!detail) return '無變更內容';
@@ -240,335 +275,404 @@ export default {
         
         // 處理所有操作類型（新增、刪除、修改、審核）
         if (detailObj.message) {
-          let html = `<div class="change-list">`;
+          let html = this.startChangeList();
           
+          // 處理客戶相關日誌
+          if (detailObj.message.customer || 
+              (detailObj.message.new_data && (detailObj.message.new_data.company_name || detailObj.message.new_data.username))) {
+            html += this.formatCustomerChanges(detailObj);
+          }
           // 處理管理員相關日誌
-          if (detailObj.message.admin) {
-            const adminInfo = detailObj.message.admin;
-            
-            // 判斷操作類型，修改操作只顯示變更詳情
-            if (detailObj.operation_type !== '修改') {
-              // 新增和刪除操作顯示管理員信息
-              html += `
-                <div class="change-item admin-info">
-                  <div class="admin-header">管理員資訊</div>
-                  <div class="admin-details">
-                    <div class="change-row">
-                      <div class="field-name">人員帳號</div>
-                      <div class="field-value">${adminInfo.admin_account || '-'}</div>
-                    </div>
-                    <div class="change-row">
-                      <div class="field-name">人員姓名</div>
-                      <div class="field-value">${adminInfo.admin_name || '-'}</div>
-                    </div>
-                    <div class="change-row">
-                      <div class="field-name">人員工號</div>
-                      <div class="field-value">${adminInfo.staff_no || '-'}</div>
-                    </div>
-                    <div class="change-row">
-                      <div class="field-name">人員權限</div>
-                      <div class="field-value">${this.convertPermissionToText(adminInfo.permission_level) || '-'}</div>
-                    </div>
-                  </div>
-                </div>`;
-            }
-            
-            // 如果有變更信息，顯示變更部分（修改操作）
-            if (detailObj.message.changes) {
-              html += `
-                <div class="change-item">
-                  <div class="change-header">變更詳情</div>
-                  <div class="change-details">`;
-              
-              for (const [field, change] of Object.entries(detailObj.message.changes)) {
-                let beforeValue = change.before;
-                let afterValue = change.after;
-                
-                // 對人員權限進行特殊處理，轉換為中文
-                if (field === '人員權限') {
-                  beforeValue = this.convertPermissionToText(beforeValue);
-                  afterValue = this.convertPermissionToText(afterValue);
-                }
-                
-                html += `
-                  <div class="change-row">
-                    <div class="field-name">${field}</div>
-                    <div class="change-values">
-                      <span class="old-value">${beforeValue}</span>
-                      <span class="arrow">→</span>
-                      <span class="new-value">${afterValue}</span>
-                    </div>
-                  </div>`;
-              }
-              
-              html += `</div></div>`;
-            }
-            
-            html += `</div>`;
-            return html;
+          else if (detailObj.message.admin) {
+            html += this.formatAdminChanges(detailObj);
           } 
           // 處理訂單相關日誌
           else if (detailObj.message.order_number) {
-            // 顯示訂單基本信息
-            html += `
-              <div class="change-item order-info">
-                <div class="field-name">訂單號：</div>
-                <div class="new-value">${detailObj.message.order_number || ''}</div>
-              </div>`;
-
-            // 顯示狀態信息
-            if (detailObj.message.status) {
-              if (typeof detailObj.message.status === 'string') {
-                html += `
-                  <div class="change-item order-info">
-                    <div class="field-name">狀態：</div>
-                    <div class="new-value">${detailObj.message.status}</div>
-                  </div>`;
-              } else {
-                html += `
-                  <div class="change-item order-info">
-                    <div class="field-name">狀態：</div>
-                    <div class="change-content">
-                      <span class="old-value">${detailObj.message.status.before}</span>
-                      <span class="arrow">→</span>
-                      <span class="new-value">${detailObj.message.status.after}</span>
-                    </div>
-                  </div>`;
-              }
-            }
-
-            // 顯示產品信息
-            if (Array.isArray(detailObj.message.products)) {
-              console.log(`處理${detailObj.message.products.length}個產品的變更記錄`);
-              detailObj.message.products.forEach((product, index) => {
-                html += `
-                  <div class="change-item">
-                    <div class="product-header">產品 ${index + 1}：${product.name || ''}</div>
-                    <div class="product-details">`;
-
-                // 如果是修改或審核操作，顯示變更內容
-                if (product.changes) {
-                  html += `<div class="product-changes">`;
-                  
-                  // 檢查並顯示數量變更
-                  if (product.changes.quantity) {
-                    html += `
-                      <div class="change-row">
-                        <div class="field-name">數量</div>
-                        <div class="change-values">
-                          <span class="old-value">${product.changes.quantity.before}</span>
-                          <span class="arrow">→</span>
-                          <span class="new-value">${product.changes.quantity.after}</span>
-                        </div>
-                      </div>`;
-                  } else {
-                    html += `
-                      <div class="change-row">
-                        <div class="field-name">數量</div>
-                        <div class="field-value">${product.quantity || '-'}</div>
-                      </div>`;
-                  }
-
-                  // 檢查並顯示出貨日期變更
-                  if (product.changes.shipping_date) {
-                    html += `
-                      <div class="change-row">
-                        <div class="field-name">出貨日期</div>
-                        <div class="change-values">
-                          <span class="old-value">${product.changes.shipping_date.before}</span>
-                          <span class="arrow">→</span>
-                          <span class="new-value">${product.changes.shipping_date.after}</span>
-                        </div>
-                      </div>`;
-                  } else {
-                    html += `
-                      <div class="change-row">
-                        <div class="field-name">出貨日期</div>
-                        <div class="field-value">${product.shipping_date || '-'}</div>
-                      </div>`;
-                  }
-
-                  // 檢查並顯示客戶備註變更
-                  if (product.changes.remark) {
-                    html += `
-                      <div class="change-row">
-                        <div class="field-name">客戶備註</div>
-                        <div class="change-values">
-                          <span class="old-value">${product.changes.remark.before}</span>
-                          <span class="arrow">→</span>
-                          <span class="new-value">${product.changes.remark.after}</span>
-                        </div>
-                      </div>`;
-                  } else if (product.remark) {
-                    html += `
-                      <div class="change-row">
-                        <div class="field-name">客戶備註</div>
-                        <div class="field-value">${product.remark || '-'}</div>
-                      </div>`;
-                  }
-
-                  // 檢查並顯示供應商備註變更
-                  if (product.changes.supplier_note) {
-                    html += `
-                      <div class="change-row">
-                        <div class="field-name">供應商備註</div>
-                        <div class="change-values">
-                          <span class="old-value">${product.changes.supplier_note.before}</span>
-                          <span class="arrow">→</span>
-                          <span class="new-value">${product.changes.supplier_note.after}</span>
-                        </div>
-                      </div>`;
-                  } else {
-                    html += `
-                      <div class="change-row">
-                        <div class="field-name">供應商備註</div>
-                        <div class="field-value">${product.supplier_note || '-'}</div>
-                      </div>`;
-                  }
-                  
-                  // 檢查並顯示狀態變更
-                  if (product.changes.status) {
-                    html += `
-                      <div class="change-row">
-                        <div class="field-name">狀態</div>
-                        <div class="change-values">
-                          <span class="old-value">${product.changes.status.before}</span>
-                          <span class="arrow">→</span>
-                          <span class="new-value">${product.changes.status.after}</span>
-                        </div>
-                      </div>`;
-                  }
-                  
-                  html += `</div>`;
-                } else {
-                  // 如果是新增或刪除操作，直接顯示值
-                  html += `
-                    <div class="product-changes">
-                      <div class="change-row">
-                        <div class="field-name">數量</div>
-                        <div class="field-value">${product.quantity || ''}</div>
-                      </div>
-                      <div class="change-row">
-                        <div class="field-name">出貨日期</div>
-                        <div class="field-value">${product.shipping_date || '待確認'}</div>
-                      </div>
-                      <div class="change-row">
-                        <div class="field-name">客戶備註</div>
-                        <div class="field-value">${product.remark || '-'}</div>
-                      </div>
-                      <div class="change-row">
-                        <div class="field-name">供應商備註</div>
-                        <div class="field-value">${product.supplier_note || '-'}</div>
-                      </div>
-                    </div>`;
-                }
-
-                html += `</div></div>`;
-              });
-            } else if (typeof detailObj.message === 'string') {
-              // 嘗試解析字符串格式的消息
-              try {
-                const messageParts = detailObj.message.split('、');
-                const parsedMessage = {};
-                
-                for (const part of messageParts) {
-                  if (part.includes(':')) {
-                    const [key, value] = part.split(':');
-                    parsedMessage[key.trim()] = value.trim();
-                  }
-                }
-                
-                // 如果解析成功，顯示產品信息
-                if (parsedMessage['產品']) {
-                  html += `
-                    <div class="change-item">
-                      <div class="product-header">產品：${parsedMessage['產品'] || ''}</div>
-                      <div class="product-details">
-                        <div class="product-changes">
-                          <div class="change-row">
-                            <div class="field-name">數量</div>
-                            <div class="field-value">${parsedMessage['數量'] || ''}</div>
-                          </div>
-                          <div class="change-row">
-                            <div class="field-name">出貨日期</div>
-                            <div class="field-value">${parsedMessage['出貨日期'] || '待確認'}</div>
-                          </div>
-                          <div class="change-row">
-                            <div class="field-name">客戶備註</div>
-                            <div class="field-value">${parsedMessage['備註'] || '-'}</div>
-                          </div>
-                          <div class="change-row">
-                            <div class="field-name">供應商備註</div>
-                            <div class="field-value">${parsedMessage['供應商備註'] || '-'}</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>`;
-                } else {
-                  // 如果無法解析為產品信息，直接顯示原始消息
-                  html += `
-                    <div class="change-item order-info">
-                      <div class="field-name">詳細信息：</div>
-                      <div class="simple-message">${detailObj.message}</div>
-                    </div>`;
-                }
-              } catch (e) {
-                console.error('解析消息字符串失敗:', e);
-                html += `
-                  <div class="change-item order-info">
-                    <div class="field-name">詳細信息：</div>
-                    <div class="simple-message">${detailObj.message}</div>
-                  </div>`;
-              }
-            }
-            
-            html += `</div>`;
-            return html;
+            html += this.formatOrderChanges(detailObj);
           } else {
             // 處理其他類型的消息
-            html += `
-              <div class="change-item order-info">
-                <div class="field-name">詳細信息：</div>
-                <div class="simple-message">${JSON.stringify(detailObj.message, null, 2)}</div>
-              </div>`;
-            html += `</div>`;
-            return html;
+            html += this.generateSimpleMessage('詳細信息', JSON.stringify(detailObj.message, null, 2));
           }
+          
+          html += this.endChangeList();
+          return html;
         }
         
-        return `<div class="simple-message">${JSON.stringify(detailObj, null, 2)}</div>`;
+        return this.wrapInSimpleMessage(JSON.stringify(detailObj, null, 2));
         
       } catch (e) {
         console.error('Error formatting changes:', e);
         return String(detail);
       }
     },
-    getFieldDisplayName(field) {
-      const fieldMap = {
-        'order_confirmed': '訂單確認狀態',
-        'status': '狀態',
-        'shipping_date': '出貨日期',
-        'quantity': '數量',
-        'supplier_note': '供應商備註',
-        'remark': '客戶備註',
-        'note': '備註',
-        'before': '原始值',
-        'after': '變更後',
-        'product': '產品',
-        'customer': '客戶'
-      };
-      return fieldMap[field] || field;
+
+    // 處理客戶相關日誌的輔助方法
+    formatCustomerChanges(detailObj) {
+      // 處理客戶數據的顯示
+      const customerData = detailObj.operation_type === '修改' ? 
+        { old: detailObj.message.old_data, new: detailObj.message.new_data } : 
+        (detailObj.operation_type === '新增' ? { new: detailObj.message.customer || detailObj.message.new_data } : 
+        { old: detailObj.message.customer || detailObj.message.old_data });
+      
+      let html = this.startChangeItem('customer-info');
+      html += this.generateSectionHeader('客戶資訊', 'customer-header');
+      html += this.startChangeDetails('customer-details');
+      
+      // 對於新增和刪除操作，顯示完整資訊
+      if (detailObj.operation_type === '新增' || detailObj.operation_type === '刪除') {
+        const data = detailObj.operation_type === '新增' ? customerData.new : customerData.old;
+        
+        // 按照定義的顺序显示字段，而不是直接遍历原始数据
+        Object.keys(this.customerFields).forEach(field => {
+          if (data && (data[field] !== undefined || (field === 'password' && data.password_changed))) {
+            if (field === 'password' && data.password_changed) {
+              html += this.generatePasswordChangeRow(this.customerFields[field]);
+            } else if (field !== 'password') {
+              html += this.generateFieldRow(this.customerFields[field], data[field] || '-');
+            }
+          }
+        });
+      } 
+      // 對於修改操作，優先使用changes字段顯示變更詳情
+      else if (detailObj.operation_type === '修改' || detailObj.operation_type.includes('修改')) {
+        // 如果有changes字段，優先使用它
+        if (detailObj.message.changes) {
+          // 按照定義的顺序检查并显示变更字段
+          Object.keys(this.customerFields).forEach(field => {
+            // 特殊處理密碼欄位
+            if (field === 'password' && (detailObj.message.changes.__password_changed__ || detailObj.message.password_changed)) {
+              html += this.generatePasswordChangeRow(this.customerFields[field]);
+              return; // 繼續下一個字段
+            }
+            
+            // 跳過特殊標記字段
+            if (field === '__password_changed__') return;
+            
+            const change = detailObj.message.changes[field];
+            const label = this.customerFields[field];
+            
+            // 只处理在changes中存在且有before和after的字段
+            if (change && typeof change === 'object' && 'before' in change && 'after' in change) {
+              html += this.generateChangeRow(label, change.before || '-', change.after || '-');
+            }
+          });
+        }
+        // 如果没有changes字段，则使用old_data和new_data进行比较
+        else if (customerData.old && customerData.new) {
+          // 按照定義的顺序比较并显示变更字段
+          Object.keys(this.customerFields).forEach(field => {
+            // 特殊處理密碼欄位
+            if (field === 'password' && customerData.new.password_changed) {
+              html += this.generatePasswordChangeRow(this.customerFields[field]);
+              return; // 繼續下一個字段
+            }
+            
+            const oldValue = customerData.old[field];
+            const newValue = customerData.new[field];
+            const label = this.customerFields[field];
+            
+            // 只顯示有變更的欄位
+            if (oldValue !== newValue && field !== 'password') {
+              html += this.generateChangeRow(label, oldValue || '-', newValue || '-');
+            }
+          });
+        }
+      }
+      
+      html += this.endChangeDetails();
+      html += this.endChangeItem();
+      return html;
     },
+
+    // 處理管理員相關日誌的輔助方法
+    formatAdminChanges(detailObj) {
+      const adminInfo = detailObj.message.admin;
+      let html = '';
+      
+      // 判斷操作類型，修改操作只顯示變更詳情
+      if (detailObj.operation_type !== '修改') {
+        // 新增和刪除操作顯示管理員信息
+        html += this.startChangeItem('admin-info');
+        html += this.generateSectionHeader('管理員資訊', 'admin-header');
+        html += this.startChangeDetails('admin-details');
+        
+        html += this.generateFieldRow('人員帳號', adminInfo.admin_account || '-');
+        html += this.generateFieldRow('人員姓名', adminInfo.admin_name || '-');
+        html += this.generateFieldRow('人員工號', adminInfo.staff_no || '-');
+        html += this.generateFieldRow('人員權限', this.convertPermissionToText(adminInfo.permission_level) || '-');
+        
+        html += this.endChangeDetails();
+        html += this.endChangeItem();
+      }
+      
+      // 如果有變更信息，顯示變更部分（修改操作）
+      if (detailObj.message.changes) {
+        html += this.startChangeItem();
+        html += this.generateSectionHeader('變更詳情', 'change-header');
+        html += this.startChangeDetails('change-details');
+        
+        for (const [field, change] of Object.entries(detailObj.message.changes)) {
+          let beforeValue = change.before;
+          let afterValue = change.after;
+          
+          // 對人員權限進行特殊處理，轉換為中文
+          if (field === '人員權限') {
+            beforeValue = this.convertPermissionToText(beforeValue);
+            afterValue = this.convertPermissionToText(afterValue);
+          }
+          
+          html += this.generateChangeRow(field, beforeValue, afterValue);
+        }
+        
+        html += this.endChangeDetails();
+        html += this.endChangeItem();
+      }
+      
+      return html;
+    },
+
+    // 處理訂單相關日誌的輔助方法
+    formatOrderChanges(detailObj) {
+      let html = '';
+      
+      // 顯示訂單基本信息
+      html += this.generateOrderInfoRow('訂單號', detailObj.message.order_number || '');
+
+      // 顯示狀態信息
+      if (detailObj.message.status) {
+        if (typeof detailObj.message.status === 'string') {
+          html += this.generateOrderInfoRow('狀態', detailObj.message.status);
+        } else {
+          html += this.generateOrderStatusChangeRow(detailObj.message.status.before, detailObj.message.status.after);
+        }
+      }
+
+      // 顯示產品信息
+      if (Array.isArray(detailObj.message.products)) {
+        console.log(`處理${detailObj.message.products.length}個產品的變更記錄`);
+        detailObj.message.products.forEach((product, index) => {
+          html += this.formatProductChange(product, index);
+        });
+      } else if (typeof detailObj.message === 'string') {
+        html += this.formatMessageString(detailObj.message);
+      }
+      
+      return html;
+    },
+
+    // 處理產品變更的輔助方法
+    formatProductChange(product, index) {
+      let html = this.startChangeItem();
+      html += this.generateSectionHeader(`產品 ${index + 1}：${product.name || ''}`, 'product-header');
+      html += this.startChangeDetails('product-details');
+
+      // 如果是修改或審核操作，顯示變更內容
+      if (product.changes) {
+        html += this.startProductChanges();
+        
+        // 檢查並顯示數量變更
+        if (product.changes.quantity) {
+          html += this.generateChangeRow('數量', product.changes.quantity.before, product.changes.quantity.after);
+        } else {
+          html += this.generateFieldRow('數量', product.quantity || '-');
+        }
+
+        // 檢查並顯示出貨日期變更
+        if (product.changes.shipping_date) {
+          html += this.generateChangeRow('出貨日期', product.changes.shipping_date.before, product.changes.shipping_date.after);
+        } else {
+          html += this.generateFieldRow('出貨日期', product.shipping_date || '-');
+        }
+
+        // 檢查並顯示客戶備註變更
+        if (product.changes.remark) {
+          html += this.generateChangeRow('客戶備註', product.changes.remark.before, product.changes.remark.after);
+        } else if (product.remark) {
+          html += this.generateFieldRow('客戶備註', product.remark || '-');
+        }
+
+        // 檢查並顯示供應商備註變更
+        if (product.changes.supplier_note) {
+          html += this.generateChangeRow('供應商備註', product.changes.supplier_note.before, product.changes.supplier_note.after);
+        } else {
+          html += this.generateFieldRow('供應商備註', product.supplier_note || '-');
+        }
+        
+        // 檢查並顯示狀態變更
+        if (product.changes.status) {
+          html += this.generateChangeRow('狀態', product.changes.status.before, product.changes.status.after);
+        }
+        
+        html += this.endProductChanges();
+      } else {
+        // 如果是新增或刪除操作，直接顯示值
+        html += this.startProductChanges();
+        html += this.generateFieldRow('數量', product.quantity || '');
+        html += this.generateFieldRow('出貨日期', product.shipping_date || '待確認');
+        html += this.generateFieldRow('客戶備註', product.remark || '-');
+        html += this.generateFieldRow('供應商備註', product.supplier_note || '-');
+        html += this.endProductChanges();
+      }
+
+      html += this.endChangeDetails();
+      html += this.endChangeItem();
+      return html;
+    },
+
+    // 處理字符串消息的輔助方法
+    formatMessageString(message) {
+      let html = '';
+      // 嘗試解析字符串格式的消息
+      try {
+        const messageParts = message.split('、');
+        const parsedMessage = {};
+        
+        for (const part of messageParts) {
+          if (part.includes(':')) {
+            const [key, value] = part.split(':');
+            parsedMessage[key.trim()] = value.trim();
+          }
+        }
+        
+        // 如果解析成功，顯示產品信息
+        if (parsedMessage['產品']) {
+          html += this.startChangeItem();
+          html += this.generateSectionHeader(`產品：${parsedMessage['產品'] || ''}`, 'product-header');
+          html += this.startChangeDetails('product-details');
+          html += this.startProductChanges();
+          
+          html += this.generateFieldRow('數量', parsedMessage['數量'] || '');
+          html += this.generateFieldRow('出貨日期', parsedMessage['出貨日期'] || '待確認');
+          html += this.generateFieldRow('客戶備註', parsedMessage['備註'] || '-');
+          html += this.generateFieldRow('供應商備註', parsedMessage['供應商備註'] || '-');
+          
+          html += this.endProductChanges();
+          html += this.endChangeDetails();
+          html += this.endChangeItem();
+        } else {
+          // 如果無法解析為產品信息，直接顯示原始消息
+          html += this.generateSimpleMessage('詳細信息', message);
+        }
+      } catch (e) {
+        console.error('解析消息字符串失敗:', e);
+        html += this.generateSimpleMessage('詳細信息', message);
+      }
+      return html;
+    },
+
+    // HTML模板輔助方法
+    startChangeList() {
+      return `<div class="change-list">`;
+    },
+    
+    endChangeList() {
+      return `</div>`;
+    },
+    
+    startChangeItem(className = '') {
+      return `<div class="change-item ${className}">`;
+    },
+    
+    endChangeItem() {
+      return `</div>`;
+    },
+    
+    startChangeDetails(className = '') {
+      return `<div class="${className}">`;
+    },
+    
+    endChangeDetails() {
+      return `</div>`;
+    },
+    
+    startProductChanges() {
+      return `<div class="product-changes">`;
+    },
+    
+    endProductChanges() {
+      return `</div>`;
+    },
+    
+    generateSectionHeader(text, className = '') {
+      return `<div class="${className}">${text}</div>`;
+    },
+    
+    generateSimpleMessage(label, message) {
+      return `
+        <div class="change-item order-info">
+          <div class="field-name">${label}：</div>
+          <div class="simple-message">${message}</div>
+        </div>`;
+    },
+    
+    wrapInSimpleMessage(message) {
+      return `<div class="simple-message">${message}</div>`;
+    },
+    
+    generateOrderInfoRow(label, value) {
+      return `
+        <div class="change-item order-info">
+          <div class="field-name">${label}：</div>
+          <div class="new-value">${value}</div>
+        </div>`;
+    },
+    
+    generateOrderStatusChangeRow(beforeStatus, afterStatus) {
+      return `
+        <div class="change-item order-info">
+          <div class="field-name">狀態：</div>
+          <div class="change-content">
+            <span class="old-value">${beforeStatus}</span>
+            <span class="arrow">→</span>
+            <span class="new-value">${afterStatus}</span>
+          </div>
+        </div>`;
+    },
+
+    // 生成標準字段行的輔助方法
+    generateFieldRow(label, value) {
+      return `
+        <div class="change-row">
+          <div class="field-name">${label}</div>
+          <div class="field-value">${value}</div>
+        </div>`;
+    },
+
+    // 生成標準變更行的輔助方法
+    generateChangeRow(label, oldValue, newValue) {
+      return `
+        <div class="change-row">
+          <div class="field-name">${label}</div>
+          <div class="change-values">
+            <span class="old-value">${oldValue}</span>
+            <span class="arrow">→</span>
+            <span class="new-value">${newValue}</span>
+          </div>
+        </div>`;
+    },
+
+    // 生成密碼變更行的輔助方法
+    generatePasswordChangeRow(label) {
+      return `
+        <div class="change-row">
+          <div class="field-name">${label}</div>
+          <div class="change-values">
+            <span class="old-value">*****</span>
+            <span class="arrow">→</span>
+            <span class="new-value">已更新密碼</span>
+          </div>
+        </div>`;
+    },
+
+    getFieldDisplayName(field) {
+      return this.fieldDisplayMap[field] || field;
+    },
+    
     convertPermissionToText(permissionId) {
       // 将权限ID转换为对应的中文描述
-      const permissionMap = {
-        '1': '最高權限',
-        '2': '審核權限',
-        '3': '普通權限',
-        '4': '檢視權限'
-      };
-      return permissionMap[permissionId] || `${permissionId}`;
+      return this.permissionMap[permissionId] || `${permissionId}`;
     },
+    
     getRecordDetail(log) {
       // 對於所有訂單操作（包括新增、修改、刪除、審核）
       if (log.table_name === 'orders') {
@@ -599,6 +703,51 @@ export default {
           }
         } catch (e) {
           console.error('Error parsing admin operation detail:', e);
+        }
+      }
+      
+      // 對於客戶操作（包括新增、修改、刪除）
+      if (log.table_name === 'customers') {
+        try {
+          // 嘗試解析 operation_detail
+          const detail = typeof log.operation_detail === 'string' ? 
+            JSON.parse(log.operation_detail) : log.operation_detail;
+          
+          // 優先顯示客戶名稱，不管是否有密碼變更
+          // 新增和修改操作優先從new_data中獲取
+          if (detail?.message?.new_data?.username) {
+            return detail.message.new_data.username;  // 返回客戶名稱
+          } 
+          // 刪除操作或備用情況從old_data中獲取
+          else if (detail?.message?.old_data?.username) {
+            return detail.message.old_data.username;  // 返回客戶名稱
+          } 
+          // 備用：從customer直接獲取
+          else if (detail?.message?.customer?.username) {
+            return detail.message.customer.username;  // 返回客戶名稱
+          }
+          // 如果沒有username，才嘗試獲取company_name
+          else if (detail?.message?.new_data?.company_name) {
+            return detail.message.new_data.company_name;  // 返回公司名稱
+          }
+          else if (detail?.message?.old_data?.company_name) {
+            return detail.message.old_data.company_name;  // 返回公司名稱
+          }
+          else if (detail?.message?.customer?.company_name) {
+            return detail.message.customer.company_name;  // 返回公司名稱
+          }
+          // 最後才考慮使用ID
+          else if (detail?.message?.new_data?.id) {
+            return `客戶ID: ${detail.message.new_data.id}`;  // 返回客戶ID
+          } 
+          else if (detail?.message?.old_data?.id) {
+            return `客戶ID: ${detail.message.old_data.id}`;  // 返回客戶ID
+          } 
+          else if (detail?.message?.customer?.id) {
+            return `客戶ID: ${detail.message.customer.id}`;  // 返回客戶ID
+          }
+        } catch (e) {
+          console.error('Error parsing customer operation detail:', e);
         }
       }
       
