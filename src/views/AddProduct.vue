@@ -1,7 +1,7 @@
 <!-- 新增產品 -->
 <template>
   <body class="admin-mode">
-  <div class="container">
+  <div class="container product-management">
     <SideBar menu-type="admin" />
     <div class="main-content">
       <div class="header">
@@ -10,7 +10,7 @@
       </div>
       <div class="content-wrapper">
         <div class="scrollable-content">
-          <div class="form-container">
+          <div class="form-container product-form">
             <h2>{{ isEditing ? '編輯產品' : '新增產品' }}</h2>
             <div class="form-group">
               <label>產品名稱：</label>
@@ -209,10 +209,11 @@ export default {
             unit: productData.product_unit,
             shipping_time: productData.shipping_time,
             special_date: productData.special_date,
-            original_image_filename: productData.original_image_filename || '',
-            original_dm_filename: productData.original_dm_filename || '',
-            image_original_filename: productData.image_original_filename || '',
-            dm_original_filename: productData.dm_original_filename || ''
+            // 保存两个不同的字段命名以确保兼容性
+            original_image_filename: productData.original_image_filename || productData.image_original_filename || '',
+            original_dm_filename: productData.original_dm_filename || productData.dm_original_filename || '',
+            image_original_filename: productData.image_original_filename || productData.original_image_filename || '',
+            dm_original_filename: productData.dm_original_filename || productData.original_dm_filename || ''
           };
           console.log('Product data loaded:', this.product);
           // 清除文件选择状态，因为已经加载了现有产品的文件
@@ -237,6 +238,8 @@ export default {
       }
 
       try {
+        console.log('保存产品前的数据:', this.product);
+        
         const productData = {
           type: 'admin',
           name: this.product.name.trim(),
@@ -248,6 +251,7 @@ export default {
           product_unit: this.product.unit.trim(),
           shipping_time: parseInt(this.product.shipping_time) || 0,
           special_date: this.product.special_date || false,
+          // 确保字段名与数据库完全一致
           image_original_filename: this.product.image_original_filename || '',
           dm_original_filename: this.product.dm_original_filename || ''
         };
@@ -258,7 +262,11 @@ export default {
           productData.stock_quantity = 0;
         }
 
-        console.log('Sending product data:', productData);
+        console.log('发送到后端的产品数据:', productData);
+        console.log('特别注意原始文件名字段:', {
+          image_original_filename: productData.image_original_filename,
+          dm_original_filename: productData.dm_original_filename
+        });
 
         const response = await axios.post(
           getApiUrl(this.isEditing ? API_PATHS.PRODUCT_UPDATE(this.editingId) : API_PATHS.PRODUCT_ADD),
@@ -271,7 +279,7 @@ export default {
           }
         );
 
-        console.log('Server response:', response.data);
+        console.log('服务器响应:', response.data);
 
         if (response.data.status === 'success' || 
             (response.data.message && response.data.message.includes('successfully'))) {
@@ -305,13 +313,17 @@ export default {
       if (!path) return '';
       
       // 检查是否有图片原始文件名
-      if (path === this.product.image_url && this.product.original_image_filename) {
-        return this.product.original_image_filename;
+      if (path === this.product.image_url) {
+        if (this.product.original_image_filename || this.product.image_original_filename) {
+          return this.product.original_image_filename || this.product.image_original_filename;
+        }
       }
       
       // 检查是否有文档原始文件名
-      if (path === this.product.dm_url && this.product.original_dm_filename) {
-        return this.product.original_dm_filename;
+      if (path === this.product.dm_url) {
+        if (this.product.original_dm_filename || this.product.dm_original_filename) {
+          return this.product.original_dm_filename || this.product.dm_original_filename;
+        }
       }
       
       // 如果没有原始文件名，则使用路径中的文件名
@@ -323,6 +335,7 @@ export default {
       
       // 立即显示选择的文件名
       this.selectedImageFile = file;
+      console.log(`选择的图片文件: ${file.name}`);
       
       if (!this.product.name) {
         alert('請先輸入產品名稱');
@@ -336,6 +349,7 @@ export default {
       formData.append('productName', this.product.name);
       
       try {
+        console.log('正在上传图片...');
         const response = await axios.post(getApiUrl(API_PATHS.UPLOAD_IMAGE), formData, {
           withCredentials: true,
           headers: {
@@ -343,13 +357,25 @@ export default {
           }
         });
         
+        console.log('图片上传响应:', response.data);
+        
         if (response.data.status === 'success') {
           this.product.image_url = response.data.data.file_path;
-          // 保存原始文件名
+          // 保存原始文件名到两个字段以确保兼容性
           if (response.data.data.original_filename) {
             this.product.image_original_filename = response.data.data.original_filename;
-            console.log(`保存图片原始文件名: ${response.data.data.original_filename}`);
+            this.product.original_image_filename = response.data.data.original_filename;
+            console.log(`保存图片原始文件名(从API): ${response.data.data.original_filename}`);
+          } else if (file.name) {
+            // 如果API没有返回原始文件名，使用本地文件名
+            this.product.image_original_filename = file.name;
+            this.product.original_image_filename = file.name;
+            console.log(`保存图片原始文件名(本地): ${file.name}`);
           }
+          console.log('当前产品对象中的图片原始文件名:', {
+            image_original_filename: this.product.image_original_filename,
+            original_image_filename: this.product.original_image_filename
+          });
           this.$refs.imageInput.value = '';
         } else {
           throw new Error(response.data.message || '上傳圖片失敗');
@@ -366,6 +392,7 @@ export default {
       
       // 立即显示选择的文件名
       this.selectedDmFile = file;
+      console.log(`选择的文档文件: ${file.name}`);
       
       if (!this.product.name) {
         alert('請先輸入產品名稱');
@@ -379,6 +406,7 @@ export default {
       formData.append('productName', this.product.name);
       
       try {
+        console.log('正在上传文档...');
         const response = await axios.post(getApiUrl(API_PATHS.UPLOAD_DOCUMENT), formData, {
           withCredentials: true,
           headers: {
@@ -386,13 +414,25 @@ export default {
           }
         });
         
+        console.log('文档上传响应:', response.data);
+        
         if (response.data.status === 'success') {
           this.product.dm_url = response.data.data.file_path;
-          // 保存原始文件名
+          // 保存原始文件名到两个字段以确保兼容性
           if (response.data.data.original_filename) {
             this.product.dm_original_filename = response.data.data.original_filename;
-            console.log(`保存文档原始文件名: ${response.data.data.original_filename}`);
+            this.product.original_dm_filename = response.data.data.original_filename;
+            console.log(`保存文档原始文件名(从API): ${response.data.data.original_filename}`);
+          } else if (file.name) {
+            // 如果API没有返回原始文件名，使用本地文件名
+            this.product.dm_original_filename = file.name;
+            this.product.original_dm_filename = file.name;
+            console.log(`保存文档原始文件名(本地): ${file.name}`);
           }
+          console.log('当前产品对象中的文档原始文件名:', {
+            dm_original_filename: this.product.dm_original_filename,
+            original_dm_filename: this.product.original_dm_filename
+          });
           this.$refs.dmInput.value = '';
         } else {
           throw new Error(response.data.message || '上傳文件失敗');
@@ -478,88 +518,4 @@ export default {
 
 <style>
 @import '../assets/styles/unified-base.css';
-
-.custom-checkbox {
-  position: relative;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 5px 0;
-  user-select: none;
-}
-
-.custom-checkbox input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
-}
-
-.custom-checkbox .checkmark {
-  position: relative;
-  height: 18px;
-  width: 18px;
-  background-color: #fff;
-  border: 2px solid #ddd;
-  border-radius: 3px;
-  margin-right: 8px;
-}
-
-.custom-checkbox:hover input ~ .checkmark {
-  border-color: #40b883;
-}
-
-.custom-checkbox input:checked ~ .checkmark {
-  background-color: #40b883;
-  border-color: #40b883;
-}
-
-.custom-checkbox .checkmark:after {
-  content: "";
-  position: absolute;
-  display: none;
-  left: 5px;
-  top: 1px;
-  width: 4px;
-  height: 9px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.custom-checkbox input:checked ~ .checkmark:after {
-  display: block;
-}
-
-/* 表单组样式 */
-.form-group {
-  margin-bottom: 20px;
-  text-align: left;
-  width: 100%;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  text-align: left;
-}
-
-.form-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-  width: 100%;
-}
-
-.action-buttons {
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-}
-
-.action-button {
-  padding: 8px 20px;
-}
 </style>

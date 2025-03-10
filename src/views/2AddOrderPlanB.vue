@@ -552,4 +552,5 @@ export default {
 
 <style>
 @import '../assets/styles/unified-base.css';
+
 </style>

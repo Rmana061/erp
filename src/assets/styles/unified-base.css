@@ -873,18 +873,27 @@ tr.shipped {
 }
 
 .input-group {
-    background-color: #f8f9fa;
-    padding: 15px;
-    border-radius: var(--border-radius);
-    margin-bottom: 20px;
-    width: 100%; /* 讓寬度自適應父容器 */
-  }
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: var(--border-radius);
+  margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input-group > div {
+  width: 100%;
+  box-sizing: border-box;
+}
 
 .product-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
 }
 
 .product-select {
@@ -928,20 +937,62 @@ tr.shipped {
 .date-input {
   position: relative;
   margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  align-items: flex-start;
 }
 
 .date-input label {
   display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  width: 100%;
+  text-align: left;
+}
+
+.datepicker-container {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
   margin-bottom: 5px;
 }
 
+/* Vue Datepicker 组件的深度样式 */
+.customer-mode .order-form .dp__main {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.customer-mode .order-form .dp__input_wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.customer-mode .order-form .dp__input {
+  text-align: center;
+  width: 100%;
+  max-width: 100%;
+}
+
+/* 确保日期选择器弹出层在最上层 */
+.dp__overlay {
+  z-index: 1000;
+}
+
 .special-date-notice {
-  color: var(--error-color);
+  color: #856404;
   font-size: 0.9em;
   padding: 8px;
-  background-color: #fdeaea;
+  background-color: #fff3cd;
+  border: 1px solid #ffecb5;
   border-radius: var(--border-radius);
-  margin-top: 4px;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  width: 100%;
   text-align: center;
 }
 
@@ -952,21 +1003,44 @@ tr.shipped {
   border-radius: var(--border-radius);
 }
 
+.shipping-hint {
+  margin-top: 5px;
+  font-size: 14px;
+  color: var(--text-light);
+  text-align: center;
+  width: 100%;
+}
+
 .remark-input {
   position: relative;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 15px;
+}
+
+.remark-input label {
+  width: 100%;
+  margin-bottom: 8px;
+  font-weight: 500;
+  display: block;
+  text-align: left;
 }
 
 .remark-input textarea {
   width: 100%;
+  max-width: 100%;
   min-height: 80px;
-  padding: 8px;
+  padding: 10px;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
   resize: vertical;
   font-size: 14px;
   background-color: white;
-  box-sizing: border-box;  /* 确保padding不会增加宽度 */
+  box-sizing: border-box;
+  margin: 0 auto;
+  text-align: left;
 }
 
 .remark-input textarea:focus {
@@ -975,19 +1049,20 @@ tr.shipped {
 }
 
 .char-count {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
   font-size: 12px;
   color: var(--text-light);
-  background-color: rgba(255, 255, 255, 0.8);  /* 半透明背景 */
   padding: 2px 5px;
   border-radius: 3px;
+  margin-top: 5px;
+  max-width: 100%;
+  width: 100%;
+  text-align: right;
+  align-self: flex-end;
 }
 
 .remove-btn {
   padding: 4px 8px;
-  margin-left: auto; /* 使按鈕靠右 */
+  margin-left: auto;
   background-color: var(--error-color);
   color: white;
   border: none;
@@ -1244,22 +1319,22 @@ tr.shipped {
 }
 
 .reset-btn {
-  padding: 8px 16px; /* 内边距 */
-  border: none; /* 无边框 */
-  border-radius: var(--border-radius); /* 圆角 */
-  background-color: #6c757d; /* 背景颜色 */
-  color: white; /* 字体颜色 */
-  cursor: pointer; /* 鼠标指针 */
-  transition: background-color 0.3s; /* 过渡效果 */
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--border-radius);
+  background-color: #6c757d;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
 }
 
 .reset-btn:hover {
-  background-color: #5a6268; /* 悬停时的背景颜色 */
+  background-color: #5a6268;
 }
 
 .reset-btn:disabled {
-  background-color: #ccc; /* 禁用状态的背景颜色 */
-  cursor: not-allowed; /* 禁用状态的鼠标指针 */
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 
 /* 緊湊型搜索面板樣式 */
@@ -1442,102 +1517,6 @@ tr.rejected {
     margin-top: 10px;
   }
   
-}
-
-/* Vue Datepicker 统一样式 */
-.customer-mode .order-form .dp__input_wrap {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background-color: white;
-  height: 38px;
-}
-
-.customer-mode .order-form .dp__input_wrap input {
-  flex: 1;
-  border: none;
-  padding: 8px;
-  font-size: 14px;
-  background: none;
-  width: calc(100% - 30px);  /* 减去图标宽度 */
-}
-
-.customer-mode .order-form .dp__input_icon {
-  width: 20px;
-  height: 20px;
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-
-/* 移除所有可能导致冲突的样式 */
-.customer-mode .order-form .dp__input {
-  all: unset;
-  width: 100%;
-}
-
-.input-group .date-input {
-  margin-bottom: 15px;
-}
-
-.date-input label {
-  display: block;
-  margin-bottom: 8px;
-  color: var(--text-color);
-  font-weight: 500;
-}
-
-.shipping-hint {
-  font-size: 12px;
-  color: var(--text-light);
-  margin-top: 5px;
-  text-align: center;
-}
-
-@media screen and (max-width: 768px) {
-  .action-buttons {
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
-  }
-
-  .action-buttons a {
-    width: 100%;
-  }
-
-  .action-button {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .search-container {
-    width: 100%;
-    margin-top: 10px;
-  }
-
-  .search-input {
-    flex: 1;
-  }
-
-  .search-select {
-    width: auto;
-  }
-
-  /* 移除移動端 router-link 的下劃線和默認樣式 */
-  td a {
-    text-decoration: none;
-  }
-
-  td a.table-button {
-    text-decoration: none;
-    color: white;
-  }
-}
-
-/* 移除 router-link 的下劃線 */
-.action-buttons a {
-  text-decoration: none;
 }
 
 /* 數量編輯相關樣式 */
@@ -1775,3 +1754,142 @@ tr.rejected {
   color: #359268;
 }
 /* 文件上传与预览样式 - 结束 */
+
+/* 产品管理页面样式 - 从AddProduct.vue迁移 */
+.admin-mode .product-form .custom-checkbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 5px 0;
+  user-select: none;
+}
+
+.admin-mode .product-form .custom-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.admin-mode .product-form .custom-checkbox .checkmark {
+  position: relative;
+  height: 18px;
+  width: 18px;
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 3px;
+  margin-right: 8px;
+}
+
+.admin-mode .product-form .custom-checkbox:hover input ~ .checkmark {
+  border-color: #40b883;
+}
+
+.admin-mode .product-form .custom-checkbox input:checked ~ .checkmark {
+  background-color: #40b883;
+  border-color: #40b883;
+}
+
+.admin-mode .product-form .custom-checkbox .checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 5px;
+  top: 1px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.admin-mode .product-form .custom-checkbox input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* 产品管理页自定义样式 */
+.product-management .custom-checkbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 5px 0;
+  user-select: none;
+}
+
+.product-management .custom-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.product-management .custom-checkbox .checkmark {
+  position: relative;
+  height: 18px;
+  width: 18px;
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 3px;
+  margin-right: 8px;
+}
+
+.product-management .custom-checkbox:hover input ~ .checkmark {
+  border-color: #40b883;
+}
+
+.product-management .custom-checkbox input:checked ~ .checkmark {
+  background-color: #40b883;
+  border-color: #40b883;
+}
+
+.product-management .custom-checkbox .checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 5px;
+  top: 1px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.product-management .custom-checkbox input:checked ~ .checkmark:after {
+  display: block;
+}
+
+/* 产品表单样式 */
+.product-form .form-group {
+  margin-bottom: 20px;
+  text-align: left;
+  width: 100%;
+}
+
+.product-form .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.product-form .form-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 100%;
+}
+
+.product-form .action-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.product-form .action-button {
+  padding: 8px 20px;
+}
