@@ -1696,3 +1696,82 @@ tr.rejected {
 .admin-list .table-button.delete:hover {
   background-color: #c82333;
 }
+
+/* 文件上传与预览样式 - 开始 */
+.file-input-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding-left: 0;
+}
+
+.hidden-file-input {
+  position: absolute;
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.file-select-button {
+  display: inline-block;
+  padding: 6px 14px;
+  background-color: #40b883;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+}
+
+.file-select-button:hover {
+  background-color: #359268;
+}
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0;
+}
+
+.preview-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 8px;
+}
+
+.image-preview {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: contain;
+  border: 1px solid #ddd;
+  margin-bottom: 5px;
+}
+
+.file-name {
+  display: block;
+  margin-top: 5px;
+  font-size: 14px;
+  color: #555;
+  word-break: break-all;
+  text-align: left;
+}
+
+.view-file {
+  color: #40b883;
+  text-decoration: none;
+  margin-left: 10px;
+}
+
+.view-file:hover {
+  text-decoration: underline;
+  color: #359268;
+}
+/* 文件上传与预览样式 - 结束 */

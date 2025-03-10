@@ -22,7 +22,9 @@
               v-model="loginForm.password"
               required>
           </div>
-          <button type="submit" class="login-button">登入</button>
+          <button type="submit" class="login-button" :disabled="isLoading">
+            {{ isLoading ? '登錄中...' : '登入' }}
+          </button>
         </form>
       </div>
     </div>
@@ -44,9 +46,14 @@ export default {
       password: ''
     });
     const isMenuOpen = ref(false);
+    const isLoading = ref(false);
 
     const handleLogin = async () => {
+      if (isLoading.value) return;
+      isLoading.value = true;
+      
       try {
+        console.log('正在尝试登录，用户名:', loginForm.value.account);
         const response = await axios.post(
           getApiUrl(API_PATHS.CUSTOMER_LOGIN),
           {
@@ -61,10 +68,18 @@ export default {
           }
         );
 
+        console.log('登录响应:', response.data);
+        
         if (response.data.status === 'success') {
           // 保存用户信息到 localStorage 和 sessionStorage
           const userData = response.data.data;
+          console.log('保存用户数据:', userData);
+          
+          // 确保存储客户ID和公司名称到localStorage
           localStorage.setItem('customer_id', userData.customer_id);
+          localStorage.setItem('company_name', userData.company_name || ''); // 确保公司名不为null
+          
+          // 同时保存到sessionStorage作为备份
           sessionStorage.setItem('userInfo', JSON.stringify({
             customer_id: userData.customer_id,
             username: userData.username,
@@ -72,14 +87,25 @@ export default {
           }));
           sessionStorage.setItem('isCustomerAuthenticated', 'true');
           
-          // 直接跳转到订单系统
-          router.push('/order-system');
+          // 检查是否有之前保存的重定向页面
+          const redirectPath = localStorage.getItem('redirect_after_login');
+          if (redirectPath) {
+            localStorage.removeItem('redirect_after_login');
+            console.log('正在重定向到:', redirectPath);
+            router.push(redirectPath);
+          } else {
+            // 直接跳转到订单系统
+            router.push('/order-system');
+          }
         } else {
           alert(response.data.message || '登入失敗');
         }
       } catch (error) {
-        console.error('Login error:', error);
+        console.error('登录错误:', error);
+        console.error('错误响应:', error.response?.data);
         alert(error.response?.data?.message || '登入失敗，請稍後再試');
+      } finally {
+        isLoading.value = false;
       }
     };
 
@@ -96,6 +122,7 @@ export default {
     return {
       loginForm,
       isMenuOpen,
+      isLoading,
       handleLogin,
       toggleMenu,
       closeMenu
@@ -106,4 +133,9 @@ export default {
 
 <style scoped>
 @import '../assets/styles/unified-base.css';
+
+.login-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
 </style>

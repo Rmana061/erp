@@ -23,36 +23,47 @@
             <div class="form-group">
               <label>產品圖片：</label>
               <div class="input-container">
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  @change="handleImageUpload" 
-                  ref="imageInput"
-                >
-                <div v-if="product.image_url" class="preview-container">
+                <div class="file-input-row">
+                  <button type="button" class="file-select-button" @click="triggerImageFileInput">選擇檔案</button>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    @change="handleImageUpload" 
+                    ref="imageInput"
+                    class="hidden-file-input"
+                  >
+                </div>
+                <div v-if="selectedImageFile || product.image_url" class="preview-container">
                   <img 
+                    v-if="product.image_url"
                     :src="product.image_url" 
                     class="image-preview" 
                     alt="產品圖片預覽"
                   >
-                  <span class="file-name">{{ getFileName(product.image_url) }}</span>
+                  <span class="file-name">
+                    {{ selectedImageFile ? selectedImageFile.name : getFileName(product.image_url) }}
+                  </span>
                 </div>
               </div>
             </div>
             <div class="form-group">
               <label>產品DM：</label>
               <div class="input-container">
-                <input 
-                  type="file" 
-                  accept=".pdf,.doc,.docx" 
-                  @change="handleDmUpload"
-                  ref="dmInput"
-                >
-                <div v-if="product.dm_url" class="preview-container">
+                <div class="file-input-row">
+                  <button type="button" class="file-select-button" @click="triggerDmFileInput">選擇檔案</button>
+                  <input 
+                    type="file" 
+                    accept=".pdf,.doc,.docx" 
+                    @change="handleDmUpload"
+                    ref="dmInput"
+                    class="hidden-file-input"
+                  >
+                </div>
+                <div v-if="selectedDmFile || product.dm_url" class="preview-container">
                   <span class="file-name">
-                    目前文件: {{ getFileName(product.dm_url) }}
+                    目前文件: {{ selectedDmFile ? selectedDmFile.name : getFileName(product.dm_url) }}
                     <a 
-                      v-if="product.dm_url" 
+                      v-if="product.dm_url && !selectedDmFile" 
                       :href="getFullUrl(product.dm_url)" 
                       target="_blank" 
                       class="view-file"
@@ -123,8 +134,14 @@ export default {
         max_order: '',
         unit: '',
         shipping_time: '',
-        special_date: false
+        special_date: false,
+        original_image_filename: '',
+        original_dm_filename: '',
+        image_original_filename: '',
+        dm_original_filename: ''
       },
+      selectedImageFile: null,
+      selectedDmFile: null,
       isEditing: false,
       editingId: null
     };
@@ -191,9 +208,16 @@ export default {
             max_order: productData.max_order_qty,
             unit: productData.product_unit,
             shipping_time: productData.shipping_time,
-            special_date: productData.special_date
+            special_date: productData.special_date,
+            original_image_filename: productData.original_image_filename || '',
+            original_dm_filename: productData.original_dm_filename || '',
+            image_original_filename: productData.image_original_filename || '',
+            dm_original_filename: productData.dm_original_filename || ''
           };
           console.log('Product data loaded:', this.product);
+          // 清除文件选择状态，因为已经加载了现有产品的文件
+          this.selectedImageFile = null;
+          this.selectedDmFile = null;
         } else {
           throw new Error(response.data.message || '獲取產品資料失敗');
         }
@@ -223,7 +247,9 @@ export default {
           max_order_qty: parseInt(this.product.max_order),
           product_unit: this.product.unit.trim(),
           shipping_time: parseInt(this.product.shipping_time) || 0,
-          special_date: this.product.special_date || false
+          special_date: this.product.special_date || false,
+          image_original_filename: this.product.image_original_filename || '',
+          dm_original_filename: this.product.dm_original_filename || ''
         };
 
         // 如果是新增产品，添加额外的必要字段
@@ -250,6 +276,9 @@ export default {
         if (response.data.status === 'success' || 
             (response.data.message && response.data.message.includes('successfully'))) {
           alert(this.isEditing ? '產品更新成功！' : '產品新增成功！');
+          // 清除选择的文件状态
+          this.selectedImageFile = null;
+          this.selectedDmFile = null;
           this.$router.push('/product-management');
           return;
         }
@@ -264,6 +293,8 @@ export default {
       }
     },
     cancel() {
+      this.selectedImageFile = null;
+      this.selectedDmFile = null;
       this.$router.push('/product-management');
     },
     getFullUrl(path) {
@@ -272,15 +303,31 @@ export default {
     },
     getFileName(path) {
       if (!path) return '';
+      
+      // 检查是否有图片原始文件名
+      if (path === this.product.image_url && this.product.original_image_filename) {
+        return this.product.original_image_filename;
+      }
+      
+      // 检查是否有文档原始文件名
+      if (path === this.product.dm_url && this.product.original_dm_filename) {
+        return this.product.original_dm_filename;
+      }
+      
+      // 如果没有原始文件名，则使用路径中的文件名
       return path.split('/').pop();
     },
     async handleImageUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
       
+      // 立即显示选择的文件名
+      this.selectedImageFile = file;
+      
       if (!this.product.name) {
         alert('請先輸入產品名稱');
         this.$refs.imageInput.value = '';
+        this.selectedImageFile = null;
         return;
       }
       
@@ -298,6 +345,11 @@ export default {
         
         if (response.data.status === 'success') {
           this.product.image_url = response.data.data.file_path;
+          // 保存原始文件名
+          if (response.data.data.original_filename) {
+            this.product.image_original_filename = response.data.data.original_filename;
+            console.log(`保存图片原始文件名: ${response.data.data.original_filename}`);
+          }
           this.$refs.imageInput.value = '';
         } else {
           throw new Error(response.data.message || '上傳圖片失敗');
@@ -305,15 +357,20 @@ export default {
       } catch (error) {
         console.error('Error uploading image:', error);
         alert('上傳圖片失敗：' + (error.response?.data?.message || error.message));
+        this.selectedImageFile = null;
       }
     },
     async handleDmUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
       
+      // 立即显示选择的文件名
+      this.selectedDmFile = file;
+      
       if (!this.product.name) {
         alert('請先輸入產品名稱');
         this.$refs.dmInput.value = '';
+        this.selectedDmFile = null;
         return;
       }
       
@@ -331,6 +388,11 @@ export default {
         
         if (response.data.status === 'success') {
           this.product.dm_url = response.data.data.file_path;
+          // 保存原始文件名
+          if (response.data.data.original_filename) {
+            this.product.dm_original_filename = response.data.data.original_filename;
+            console.log(`保存文档原始文件名: ${response.data.data.original_filename}`);
+          }
           this.$refs.dmInput.value = '';
         } else {
           throw new Error(response.data.message || '上傳文件失敗');
@@ -338,6 +400,7 @@ export default {
       } catch (error) {
         console.error('Error uploading document:', error);
         alert('上傳文件失敗：' + (error.response?.data?.message || error.message));
+        this.selectedDmFile = null;
       }
     },
     handleShippingTimeChange() {
@@ -394,7 +457,16 @@ export default {
       }
 
       return true;
-    }
+    },
+    // 触发图片文件输入点击
+    triggerImageFileInput() {
+      this.$refs.imageInput.click();
+    },
+    
+    // 触发文档文件输入点击
+    triggerDmFileInput() {
+      this.$refs.dmInput.click();
+    },
   },
   watch: {
     $route() {
@@ -460,5 +532,34 @@ export default {
   display: block;
 }
 
-/* 其他样式保持不变 */
+/* 表单组样式 */
+.form-group {
+  margin-bottom: 20px;
+  text-align: left;
+  width: 100%;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.form-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 100%;
+}
+
+.action-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.action-button {
+  padding: 8px 20px;
+}
 </style>

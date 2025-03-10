@@ -225,7 +225,11 @@ export default {
       if (confirm(`確定要刪除選中的 ${selectedProducts.length} 個產品嗎？`)) {
         try {
           await Promise.all(selectedProducts.map(product => 
-            axios.post(getApiUrl(API_PATHS.PRODUCT_DELETE(product.id)), null, {
+            axios.post(getApiUrl(API_PATHS.PRODUCT_DELETE(product.id)), {
+              type: 'admin',
+              soft_delete: true, // 軟刪除標記
+              product_folder: product.name // 傳遞產品名稱，用於刪除對應的上傳文件夾
+            }, {
               withCredentials: true,
               headers: {
                 'Content-Type': 'application/json'
@@ -248,7 +252,9 @@ export default {
       if (confirm(`確定要刪除產品：${product.name}？`)) {
         try {
           const response = await axios.post(getApiUrl(API_PATHS.PRODUCT_DELETE(productId)), {
-            type: 'admin'
+            type: 'admin',
+            soft_delete: true, // 軟刪除標記
+            product_folder: product.name // 傳遞產品名稱，用於刪除對應的上傳文件夾
           }, {
             withCredentials: true,
             headers: {
@@ -522,13 +528,20 @@ export default {
     },
     openDM(url) {
       if (!url) return;
-      // 如果 URL 不是以 http 開頭，假設它是相對路徑
+      
+      // 从产品列表中查找对应的产品
+      const product = this.products.find(p => p.dm_url === url);
+      const originalFilename = product?.dm_original_filename || '';
+      
+      // 设置完整URL
+      let fullUrl = url;
       if (!url.startsWith('http')) {
-        // 使用當前域名拼接完整URL
         const baseUrl = window.location.origin;
-        url = `${baseUrl}${url}`;
+        fullUrl = `${baseUrl}${url}`;
       }
-      window.open(url, '_blank', 'noopener,noreferrer');
+      
+      // 直接打开文件链接
+      window.open(fullUrl, '_blank', 'noopener,noreferrer');
     },
   },
   mounted() {
