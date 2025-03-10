@@ -1,7 +1,7 @@
 <!-- 訂貨紀錄 -->
 <template>
   <body class="customer-mode">
-  <div class="container">
+  <div class="container order-record">
     <SideBar menu-type="customer" />
     
     <div class="main-content">
@@ -16,13 +16,38 @@
           <!-- 添加搜索框 -->
           <div class="search-panel compact">
             <div class="search-form-row">
+              <!-- 文本搜索 -->
               <div class="search-form-item">
                 <input 
                   type="text" 
                   v-model="searchQuery" 
-                  placeholder="搜索訂單號、日期或產品名稱..."
+                  placeholder="搜索訂單號或產品名稱..."
                   class="search-input"
                 >
+              </div>
+              
+              <!-- 日期範圍搜索 -->
+              <div class="search-form-item date-range-field">
+                <div class="date-range-wrapper">
+                  <input 
+                    type="date" 
+                    v-model="startDate" 
+                    class="date-field"
+                    :max="endDate || undefined"
+                  >
+                  <span class="date-separator">至</span>
+                  <input 
+                    type="date" 
+                    v-model="endDate" 
+                    class="date-field"
+                    :min="startDate || undefined"
+                  >
+                </div>
+              </div>
+              
+              <!-- 重置按鈕 -->
+              <div class="search-form-item">
+                <button @click="resetFilters" class="reset-btn">重置</button>
               </div>
             </div>
           </div>
@@ -31,8 +56,8 @@
             <table class="order-table">
               <thead>
                 <tr>
-                  <th>訂單編號</th>
                   <th>建立日期</th>
+                  <th>訂單編號</th>
                   <th>產品</th>
                   <th>數量</th>
                   <th>單位</th>
@@ -51,8 +76,8 @@
                         'rejected': product.order_status === '已取消',
                         'shipped': product.order_status === '已出貨'
                       }">
-                    <td>{{ productIndex === 0 ? order.order_number : '' }}</td>
                     <td>{{ productIndex === 0 ? formatDate(order.created_at) : '' }}</td>
+                    <td>{{ productIndex === 0 ? order.order_number : '' }}</td>
                     <td>{{ product.product_name }}</td>
                     <td>{{ product.product_quantity }}</td>
                     <td>{{ product.product_unit }}</td>
@@ -101,34 +126,62 @@ export default {
       showCancelModal: false,
       currentPage: 1,
       ordersPerPage: 10,
-      searchQuery: ''
+      searchQuery: '',
+      startDate: '',
+      endDate: ''
     };
   },
   computed: {
     filteredOrders() {
-      if (!this.searchQuery) {
-        return this.orders;
+      let result = this.orders;
+      
+      // 文本搜索过滤
+      if (this.searchQuery) {
+        const searchLower = this.searchQuery.toLowerCase().trim();
+        
+        result = result.filter(order => {
+          // 搜索订单号（支持部分匹配）
+          const orderNumberMatch = order.order_number.toLowerCase().includes(searchLower);
+          
+          // 搜索产品名称
+          const productMatch = order.products.some(product => 
+            product.product_name.toLowerCase().includes(searchLower)
+          );
+          
+          return orderNumberMatch || productMatch;
+        });
       }
       
-      const searchLower = this.searchQuery.toLowerCase().trim();
+      // 日期范围过滤
+      if (this.startDate || this.endDate) {
+        result = result.filter(order => {
+          const orderDate = new Date(order.created_at);
+          orderDate.setHours(0, 0, 0, 0); // 重置时间部分以便比较日期
+          
+          if (this.startDate && this.endDate) {
+            // 转换为Date对象以进行比较
+            const start = new Date(this.startDate);
+            start.setHours(0, 0, 0, 0);
+            
+            const end = new Date(this.endDate);
+            end.setHours(23, 59, 59, 999); // 设置为当天结束时间
+            
+            return orderDate >= start && orderDate <= end;
+          } else if (this.startDate) {
+            const start = new Date(this.startDate);
+            start.setHours(0, 0, 0, 0);
+            return orderDate >= start;
+          } else if (this.endDate) {
+            const end = new Date(this.endDate);
+            end.setHours(23, 59, 59, 999);
+            return orderDate <= end;
+          }
+          
+          return true;
+        });
+      }
       
-      return this.orders.filter(order => {
-        // 搜索订单号（支持部分匹配）
-        const orderNumberMatch = order.order_number.toLowerCase().includes(searchLower);
-        
-        // 搜索日期（支持多种格式）
-        const createdDate = new Date(order.created_at);
-        const dateStr = this.formatDate(order.created_at).toLowerCase();
-        const shortDateStr = `${createdDate.getFullYear()}/${String(createdDate.getMonth() + 1).padStart(2, '0')}/${String(createdDate.getDate()).padStart(2, '0')}`.toLowerCase();
-        const dateMatch = dateStr.includes(searchLower) || shortDateStr.includes(searchLower);
-        
-        // 搜索产品名称
-        const productMatch = order.products.some(product => 
-          product.product_name.toLowerCase().includes(searchLower)
-        );
-        
-        return orderNumberMatch || dateMatch || productMatch;
-      });
+      return result;
     },
     
     paginatedOrders() {
@@ -176,6 +229,11 @@ export default {
           this.$router.push('/customer-login');
         }
       }
+    },
+    resetFilters() {
+      this.searchQuery = '';
+      this.startDate = '';
+      this.endDate = '';
     }
   },
   created() {
@@ -189,79 +247,4 @@ export default {
 
 <style>
 @import '../assets/styles/unified-base.css';
-
-.table-container {
-  margin-top: 20px;
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.order-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.order-table th,
-.order-table td {
-  padding: 12px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
-}
-
-.order-table th {
-  background-color: #f8f9fa;
-  font-weight: bold;
-  color: #333;
-}
-
-.order-table tr:hover {
-  background-color: #f5f5f5;
-}
-
-.first-product td {
-  border-top: 2px solid #ddd;
-}
-
-
-/* 搜索框样式 */
-.search-panel.compact {
-  margin-bottom: 20px;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-}
-
-.search-form-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.search-form-item {
-  flex: 1;
-  max-width: 300px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  transition: border-color 0.3s;
-}
-
-.search-input:focus {
-  border-color: #4CAF50;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-}
-
-.search-input::placeholder {
-  color: #999;
-}
-
-/* 所有其他樣式已移至 unified-base */
 </style>

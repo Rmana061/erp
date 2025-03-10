@@ -25,8 +25,8 @@
             <table class="order-table">
               <thead>
                 <tr>
-                  <th>訂單編號</th>
                   <th>建立日期</th>
+                  <th>訂單編號</th>
                   <th>品項</th>
                   <th>數量</th>
                   <th>單位</th>
@@ -49,8 +49,8 @@
                         'shipped': product.order_status === '已出貨'
                       }"
                       @click="handleOrderClick(order)">
-                    <td>{{ productIndex === 0 ? order.order_number : '' }}</td>
                     <td>{{ productIndex === 0 ? formatDate(order.created_at) : '' }}</td>
+                    <td>{{ productIndex === 0 ? order.order_number : '' }}</td>
                     <td>{{ product.product_name }}</td>
                     <td>{{ product.product_quantity }}</td>
                     <td>{{ product.product_unit }}</td>

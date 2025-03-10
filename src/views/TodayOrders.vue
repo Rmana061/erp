@@ -18,8 +18,9 @@
         <div class="search-panel compact">
           <div class="search-panel-body">
             <div class="search-form">
-              <div class="search-form-row">
-                <div class="search-form-item">
+              <!-- 日期搜索放在第一排 -->
+              <div class="search-form-row date-row">
+                <div class="date-wrapper">
                   <input 
                     type="date" 
                     v-model="searchFilters.startDate"
@@ -35,6 +36,15 @@
                     class="search-field"
                     placeholder="結束日期">
                 </div>
+                <div class="actions-wrapper">
+                  <button class="reset-btn" @click="resetFilters">
+                    <i class="fas fa-undo-alt"></i>重置
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 其他搜索條件放在第二排 -->
+              <div class="search-form-row filters-row">
                 <div class="search-form-item">
                   <input 
                     type="text" 
@@ -56,11 +66,6 @@
                     placeholder="訂單編號"
                     class="search-field">
                 </div>
-                <div class="search-actions">
-                  <button class="reset-btn" @click="resetFilters">
-                    <i class="fas fa-undo-alt"></i>重置
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -68,7 +73,7 @@
 
         <div class="scrollable-content">
           <div class="table-container">
-            <table>
+            <table class="order-table">
               <thead>
                 <tr>
                   <th>建立日期</th>
@@ -150,7 +155,7 @@
         <h3>訂單審核 - {{ selectedOrder?.orderNumber }}</h3>
         
         <div class="order-items">
-          <table class="review-table">
+          <table class="review-table order-table">
             <thead>
               <tr>
                 <th>品項</th>

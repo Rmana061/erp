@@ -24,8 +24,9 @@
         <div class="search-panel compact">
           <div class="search-panel-body">
             <div class="search-form">
-              <div class="search-form-row">
-                <div class="search-form-item">
+              <!-- 日期搜索放在第一排 -->
+              <div class="search-form-row date-row">
+                <div class="date-wrapper">
                   <input 
                     type="date" 
                     v-model="searchFilters.startDate"
@@ -41,6 +42,15 @@
                     class="search-field"
                     placeholder="結束日期">
                 </div>
+                <div class="actions-wrapper">
+                  <button class="reset-btn" @click="resetFilters">
+                    <i class="fas fa-undo-alt"></i>重置
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 其他搜索條件放在第二排 -->
+              <div class="search-form-row filters-row">
                 <div class="search-form-item">
                   <input 
                     type="text" 
@@ -62,18 +72,13 @@
                     placeholder="訂單編號"
                     class="search-field">
                 </div>
-                <div class="search-actions">
-                  <button class="reset-btn" @click="resetFilters">
-                    <i class="fas fa-undo-alt"></i>重置
-                  </button>
-                </div>
               </div>
             </div>
           </div>
         </div>
 
         <div class="table-container">
-          <table>
+          <table class="order-table">
             <thead>
               <tr>
                 <th>建立日期</th>
@@ -176,7 +181,7 @@
         <h3>訂單審核 - {{ selectedOrder?.orderNumber }}</h3>
         
         <div class="order-items">
-          <table class="review-table">
+          <table class="review-table order-table">
             <thead>
               <tr>
                 <th>品項</th>
@@ -794,53 +799,5 @@ export default {
 
 <style>
 @import '../assets/styles/unified-base.css';
-
-.completed-text {
-  display: inline-block;
-  padding: 6px 0;
-}
-
-.modal-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  max-width: 90%;
-}
-
-.modal-content h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.modal-content p {
-  margin-bottom: 20px;
-  color: #666;
-}
-
-.modal-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.modal-buttons button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.modal-buttons .confirm-btn {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.modal-buttons .cancel-btn {
-  background-color: #f44336;
-  color: white;
-}
 </style>
 

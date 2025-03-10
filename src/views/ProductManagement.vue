@@ -28,7 +28,7 @@
               - 批量刪除
             </button>
             <button 
-              class="export-btn" 
+              class="export-btn product-export-btn" 
               @click="exportReport">
               ↓ 產品匯出
             </button>
@@ -69,7 +69,7 @@
           </div>
 
           <div class="table-container">
-            <table>
+            <table class="product-table">
               <thead>
                 <tr>
                   <th><input type="checkbox" @click="selectAll" :checked="allSelected"></th>
