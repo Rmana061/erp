@@ -222,10 +222,19 @@ export default {
       minDate.setDate(today.getDate() + (parseInt(product.shipping_time) || 0));
       return minDate.toISOString().split('T')[0];
     },
-    handleProductChange(index) {
+    async handleProductChange(index) {
       const product = this.orderProducts[index];
       const selectedProduct = this.selectedProduct(product.product_id);
+      
       if (selectedProduct) {
+        // 检查是否最近订购过
+        const checkResult = await this.checkRecentOrder(product.product_id);
+        if (!checkResult.canOrder) {
+          alert(`重複下單提醒：您在最近${checkResult.limitDays}天內已經訂購過"${selectedProduct.name}"，請聯繫公司。`);
+          product.product_id = ''; // 清空选择
+          return;
+        }
+        
         // 设置最小订购量
         product.quantity = selectedProduct.min_order_qty;
         
@@ -274,6 +283,18 @@ export default {
       try {
         if (!this.validateOrder()) {
           return;
+        }
+        
+        // 在提交前再次验证所有产品
+        for (const product of this.orderProducts) {
+          if (product.product_id) {
+            const checkResult = await this.checkRecentOrder(product.product_id);
+            if (!checkResult.canOrder) {
+              const selectedProduct = this.selectedProduct(product.product_id);
+              alert(`重複下單提醒：您在最近${checkResult.limitDays}天內已經訂購過"${selectedProduct.name}"，請聯繫公司。`);
+              return;
+            }
+          }
         }
 
         const orderData = this.prepareOrderData();
@@ -537,6 +558,22 @@ export default {
 
       console.log('Prepared order data:', JSON.stringify(orderData, null, 2));
       return orderData;
+    },
+    async checkRecentOrder(productId) {
+      try {
+        const customerId = localStorage.getItem('customer_id');
+        const response = await axios.post(getApiUrl(API_PATHS.CHECK_RECENT_ORDER), {
+          customer_id: parseInt(customerId),
+          product_id: productId
+        }, {
+          withCredentials: true
+        });
+        
+        return response.data;
+      } catch (error) {
+        console.error('Error checking recent orders:', error);
+        return { canOrder: true }; // 出错时默认允许下单
+      }
     }
   },
   created() {

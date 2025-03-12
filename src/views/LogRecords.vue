@@ -179,7 +179,8 @@ export default {
         'phone': '電話',
         'email': 'Email',
         'address': '地址',
-        'remark': '備註'
+        'remark': '備註',
+        'reorder_limit_days': '重複下單限制'
       },
       // 表名顯示映射
       tableNames: {
@@ -470,6 +471,10 @@ export default {
           if (data && (data[field] !== undefined || (field === 'password' && data.password_changed))) {
             if (field === 'password' && data.password_changed) {
               html += this.generatePasswordChangeRow(this.customerFields[field]);
+            } else if (field === 'reorder_limit_days' && data[field] !== undefined) {
+              // 特殊处理重复下单限制字段
+              const value = data[field] > 0 ? `${data[field]}天` : '無限制';
+              html += this.generateFieldRow(this.customerFields[field], value);
             } else if (field !== 'password') {
               html += this.generateFieldRow(this.customerFields[field], data[field] || '-');
             }
@@ -516,7 +521,14 @@ export default {
             
             // 只顯示有變更的欄位
             if (oldValue !== newValue && field !== 'password') {
-              html += this.generateChangeRow(label, oldValue || '-', newValue || '-');
+              // 特殊处理重复下单限制字段
+              if (field === 'reorder_limit_days') {
+                const oldDisplay = oldValue > 0 ? `${oldValue}天` : '無限制';
+                const newDisplay = newValue > 0 ? `${newValue}天` : '無限制';
+                html += this.generateChangeRow(label, oldDisplay, newDisplay);
+              } else {
+                html += this.generateChangeRow(label, oldValue || '-', newValue || '-');
+              }
             }
           });
         }
@@ -948,7 +960,8 @@ export default {
         'shipping_time': '出貨時間',
         'special_date': '特殊日期',
         'order_confirmed': '訂單確認狀態',
-        'performed_by': '操作者'
+        'performed_by': '操作者',
+        'reorder_limit_days': '重複下單限制'
       };
       
       return fieldLabels[field] || this.fieldDisplayMap[field] || field;
@@ -1039,28 +1052,28 @@ export default {
           const detail = typeof log.operation_detail === 'string' ? 
             JSON.parse(log.operation_detail) : log.operation_detail;
           
-          // 優先顯示客戶名稱，不管是否有密碼變更
+          // 修改優先順序：現在優先顯示公司名稱
           // 新增和修改操作優先從new_data中獲取
-          if (detail?.message?.new_data?.username) {
-            return detail.message.new_data.username;  // 返回客戶名稱
-          } 
-          // 刪除操作或備用情況從old_data中獲取
-          else if (detail?.message?.old_data?.username) {
-            return detail.message.old_data.username;  // 返回客戶名稱
-          } 
-          // 備用：從customer直接獲取
-          else if (detail?.message?.customer?.username) {
-            return detail.message.customer.username;  // 返回客戶名稱
-          }
-          // 如果沒有username，才嘗試獲取company_name
-          else if (detail?.message?.new_data?.company_name) {
+          if (detail?.message?.new_data?.company_name) {
             return detail.message.new_data.company_name;  // 返回公司名稱
           }
+          // 刪除操作或備用情況從old_data中獲取
           else if (detail?.message?.old_data?.company_name) {
             return detail.message.old_data.company_name;  // 返回公司名稱
-          }
+          } 
+          // 備用：從customer直接獲取
           else if (detail?.message?.customer?.company_name) {
             return detail.message.customer.company_name;  // 返回公司名稱
+          }
+          // 如果沒有company_name，再嘗試獲取username
+          else if (detail?.message?.new_data?.username) {
+            return detail.message.new_data.username;  // 返回客戶帳號
+          } 
+          else if (detail?.message?.old_data?.username) {
+            return detail.message.old_data.username;  // 返回客戶帳號
+          } 
+          else if (detail?.message?.customer?.username) {
+            return detail.message.customer.username;  // 返回客戶帳號
           }
           // 最後才考慮使用ID
           else if (detail?.message?.new_data?.id) {

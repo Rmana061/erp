@@ -13,6 +13,7 @@ export const API_PATHS = {
     ORDERS_ALL: '/api/orders/all',
     PENDING_ORDERS: '/api/orders/pending',
     CREATE_ORDER: '/api/orders/create',
+    CHECK_RECENT_ORDER: '/api/orders/check-recent',
     UPDATE_ORDER_STATUS: '/api/orders/update-status',
     BATCH_UPDATE_ORDER_STATUS: '/api/orders/batch-update-status',
     UPDATE_ORDER_CONFIRMED: '/api/orders/update-confirmed',

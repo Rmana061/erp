@@ -36,6 +36,7 @@
                   <th>電話</th>
                   <th>Email</th>
                   <th>地址</th>
+                  <th>重複下單限制</th>
                   <th>建立時間</th>
                   <th>操作</th>
                 </tr>
@@ -47,6 +48,7 @@
                   <td>{{ customer.phone }}</td>
                   <td>{{ customer.email }}</td>
                   <td>{{ customer.address }}</td>
+                  <td>{{ customer.repeat_order_limit }}</td>
                   <td>{{ customer.created_at }}</td>
                   <td>
                     <div class="table-button-group">
@@ -144,13 +146,21 @@ export default {
         });
         
         if (response.data && response.data.status === 'success') {
-          this.customers = response.data.data.map(customer => ({
-            ...customer,
-            viewable_products: customer.viewable_products || '',
-            line_account: customer.line_account || '',
-            remark: customer.remark || ''
-          }));
-          console.log('Fetched customers:', this.customers);
+          console.log('原始客户数据:', response.data.data);
+          console.log('第一位客户的reorder_limit_days值:', response.data.data[0]?.reorder_limit_days);
+          
+          this.customers = response.data.data.map(customer => {
+            console.log(`处理客户 ${customer.company_name} 的reorder_limit_days:`, customer.reorder_limit_days);
+            
+            return {
+              ...customer,
+              viewable_products: customer.viewable_products || '',
+              line_account: customer.line_account || '',
+              remark: customer.remark || '',
+              repeat_order_limit: customer.reorder_limit_days > 0 ? `${customer.reorder_limit_days}天` : '無限制'
+            };
+          });
+          console.log('处理后的客户数据:', this.customers);
         } else {
           console.error('獲取客戶數據失敗:', response.data.message);
         }
@@ -197,6 +207,7 @@ export default {
         '電話',
         'Email',
         '地址',
+        '重複下單限制天數',
         '建立時間',
         '更新時間'
       ];
@@ -211,6 +222,7 @@ export default {
           customer.phone,
           customer.email,
           customer.address,
+          customer.reorder_limit_days || 0,
           customer.created_at,
           customer.updated_at
         ])
@@ -227,6 +239,7 @@ export default {
         { wch: 15 },
         { wch: 25 },
         { wch: 40 },
+        { wch: 15 },
         { wch: 20 },
         { wch: 20 }
       ];

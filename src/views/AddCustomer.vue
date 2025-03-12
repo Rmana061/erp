@@ -56,6 +56,11 @@
               <input type="text" v-model="newCustomer.address" placeholder="請輸入完整地址">
             </div>
             <div class="form-group">
+              <label>重複下單限制：</label>
+              <input type="number" v-model="newCustomer.reorderLimitDays" min="0" placeholder="0表示無限制" class="short-input">
+              <span class="field-hint">設置客戶在多少天內不能重複下單相同產品，0表示無限制</span>
+            </div>
+            <div class="form-group">
               <label>備註：</label>
               <textarea v-model="newCustomer.notes" placeholder="請輸入其他相關備註"></textarea>
             </div>
@@ -99,6 +104,7 @@ export default {
         phone: '',
         email: '',
         address: '',
+        reorderLimitDays: 2,
         notes: ''
       },
       products: [],
@@ -143,6 +149,7 @@ export default {
             phone: customerData.phone || '',
             email: customerData.email || '',
             address: customerData.address || '',
+            reorderLimitDays: customerData.reorder_limit_days || 2,
             notes: customerData.remark || ''
           };
         } else {
@@ -191,6 +198,7 @@ export default {
           address: this.newCustomer.address,
           line_account: this.newCustomer.lineAccount,
           viewable_products: this.newCustomer.selectedProducts.join(','),
+          reorder_limit_days: this.newCustomer.reorderLimitDays,
           remark: this.newCustomer.notes || ''
         };
 
@@ -347,5 +355,16 @@ export default {
 .button-group button {
   margin: 0 10px;
   padding: 8px 20px;
+}
+
+.short-input {
+  width: 100px !important;
+  margin-right: 10px;
+}
+
+.field-hint {
+  font-size: 0.85em;
+  color: #666;
+  margin-left: 5px;
 }
 </style>
