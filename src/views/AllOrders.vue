@@ -77,96 +77,98 @@
           </div>
         </div>
 
-        <div class="table-container">
-          <table class="order-table">
-            <thead>
-              <tr>
-                <th>建立日期</th>
-                <th>客戶</th>
-                <th>訂單編號</th>
-                <th>品項</th>
-                <th>數量</th>
-                <th>單位</th>
-                <th>出貨日期</th>
-                <th>備註</th>
-                <th>供應商備註</th>
-                <th>狀態</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <template v-for="(order, orderIndex) in paginatedOrders" :key="order.orderNumber">
-                <tr v-for="(item, itemIndex) in order.items" 
-                    :key="order.orderNumber + '-' + itemIndex"
-                    :class="{ 
-                      'first-product': itemIndex === 0,
-                      'approved': item.status === '已確認', 
-                      'rejected': item.status === '已取消',
-                      'shipped': item.status === '已出貨'
-                    }">
-                  <td>{{ itemIndex === 0 ? formatDateTime(order.date) : '' }}</td>
-                  <td>{{ itemIndex === 0 ? order.customer : '' }}</td>
-                  <td>{{ itemIndex === 0 ? order.orderNumber : '' }}</td>
-                  <td>{{ item.item }}</td>
-                  <td>
-                    <template v-if="selectedOrder && selectedOrder.orderNumber === order.orderNumber">
-                      <input 
-                        type="number" 
-                        v-model.number="item.tempQuantity"
-                        :min="1"
-                        class="quantity-input"
-                        style="width: 80px;"
-                      >
-                    </template>
-                    <template v-else>
-                      {{ item.quantity }}
-                    </template>
-                  </td>
-                  <td>{{ item.unit }}</td>
-                  <td>{{ formatDate(item.shipping_date) }}</td>
-                  <td>{{ item.remark || '-' }}</td>
-                  <td>{{ item.supplier_note || '-' }}</td>
-                  <td>
-                    <span class="status-badge" :class="item.status">{{ item.status }}</span>
-                  </td>
-                  <td>
-                    <div class="table-button-group" v-if="itemIndex === 0 && allItemsPending(order.items)">
-                      <button 
-                        class="table-button" 
-                        @click="handleApprove(order)"
-                        v-permission="'can_approve_orders'">
-                        審核
-                      </button>
-                    </div>
-                    <div class="table-button-group" v-else-if="itemIndex === 0 && hasConfirmedItems(order.items)">
-                      <button 
-                        class="table-button" 
-                        @click="handleComplete(order)"
-                        v-permission="'can_approve_orders'">
-                        完成
-                      </button>
-                    </div>
-                    <span v-else-if="itemIndex === 0" class="completed-text">已完成</span>
-                  </td>
+        <div class="scrollable-content">
+          <div class="table-container">
+            <table class="order-table">
+              <thead>
+                <tr>
+                  <th>建立日期</th>
+                  <th>客戶</th>
+                  <th>訂單編號</th>
+                  <th>品項</th>
+                  <th>數量</th>
+                  <th>單位</th>
+                  <th>出貨日期</th>
+                  <th>備註</th>
+                  <th>供應商備註</th>
+                  <th>狀態</th>
+                  <th>操作</th>
                 </tr>
-              </template>
-            </tbody>
-          </table>
-        </div>
-        
-        <!-- 分頁控制 -->
-        <div class="pagination" v-if="totalPages > 1">
-          <button 
-            @click="currentPage--" 
-            :disabled="currentPage === 1">
-            上一頁
-          </button>
-          <span>{{ currentPage }} / {{ totalPages }}</span>
-          <button 
-            @click="currentPage++" 
-            :disabled="currentPage === totalPages">
-            下一頁
-          </button>
+              </thead>
+              <tbody>
+                <template v-for="(order, orderIndex) in paginatedOrders" :key="order.orderNumber">
+                  <tr v-for="(item, itemIndex) in order.items" 
+                      :key="order.orderNumber + '-' + itemIndex"
+                      :class="{ 
+                        'first-product': itemIndex === 0,
+                        'approved': item.status === '已確認', 
+                        'rejected': item.status === '已取消',
+                        'shipped': item.status === '已出貨'
+                      }">
+                    <td>{{ itemIndex === 0 ? formatDateTime(order.date) : '' }}</td>
+                    <td>{{ itemIndex === 0 ? order.customer : '' }}</td>
+                    <td>{{ itemIndex === 0 ? order.orderNumber : '' }}</td>
+                    <td>{{ item.item }}</td>
+                    <td>
+                      <template v-if="selectedOrder && selectedOrder.orderNumber === order.orderNumber">
+                        <input 
+                          type="number" 
+                          v-model.number="item.tempQuantity"
+                          :min="1"
+                          class="quantity-input"
+                          style="width: 80px;"
+                        >
+                      </template>
+                      <template v-else>
+                        {{ item.quantity }}
+                      </template>
+                    </td>
+                    <td>{{ item.unit }}</td>
+                    <td>{{ formatDate(item.shipping_date) }}</td>
+                    <td>{{ item.remark || '-' }}</td>
+                    <td>{{ item.supplier_note || '-' }}</td>
+                    <td>
+                      <span class="status-badge" :class="item.status">{{ item.status }}</span>
+                    </td>
+                    <td>
+                      <div class="table-button-group" v-if="itemIndex === 0 && allItemsPending(order.items)">
+                        <button 
+                          class="table-button" 
+                          @click="handleApprove(order)"
+                          v-permission="'can_approve_orders'">
+                          審核
+                        </button>
+                      </div>
+                      <div class="table-button-group" v-else-if="itemIndex === 0 && hasConfirmedItems(order.items)">
+                        <button 
+                          class="table-button" 
+                          @click="handleComplete(order)"
+                          v-permission="'can_approve_orders'">
+                          完成
+                        </button>
+                      </div>
+                      <span v-else-if="itemIndex === 0" class="completed-text">已完成</span>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- 分頁控制 -->
+          <div class="pagination" v-if="totalPages > 1">
+            <button 
+              @click="currentPage--" 
+              :disabled="currentPage === 1">
+              上一頁
+            </button>
+            <span>{{ currentPage }} / {{ totalPages }}</span>
+            <button 
+              @click="currentPage++" 
+              :disabled="currentPage === totalPages">
+              下一頁
+            </button>
+          </div>
         </div>
         
         <div class="notification">
@@ -800,5 +802,10 @@ export default {
 
 <style>
 @import '../assets/styles/unified-base.css';
+
+.completed-text {
+  display: inline-block;
+  padding: 6px 0;
+}
 </style>
 
