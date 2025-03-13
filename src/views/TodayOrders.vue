@@ -23,18 +23,18 @@
                 <div class="date-wrapper">
                   <input 
                     type="date" 
+                    class="date-field" 
+                    placeholder="開始日期" 
                     v-model="searchFilters.startDate"
-                    :max="searchFilters.endDate || maxShippingDate"
-                    class="search-field"
-                    placeholder="開始日期">
+                  >
                   <span class="date-separator">~</span>
                   <input 
                     type="date" 
+                    class="date-field" 
+                    placeholder="結束日期" 
                     v-model="searchFilters.endDate"
-                    :min="searchFilters.startDate || minShippingDate"
-                    :max="maxShippingDate"
-                    class="search-field"
-                    placeholder="結束日期">
+                    :min="searchFilters.startDate || ''"
+                  >
                 </div>
                 <div class="actions-wrapper">
                   <button class="reset-btn" @click="resetFilters">
@@ -197,6 +197,7 @@
                 </td>
                 <td>
                   <select v-model="item.tempStatus">
+                    <option value="">選擇</option>
                     <option value="已確認">核准</option>
                     <option value="已取消">駁回</option>
                   </select>
@@ -324,6 +325,11 @@ export default {
     isValidForConfirmation() {
       if (!this.selectedOrder) return false;
       return this.selectedOrder.items.every(item => {
+        // 首先检查是否选择了状态
+        if (!item.tempStatus) {
+          return false;
+        }
+        // 如果状态是"已確認"，还需要检查是否选择了出货日期
         if (item.tempStatus === '已確認') {
           return !!item.tempShippingDate;
         }
@@ -417,7 +423,7 @@ export default {
         orderNumber: order.orderNumber,
         items: order.items.map(item => ({
           ...item,
-          tempStatus: '已確認',
+          tempStatus: '',
           tempShippingDate: item.shipping_date || '',
           tempSupplierNote: item.supplier_note || '',
           tempQuantity: item.quantity
@@ -612,6 +618,14 @@ export default {
       } catch (error) {
         console.error('Error in confirmOrderUpdate:', error);
         alert('處理訂單時發生錯誤：' + (error.response?.data?.message || error.message));
+      }
+    }
+  },
+  watch: {
+    'searchFilters.startDate': function(newVal) {
+      // 如果開始日期大於結束日期，則將結束日期設為開始日期
+      if (newVal && this.searchFilters.endDate && newVal > this.searchFilters.endDate) {
+        this.searchFilters.endDate = newVal;
       }
     }
   },

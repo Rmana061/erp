@@ -35,6 +35,7 @@
                           class="date-field" 
                           placeholder="結束日期" 
                           v-model="searchParams.end_date"
+                          :min="searchParams.start_date || ''"
                         >
                       </div>
                     </div>
@@ -1341,8 +1342,12 @@ export default {
     'searchParams.user_type': function() {
       this.goToPage = 1;
     },
-    'searchParams.start_date': function() {
+    'searchParams.start_date': function(newVal) {
       this.goToPage = 1;
+      // 如果開始日期大於結束日期，則將結束日期設為開始日期
+      if (newVal && this.searchParams.end_date && newVal > this.searchParams.end_date) {
+        this.searchParams.end_date = newVal;
+      }
     },
     'searchParams.end_date': function() {
       this.goToPage = 1;

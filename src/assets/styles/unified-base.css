@@ -1502,27 +1502,33 @@ tr.shipped {
 
 /* 訂單審核對話框樣式 */
 .modal-content.order-review {
-  width: 80%;
-  max-width: 800px;
+  width: 95%;
+  max-width: 1400px; /* 增加最大宽度 */
+  padding: 25px; /* 减小内边距，为表格提供更多空间 */
 }
 
 .order-items {
   margin: var(--spacing-lg) 0;
-  max-height: 400px;
+  max-height: 500px; /* 增加高度 */
   overflow-y: auto;
   overflow-x: auto;
+  padding-bottom: 10px; /* 添加底部内边距 */
 }
 
 .review-table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 20px;
+  table-layout: fixed; /* 使用固定表格布局 */
 }
 
 .review-table th,
 .review-table td {
-  padding: 10px;
+  padding: 12px 8px;
   border: 1px solid #ddd;
+  white-space: nowrap; /* 防止内容换行 */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .review-table th {
@@ -1537,8 +1543,16 @@ tr.shipped {
   border-radius: 4px;
 }
 
+.review-table input[type="date"] {
+  min-width: 150px; /* 确保日期选择器有足够宽度 */
+  box-sizing: border-box;
+  padding-right: 10px; /* 确保日期右侧有足够空间显示下拉箭头 */
+  text-align: center; /* 居中显示日期 */
+}
+
 .review-table select {
   background-color: white;
+  min-width: 100px;
 }
 
 .review-table input[type="date"]:disabled,
@@ -3130,5 +3144,171 @@ table.product-table td:nth-child(2) {
   .search-panel.compact .reset-btn {
     width: 100%;
     margin-top: 10px;
+  }
+}
+
+/* 自定义各列宽度 */
+.review-table th:nth-child(4), /* 出货日期列 */
+.review-table td:nth-child(4) {
+  min-width: 160px;
+  width: 160px;
+}
+
+/* 设置其他列宽 */
+.review-table th:nth-child(1), /* 品项列 */
+.review-table td:nth-child(1) {
+  min-width: 120px;
+  width: 120px;
+}
+
+.review-table th:nth-child(2), /* 数量列 */
+.review-table td:nth-child(2) {
+  min-width: 80px;
+  width: 80px;
+}
+
+.review-table th:nth-child(3), /* 单位列 */
+.review-table td:nth-child(3) {
+  min-width: 60px;
+  width: 60px;
+}
+
+.review-table th:nth-child(5), /* 备注列 */
+.review-table td:nth-child(5) {
+  min-width: 140px;
+  width: 140px;
+}
+
+.review-table th:nth-child(6), /* 供应商备注列 */
+.review-table td:nth-child(6) {
+  min-width: 200px;
+  width: 200px;
+}
+
+.review-table th:nth-child(7), /* 状态列 */
+.review-table td:nth-child(7) {
+  min-width: 100px;
+  width: 100px;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+/* 產品勾選框樣式 */
+.product-checkbox {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 5px 8px;
+  margin: 2px 0;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.product-checkbox:hover {
+  background-color: #f0f0f0;
+}
+
+.product-checkbox input[type="checkbox"] {
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.product-checkbox .checkmark {
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* 修改產品名稱span元素樣式，確保title屬性生效 */
+.product-checkbox span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  display: inline-block; /* 確保title屬性能正常顯示 */
+  max-width: 100%;
+}
+
+/* 確保在Firefox和Safari中也能正常顯示tooltip */
+.product-checkbox span:last-child:hover {
+  position: relative; /* 保留相對定位以確保tooltip正確顯示 */
+}
+
+
+/* 產品選擇區域樣式 */
+.product-selection-container {
+  width: calc(100% - 135px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.product-search {
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.product-search-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* 移動端樣式調整 */
+@media screen and (max-width: 768px) {
+  /* 其他移動端樣式保持不變 */
+  
+  /* 產品選擇區域在移動端的寬度調整 */
+  .product-selection-container {
+    width: 100%; /* 在移動端下寬度設為100%，與密碼輸入框一致 */
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  }
+  
+  /* 確保產品搜索框在移動端下與其他輸入框同寬 */
+  .product-search {
+    width: 100%;
+    padding: 0;
+    margin-bottom: 10px;
+  }
+  
+  .product-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px;
+  }
+  
+  /* 確保checkbox-grid在移動端下也與其他輸入框同寬 */
+  .checkbox-grid {
+    width: 100%;
+    margin: 0;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  
+  /* 確保form-group內的所有元素在移動端下寬度一致 */
+  .form-group input,
+  .form-group .product-selection-container,
+  .form-group .product-search-input,
+  .form-group .checkbox-grid {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 }

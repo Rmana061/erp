@@ -27,12 +27,30 @@
             </div>
             <div class="form-group">
               <label>可購產品：</label>
-              <div class="checkbox-group">
-                <label v-for="(product, index) in products" :key="index" class="custom-checkbox">
-                  <input type="checkbox" v-model="newCustomer.selectedProducts" :value="product.value">
-                  <span class="checkmark"></span>
-                  <span>{{ product.name }}</span>
-                </label>
+              <div class="product-selection-container">
+                <div class="product-search">
+                  <input 
+                    type="text" 
+                    v-model="productSearchQuery" 
+                    placeholder="搜索產品名稱"
+                    class="product-search-input"
+                  >
+                </div>
+                <div class="checkbox-grid">
+                  <label 
+                    v-for="(product, index) in filteredProducts" 
+                    :key="index" 
+                    class="custom-checkbox product-checkbox"
+                  >
+                    <input 
+                      type="checkbox" 
+                      v-model="newCustomer.selectedProducts" 
+                      :value="product.value"
+                    >
+                    <span class="checkmark"></span>
+                    <span :title="product.name">{{ product.name }}</span>
+                  </label>
+                </div>
               </div>
             </div>
             <div class="form-group">
@@ -96,6 +114,7 @@ export default {
       isMenuOpen: false,
       currentTime: '',
       isEditing: false,
+      productSearchQuery: '',
       newCustomer: {
         companyName: '',
         account: '',
@@ -112,6 +131,18 @@ export default {
       products: [],
       editingId: null
     };
+  },
+  computed: {
+    filteredProducts() {
+      if (!this.productSearchQuery) {
+        return this.products;
+      }
+      
+      const query = this.productSearchQuery.toLowerCase().trim();
+      return this.products.filter(product => 
+        product.name.toLowerCase().includes(query)
+      );
+    }
   },
   async created() {
     // 检查是否是编辑模式
@@ -298,67 +329,7 @@ export default {
 <style>
 @import '../assets/styles/unified-base.css';
 
-/* 表单容器样式 */
-.form-container {
-  background-color: #f5fffa;
-  padding: 20px;
-  border-radius: 8px;
-  margin: 20px 0;
-}
-
-.form-group {
-  margin-bottom: 15px;
-  display: flex;
-  align-items: flex-start;
-}
-
-.form-group label {
-  width: 120px;
-  text-align: right;
-  margin-right: 10px;
-  padding-top: 8px;
-}
-
-.form-group input,
-.form-group textarea {
-  width: calc(100% - 135px);
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.checkbox-group {
-  display: flex;
-  flex-direction: column;
-  width: calc(100% - 135px);
-  gap: 5px;
-}
-
-.checkbox-group .custom-checkbox {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  padding: 5px 0;
-}
-
-.checkbox-group .custom-checkbox input[type="checkbox"] {
-  margin-right: 8px;
-}
-
-.checkbox-group .custom-checkbox .checkmark {
-  margin-right: 8px;
-}
-
-.button-group {
-  margin-top: 20px;
-  text-align: center;
-}
-
-.button-group button {
-  margin: 0 10px;
-  padding: 8px 20px;
-}
-
+/* 保留僅在此頁面需要的樣式 */
 .short-input {
   width: 100px !important;
   margin-right: 10px;
