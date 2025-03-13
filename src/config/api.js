@@ -41,6 +41,7 @@ export const API_PATHS = {
     CUSTOMER_DELETE: '/api/customer/delete',
     CUSTOMER_INFO: '/api/customer/info',
     CUSTOMER_DETAIL: (id) => `/api/customer/${id}/info`,
+    UPDATE_CUSTOMER_INFO: '/api/customer/update-self',
     
     // LINE相关
     GENERATE_BIND_URL: '/api/line/generate-bind-url',

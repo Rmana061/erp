@@ -442,8 +442,11 @@ export default {
       try {
         console.log('Fetching products...');
         const customerId = localStorage.getItem('customer_id');
-        if (!customerId) {
-          console.log('No customer_id found');
+        const companyName = localStorage.getItem('company_name');
+        
+        if (!customerId || !companyName) {
+          console.log('Missing customer information');
+          localStorage.setItem('redirect_after_login', '/add-order');
           this.$router.push('/customer-login');
           return;
         }
@@ -451,9 +454,14 @@ export default {
         console.log('Fetching products for customer:', customerId);
         const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
           type: 'customer',
-          customer_id: customerId
+          customer_id: customerId,
+          company_name: companyName
         }, {
-          withCredentials: true
+          withCredentials: true,
+          headers: {
+            'X-Customer-ID': customerId,
+            'X-Company-Name': companyName
+          }
         });
 
         console.log('Products response:', response.data);
@@ -505,15 +513,27 @@ export default {
     },
     async fetchLockedDates() {
       try {
+        const customerId = localStorage.getItem('customer_id');
+        const companyName = localStorage.getItem('company_name');
+        
+        if (!customerId || !companyName) {
+          return;
+        }
+        
         const response = await axios.post(getApiUrl(API_PATHS.LOCKED_DATES), {}, {
-          withCredentials: true
+          withCredentials: true,
+          headers: {
+            'X-Customer-ID': customerId,
+            'X-Company-Name': companyName
+          }
         });
-
+        
         if (response.data.status === 'success') {
-          this.lockedDates = response.data.data;
+          this.lockedDates = response.data.data.map(item => item.locked_date);
         }
       } catch (error) {
         console.error('Error fetching locked dates:', error);
+        this.lockedDates = [];
       }
     },
     getDisabledDatesArray() {
@@ -562,17 +582,34 @@ export default {
     async checkRecentOrder(productId) {
       try {
         const customerId = localStorage.getItem('customer_id');
+        const companyName = localStorage.getItem('company_name');
+        
+        if (!customerId || !companyName) {
+          return { canOrder: true, limitDays: 0 };
+        }
+        
         const response = await axios.post(getApiUrl(API_PATHS.CHECK_RECENT_ORDER), {
-          customer_id: parseInt(customerId),
+          customer_id: customerId,
           product_id: productId
         }, {
-          withCredentials: true
+          withCredentials: true,
+          headers: {
+            'X-Customer-ID': customerId,
+            'X-Company-Name': companyName
+          }
         });
         
-        return response.data;
+        if (response.data.status === 'success') {
+          return {
+            canOrder: response.data.data.can_order,
+            limitDays: response.data.data.limit_days || 0
+          };
+        }
+        
+        return { canOrder: true, limitDays: 0 };
       } catch (error) {
         console.error('Error checking recent orders:', error);
-        return { canOrder: true }; // 出错时默认允许下单
+        return { canOrder: true, limitDays: 0 };
       }
     }
   },
@@ -583,6 +620,47 @@ export default {
     console.log('Component created, fetching products...');
     this.fetchProducts();
     this.fetchLockedDates();
+  },
+  async mounted() {
+    // 验证登录状态
+    const customerId = localStorage.getItem('customer_id');
+    const companyName = localStorage.getItem('company_name');
+    
+    if (!customerId || !companyName) {
+      console.log('Not logged in, redirecting to login page');
+      localStorage.setItem('redirect_after_login', '/add-order');
+      this.$router.push('/customer-login');
+      return;
+    }
+    
+    try {
+      // 验证会话是否有效
+      const sessionCheck = await axios.post(getApiUrl(API_PATHS.CUSTOMER_INFO), {
+        customer_id: customerId
+      }, {
+        withCredentials: true,
+        headers: {
+          'X-Customer-ID': customerId,
+          'X-Company-Name': companyName
+        }
+      });
+      
+      if (sessionCheck.data.status !== 'success') {
+        throw new Error('Session invalid');
+      }
+      
+      // 获取数据
+      await Promise.all([
+        this.fetchProducts(),
+        this.fetchLockedDates()
+      ]);
+      
+      document.title = '新增訂單';
+    } catch (error) {
+      console.error('Session verification failed:', error);
+      localStorage.setItem('redirect_after_login', '/add-order');
+      this.$router.push('/customer-login');
+    }
   }
 };
 </script>
