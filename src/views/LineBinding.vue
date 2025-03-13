@@ -1,17 +1,36 @@
 <!-- LINE 帳號綁定頁面 -->
 <template>
-  <div class="line-binding">
-    <div class="loading-message" v-if="loading">
-      正在處理LINE帳號綁定，請稍候...
-    </div>
-    <div class="error-message" v-if="error">
-      {{ error }}
+  <body class="customer-mode">
+  <div class="container">
+    <SideBar menu-type="customer" />
+    <div class="main-content">
+      <div class="header">
+        <span>Hi {{ adminName || companyName || '用戶' }}您好,<button class="logout-button" @click="logout">登出</button></span>
+        <span>{{ currentTime }}</span>
+      </div>
+      
+      <div class="content-wrapper">
+        <h2>LINE綁定</h2>
+        <div v-if="loading" class="loading-indicator">載入中...</div>
+        <div v-else-if="error" class="error-message">{{ error }}</div>
+        <div v-else class="success-message">
+          <p>LINE帳號綁定成功！</p>
+          <p>您現在可以通過LINE接收訂單通知。</p>
+          <button @click="closeWindow" class="close-button">關閉視窗</button>
+        </div>
+      </div>
     </div>
   </div>
+  </body>
 </template>
 
 <script>
 import { initializeLiff } from '../utils/liff'
+import { adminMixin } from '../mixins/adminMixin';
+import { companyMixin } from '../mixins/companyMixin';
+import { timeMixin } from '../mixins/timeMixin';
+import { logoutMixin } from '../mixins/logoutMixin';
+import SideBar from '../components/SideBar.vue';
 
 export default {
   name: 'LineBinding',
@@ -30,7 +49,11 @@ export default {
       this.error = error.message || '綁定過程發生錯誤'
       this.loading = false
     }
-  }
+  },
+  components: {
+    SideBar
+  },
+  mixins: [adminMixin, companyMixin, timeMixin, logoutMixin]
 }
 </script>
 

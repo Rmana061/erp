@@ -5,7 +5,7 @@
     <SideBar menu-type="admin" />
     <div class="main-content">
       <div class="header">
-        <span>Hi {{ adminName }}您好,</span>
+        <span>Hi {{ adminName }}您好,<button class="logout-button" @click="logout">登出</button></span>
         <span>{{ currentTime }}</span>
       </div>
       
@@ -28,11 +28,12 @@
 <script>
 import { adminMixin } from '../mixins/adminMixin';
 import { timeMixin } from '../mixins/timeMixin';
+import { logoutMixin } from '../mixins/logoutMixin';
 import SideBar from '../components/SideBar.vue';
 
 export default {
   name: 'NotificationSetting',
-  mixins: [adminMixin, timeMixin],
+  mixins: [adminMixin, timeMixin, logoutMixin],
   components: {
     SideBar
   },

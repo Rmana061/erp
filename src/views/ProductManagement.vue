@@ -8,7 +8,7 @@
     <SideBar menu-type="admin" :class="{ active: isSidebarActive }" />
     <div class="main-content">
       <div class="header">
-        <span>Hi {{ adminName }}您好,</span>
+        <span>Hi {{ adminName }}您好,<button class="logout-button" @click="logout">登出</button></span>
         <span>{{ currentTime }}</span>
       </div>
       <div class="content-wrapper">
@@ -153,6 +153,7 @@ import * as XLSX from "xlsx";
 import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
 import { timeMixin } from '../mixins/timeMixin';
+import { logoutMixin } from '../mixins/logoutMixin';
 import { API_PATHS, getApiUrl } from '../config/api';
 
 export default {
@@ -160,7 +161,7 @@ export default {
   components: {
     SideBar
   },
-  mixins: [adminMixin, timeMixin],
+  mixins: [adminMixin, timeMixin, logoutMixin],
   data() {
     return {
       searchQuery: "",

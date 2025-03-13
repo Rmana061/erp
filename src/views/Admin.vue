@@ -9,7 +9,7 @@
     <SideBar menu-type="admin" :class="{ active: isSidebarActive }" />
     <div class="main-content">
       <div class="header">
-        <span>Hi {{ adminName }}您好,</span>
+        <span>Hi {{ adminName }}您好,<button class="logout-button" @click="logout">登出</button></span>
         <span>{{ currentTime }}</span>
       </div>
       <div class="content-wrapper">
@@ -79,12 +79,13 @@ import axios from 'axios';
 import SideBar from '../components/SideBar.vue';
 import { adminMixin } from '../mixins/adminMixin';
 import { timeMixin } from '../mixins/timeMixin';
+import { logoutMixin } from '../mixins/logoutMixin';
 import { API_PATHS, getApiUrl } from '../config/api';
 import axiosInstance from '../config/axios';
 
 export default {
   name: 'Admin',
-  mixins: [adminMixin, timeMixin],
+  mixins: [adminMixin, timeMixin, logoutMixin],
   components: {
     SideBar
   },

@@ -68,6 +68,11 @@ html, body {
   margin-left: 15px;
 }
 
+.header > span:first-child {
+  display: flex;
+  align-items: center;
+}
+
 /* 管理端特定樣式 */
 body.admin-mode .header {
   background-color: var(--success-color);
@@ -2388,4 +2393,37 @@ table.product-table td:nth-child(2) {
     margin-right: 0;
     box-sizing: border-box;
   }
+}
+
+/* 登出按钮样式 */
+.logout-button {
+  margin-left: 10px;
+  padding: 3px 10px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.logout-button:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.customer-mode .logout-button {
+  background-color: rgba(99, 102, 241, 0.2);
+}
+
+.customer-mode .logout-button:hover {
+  background-color: rgba(99, 102, 241, 0.3);
+}
+
+.admin-mode .logout-button {
+  background-color: rgba(80, 200, 120, 0.2);
+}
+
+.admin-mode .logout-button:hover {
+  background-color: rgba(80, 200, 120, 0.3);
 }

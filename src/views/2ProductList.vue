@@ -5,7 +5,7 @@
     <SideBar menu-type="customer" />
       <div class="main-content">
         <div class="header">
-          <span>Hi {{ companyName }}您好,</span>
+          <span>Hi {{ companyName }}您好,<button class="logout-button" @click="logout">登出</button></span>
           <span>{{ currentTime }}</span>
         </div>
 
@@ -83,6 +83,7 @@
 <script>
 import { timeMixin } from '../mixins/timeMixin';
 import { companyMixin } from '../mixins/companyMixin';
+import { logoutMixin } from '../mixins/logoutMixin';
 import SideBar from '../components/SideBar.vue';
 import axios from 'axios';
 import { API_PATHS, getApiUrl } from '../config/api';
@@ -92,7 +93,7 @@ export default {
   components: {
     SideBar
   },
-  mixins: [timeMixin, companyMixin],
+  mixins: [timeMixin, companyMixin, logoutMixin],
   data() {
     return {
       username: 'Customer',
