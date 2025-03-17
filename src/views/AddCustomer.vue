@@ -48,7 +48,7 @@
                       :value="product.value"
                     >
                     <span class="checkmark"></span>
-                    <span :title="product.name">{{ product.name }}</span>
+                    <span :title="product.name" class="product-name">{{ product.name }}</span>
                   </label>
                 </div>
               </div>
@@ -339,5 +339,131 @@ export default {
   font-size: 0.85em;
   color: #666;
   margin-left: 5px;
+}
+
+/* 產品選擇區域樣式 */
+.product-selection-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  width: 100%; /* 確保容器與其他輸入框相同寬度 */
+  box-sizing: border-box; /* 確保padding不會導致寬度溢出 */
+  overflow-x: hidden; /* 避免出現水平滾動條 */
+}
+
+.product-search {
+  margin-bottom: 15px;
+  width: 98%; /* 稍微縮小搜索框寬度，避免水平滾動 */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.product-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 固定每行顯示4個產品 */
+  gap: 10px;
+  width: 98%; /* 稍微縮小網格寬度 */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.product-checkbox {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  min-width: 0; /* 防止項目過大 */
+}
+
+.product-checkbox:hover {
+  background-color: #eee;
+}
+
+.product-checkbox input[type="checkbox"] {
+  flex-shrink: 0; /* 防止複選框被壓縮 */
+  margin-right: 8px; /* 確保複選框和文字之間有間距 */
+}
+
+.product-checkbox .checkmark {
+  flex-shrink: 0; /* 防止勾選框被壓縮 */
+  min-width: 18px; /* 固定勾選框寬度 */
+}
+
+.product-name {
+  margin-left: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 30px); /* 為複選框預留足夠空間 */
+  display: inline-block; /* 確保寬度正確套用 */
+  cursor: help; /* 修改為help游標，提示用戶有提示信息 */
+  position: relative; /* 為自定義提示定位 */
+  border-bottom: 1px dotted #999; /* 添加虛線底邊，提示有提示信息 */
+  color: #333; /* 設置文字顏色 */
+  transition: color 0.2s; /* 添加過渡效果 */
+}
+
+/* 確保title提示能正常顯示 */
+.product-checkbox:hover .product-name {
+  color: #4CAF50; /* 在管理者模式下使用綠色 */
+}
+
+/* 確保選中狀態下的項目樣式 */
+.product-checkbox input[type="checkbox"]:checked + .checkmark + .product-name {
+  font-weight: bold;
+  color: #4CAF50;
+}
+
+/* 移除舊的重複樣式 */
+.product-checkbox span:last-child {
+  margin-left: 0; /* 已由 .product-name 設定 */
+}
+
+@media (max-width: 1200px) {
+  .checkbox-grid {
+    grid-template-columns: repeat(3, 1fr); /* 在較小螢幕上每行顯示3個 */
+  }
+}
+
+@media (max-width: 768px) {
+  .checkbox-grid {
+    grid-template-columns: repeat(1, 1fr); /* 在移動裝置上每行顯示1個 */
+  }
+  
+  .product-selection-container {
+    max-width: 100%; /* 確保在移動端與其他輸入框相同寬度 */
+    margin: 0;
+    padding: 10px;
+  }
+  
+  .product-search,
+  .checkbox-grid {
+    width: 100%; /* 在移動端使用全寬 */
+  }
+  
+  .form-group {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .form-group input,
+  .form-group textarea,
+  .product-selection-container {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
 }
 </style>
