@@ -18,75 +18,73 @@
             
             <!-- 查詢條件 - 使用與訂單列表相同的樣式 -->
             <div class="search-panel compact">
-              <div class="search-panel-body">
-                <form class="search-form" @submit.prevent="searchLogs(true)">
-                  <div class="search-form-row">
-                    <div class="date-range-field">
-                      <div class="date-range-wrapper">
-                        <input 
-                          type="date" 
-                          class="date-field" 
-                          placeholder="開始日期" 
-                          v-model="searchParams.start_date"
-                        >
-                        <span class="date-separator">~</span>
-                        <input 
-                          type="date" 
-                          class="date-field" 
-                          placeholder="結束日期" 
-                          v-model="searchParams.end_date"
-                          :min="searchParams.start_date || ''"
-                        >
-                      </div>
-                    </div>
+              <!-- 將日期範圍和操作對象搜索框移到上方 -->
+              <div class="search-form-row">
+                <div class="search-form-item date-range-field">
+                  <div class="date-range-wrapper">
+                    <input
+                      type="date"
+                      v-model="searchParams.start_date"
+                      class="search-field date-field"
+                    />
+                    <span class="date-separator">至</span>
+                    <input
+                      type="date"
+                      v-model="searchParams.end_date"
+                      class="search-field date-field"
+                    />
                   </div>
-                  
-                  <div class="search-form-row">
-                    <div class="search-form-item">
-                      <select class="search-field" v-model="searchParams.table_name">
-                        <option value="">全部表名</option>
-                    <option value="orders">訂單</option>
-                    <option value="customers">客戶</option>
+                </div>
+                <div class="search-form-item record-detail-field">
+                  <input
+                    type="text"
+                    v-model="searchParams.record_detail"
+                    class="search-field"
+                    placeholder="輸入操作對象關鍵字搜索"
+                  />
+                </div>
+              </div>
+              
+              <!-- 選擇框移到下方 -->
+              <div class="search-form-row">
+                <div class="search-form-item">
+                  <label>操作表</label>
+                  <select v-model="searchParams.table_name" class="search-field">
+                    <option value="">全部</option>
                     <option value="products">產品</option>
-                    <option value="administrators">管理員</option>
+                    <option value="orders">訂單</option>
+                    <option value="inventory">庫存</option>
+                    <option value="customers">客戶</option>
+                    <option value="suppliers">供應商</option>
+                    <option value="users">用戶</option>
                   </select>
                 </div>
-                    
-                    <div class="search-form-item">
-                      <select class="search-field" v-model="searchParams.operation_type">
-                        <option value="">全部操作類型</option>
-                    <option value="新增">新增</option>
-                    <option value="修改">修改</option>
-                    <option value="刪除">刪除</option>
-                    <option value="審核">審核</option>
+                <div class="search-form-item">
+                  <label>操作類型</label>
+                  <select v-model="searchParams.operation_type" class="search-field">
+                    <option value="">全部</option>
+                    <option value="insert">新增</option>
+                    <option value="update">更新</option>
+                    <option value="delete">刪除</option>
+                    <option value="login">登入</option>
+                    <option value="logout">登出</option>
                   </select>
                 </div>
-                    
-                    <div class="search-form-item">
-                      <select class="search-field" v-model="searchParams.user_type">
-                        <option value="">全部用戶類型</option>
-                    <option value="管理員">管理員</option>
-                    <option value="客戶">客戶</option>
+                <div class="search-form-item">
+                  <label>用戶類型</label>
+                  <select v-model="searchParams.user_type" class="search-field">
+                    <option value="">全部</option>
+                    <option value="admin">管理員</option>
+                    <option value="customer">客戶</option>
                   </select>
                 </div>
               </div>
-                  
-                  <div class="search-actions">
-                    <button 
-                      type="button" 
-                      class="action-btn reset-btn" 
-                      @click="resetSearch"
-                    >
-                      重置
-                    </button>
-                    <button 
-                      type="submit" 
-                      class="action-btn search-btn"
-                    >
-                      查詢
-                    </button>
+              
+              <div class="search-form-row">
+                <div class="search-form-item button-group">
+                  <button class="primary-btn" @click="searchLogs(true)">搜索</button>
+                  <button class="reset-btn" @click="resetSearch">重置</button>
                 </div>
-                </form>
               </div>
             </div>
 
@@ -198,6 +196,7 @@ export default {
         start_date: '',
         end_date: '',
         user_type: '',
+        record_detail: '',
         page: 1,
         per_page: 50
       },
@@ -1311,6 +1310,7 @@ export default {
         start_date: '',
         end_date: '',
         user_type: '',
+        record_detail: '',
         page: 1,
         per_page: 50
       };

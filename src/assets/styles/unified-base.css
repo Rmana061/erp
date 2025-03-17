@@ -3131,669 +3131,298 @@ table.product-table td:nth-child(2) {
 @media (max-width: 768px) {
   .search-panel.compact .search-form-row {
     flex-direction: column;
-    gap: 15px;
+    margin-bottom: 10px;
+    width: 100%;
   }
   
   .search-panel.compact .search-form-item {
     width: 100%;
+    margin-bottom: 8px;
   }
   
   .search-panel.compact .date-range-wrapper {
-    flex-direction: row;
+    flex-direction: column;
     width: 100%;
   }
   
   .search-panel.compact .date-field {
-    font-size: 14px;
-    padding: 8px;
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 8px;
   }
   
   .search-panel.compact .date-separator {
-    margin: 0 10px;
+    display: block;
+    text-align: center;
+    margin: 5px 0;
+    width: 100%;
+  }
+  
+  .search-panel.compact .search-field {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  /* 操作對象搜索框特殊樣式 */
+  .search-panel.compact input.search-field[type="text"] {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    width: 100%;
+    font-size: 14px;
+  }
+  
+  .search-panel.compact input.search-field[type="text"]:focus {
+    border-color: #43a047;
+    box-shadow: 0 0 0 2px rgba(67, 160, 71, 0.2);
+    outline: none;
+  }
+}
+
+/* 為操作對象搜索框添加網頁端適配樣式 */
+.search-panel.compact input.search-field[type="text"] {
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  width: 100%;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-panel.compact input.search-field[type="text"]:focus {
+  border-color: #43a047;
+  box-shadow: 0 0 0 2px rgba(67, 160, 71, 0.2);
+  outline: none;
+}
+
+/* 讓最後的搜索欄位行保持與其他行一致的佈局 */
+.search-panel.compact .search-form-row:last-of-type {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.search-panel.compact .search-form-row:last-of-type .search-form-item {
+  flex: 1;
+  min-width: 200px;
+  margin-right: 10px;
+}
+
+@media (min-width: 769px) {
+  .search-panel.compact .search-form-row:last-of-type .search-form-item {
+    max-width: 100%;
+  }
+}
+
+/* 調整操作對象輸入框在日期右側的樣式 */
+.date-range-field {
+  flex: 2;
+}
+
+.record-detail-field {
+  flex: 1;
+  margin-left: 10px;
+}
+
+/* 確保搜索欄布局在網頁端的美觀 */
+@media (min-width: 769px) {
+  .search-panel.compact .search-form-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .search-panel.compact .date-range-wrapper {
+    display: flex;
+    align-items: center;
+  }
+
+  .search-panel.compact .search-form-item.record-detail-field {
+    max-width: 300px;
+  }
+}
+
+/* 移動端適配樣式 */
+@media (max-width: 768px) {
+  .search-panel.compact .search-form-row {
+    flex-direction: column;
+    margin-bottom: 10px;
+    width: 100%;
+  }
+  
+  .search-panel.compact .search-form-item {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .search-panel.compact .record-detail-field {
+    margin-left: 0;
+    margin-top: 8px;
+    width: 100%;
+  }
+  
+  .search-panel.compact .date-range-wrapper {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .search-panel.compact .date-field {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 8px;
+  }
+  
+  .search-panel.compact .date-separator {
+    display: block;
+    text-align: center;
+    margin: 5px 0;
+    width: 100%;
+  }
+  
+  .search-panel.compact .search-field {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  /* 操作對象搜索框特殊樣式 */
+  .search-panel.compact input.search-field[type="text"] {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    width: 100%;
+    font-size: 14px;
+  }
+  
+  .search-panel.compact input.search-field[type="text"]:focus {
+    border-color: #43a047;
+    box-shadow: 0 0 0 2px rgba(67, 160, 71, 0.2);
+    outline: none;
+  }
+}
+
+/* 優化搜索按鈕樣式 */
+.search-panel.compact .button-group {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.search-panel.compact .primary-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  min-width: 60px;
+  text-align: center;
+}
+
+.search-panel.compact .primary-btn:hover {
+  background-color: #3e8e41;
+}
+
+.search-panel.compact .secondary-btn.reset-btn {
+  background-color: #f0f0f0;
+  color: #666;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  min-width: 60px;
+  text-align: center;
+}
+
+.search-panel.compact .secondary-btn.reset-btn:hover {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+/* 移動端適配 */
+@media (max-width: 768px) {
+  .search-panel.compact .button-group {
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+  
+  .search-panel.compact .primary-btn,
+  .search-panel.compact .reset-btn {
+    min-width: 100px;
+    width: 100%;
+    margin: 0;
+    padding: 10px 0;
+    font-size: 15px;
+  }
+  
+  .search-panel.compact .primary-btn {
+    order: 1;
   }
   
   .search-panel.compact .reset-btn {
-    width: 100%;
-    margin-top: 10px;
+    order: 2;
   }
 }
 
-/* 自定义各列宽度 */
-.review-table th:nth-child(4), /* 出货日期列 */
-.review-table td:nth-child(4) {
-  min-width: 160px;
-  width: 160px;
-}
-
-/* 设置其他列宽 */
-.review-table th:nth-child(1), /* 品项列 */
-.review-table td:nth-child(1) {
-  min-width: 120px;
-  width: 120px;
-}
-
-.review-table th:nth-child(2), /* 数量列 */
-.review-table td:nth-child(2) {
-  min-width: 80px;
-  width: 80px;
-}
-
-.review-table th:nth-child(3), /* 单位列 */
-.review-table td:nth-child(3) {
-  min-width: 60px;
-  width: 60px;
-}
-
-.review-table th:nth-child(5), /* 备注列 */
-.review-table td:nth-child(5) {
-  min-width: 140px;
-  width: 140px;
-}
-
-.review-table th:nth-child(6), /* 供应商备注列 */
-.review-table td:nth-child(6) {
-  min-width: 200px;
-  width: 200px;
-}
-
-.review-table th:nth-child(7), /* 状态列 */
-.review-table td:nth-child(7) {
-  min-width: 100px;
-  width: 100px;
-}
-
-.checkbox-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid #eee;
-  padding: 10px;
-  border-radius: 4px;
-  background-color: #fff;
-}
-
-/* 產品勾選框樣式 */
-.product-checkbox {
-  width: 100%;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  padding: 5px 8px;
-  margin: 2px 0;
-  border: 1px solid #f0f0f0;
-  border-radius: 4px;
-  background-color: #f9f9f9;
-  transition: background-color 0.2s;
-  cursor: pointer;
-}
-
-.product-checkbox:hover {
-  background-color: #f0f0f0;
-}
-
-.product-checkbox input[type="checkbox"] {
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-
-.product-checkbox .checkmark {
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-
-/* 修改產品名稱span元素樣式，確保title屬性生效 */
-.product-checkbox span:last-child {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1;
-  display: inline-block; /* 確保title屬性能正常顯示 */
-  max-width: 100%;
-}
-
-/* 確保在Firefox和Safari中也能正常顯示tooltip */
-.product-checkbox span:last-child:hover {
-  position: relative; /* 保留相對定位以確保tooltip正確顯示 */
-}
-
-
-/* 產品選擇區域樣式 */
-.product-selection-container {
-  width: calc(100% - 135px);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.product-search {
-  margin-bottom: 10px;
-  width: 100%;
-}
-
-.product-search-input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-/* 移動端樣式調整 */
-@media screen and (max-width: 768px) {
-  /* 其他移動端樣式保持不變 */
-  
-  /* 產品選擇區域在移動端的寬度調整 */
-  .product-selection-container {
-    width: 100%; /* 在移動端下寬度設為100%，與密碼輸入框一致 */
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-  }
-  
-  /* 確保產品搜索框在移動端下與其他輸入框同寬 */
-  .product-search {
-    width: 100%;
-    padding: 0;
-    margin-bottom: 10px;
-  }
-  
-  .product-search-input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px;
-  }
-  
-  /* 確保checkbox-grid在移動端下也與其他輸入框同寬 */
-  .checkbox-grid {
-    width: 100%;
-    margin: 0;
-    padding: 10px;
-    box-sizing: border-box;
-  }
-  
-  /* 確保form-group內的所有元素在移動端下寬度一致 */
-  .form-group input,
-  .form-group .product-selection-container,
-  .form-group .product-search-input,
-  .form-group .checkbox-grid {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-}
-
-/* 登入頁面特殊容器處理 */
-body.admin-mode .container,
-body.customer-mode .container,
-.login-page .container {
-  width: 100% !important;
-  height: 100vh !important;
-  overflow: hidden !important;
-  display: block !important;
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  box-sizing: border-box !important;
-}
-
-/* 登入頁面樣式 */
+/* 登录页面样式 */
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
   height: 100vh;
-  width: 100%;
   position: relative;
   overflow: hidden;
-  box-sizing: border-box;
-  margin: 0 auto;
-  padding: 0;
 }
 
-/* 網頁端樣式優化 */
-@media (min-width: 769px) {
-  .login-form .form-group {
-    width: 100%;
-  }
-  
-  .login-form .form-group input {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-  
-  .login-box {
-    width: 450px;
-    margin: 0 auto;
-  }
-
-  .login-form {
-    width: 100%;
-    display: block;
-  }
-}
-
-/* 管理員和客戶登入頁面背景 */
-body.admin-mode .login-container {
-  background: linear-gradient(135deg, #43a047 0%, #1b5e20 100%);
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
-}
-
-body.customer-mode .login-container {
-  background: linear-gradient(135deg, #7e57c2 0%, #4527a0 100%);
-  background-size: 400% 400%;
-  animation: gradient 15s ease infinite;
-}
-
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.login-container::before {
-  content: "";
-  position: absolute;
-  width: 150%;
-  height: 150%;
-  background: rgba(255, 255, 255, 0.1);
-  transform: rotate(45deg);
-  top: -50%;
-  left: -50%;
-}
-
-.login-box {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 40px;
-  width: 400px;
-  max-width: 90%;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  position: relative;
-  z-index: 1;
-  transform: translateY(0);
-  transition: transform 0.5s ease, box-shadow 0.5s ease;
-  margin: 0 auto;
-}
-
-.login-box:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
-}
-
-.login-box h2 {
-  margin-bottom: 30px;
-  color: #333;
-  font-size: 28px;
-  font-weight: 700;
-  position: relative;
-  padding-bottom: 15px;
-}
-
-.login-box h2::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 4px;
-  background: var(--primary-color);
-  border-radius: 2px;
-}
-
-.login-form {
-  margin-top: 30px;
-  width: 100%;
-}
-
-.login-form .form-group {
-  margin-bottom: 25px;
-  text-align: left;
-  position: relative;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.login-form .form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #555;
-  font-size: 16px;
-  text-align: left;
-  width: 100%;
-}
-
-.login-form .form-group input {
-  width: 100%;
-  padding: 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 16px;
-  transition: border-color 0.3s, box-shadow 0.3s;
-  background: white;
-  box-sizing: border-box;
-}
-
-.login-form .form-group input:focus {
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(98, 72, 202, 0.2);
-  outline: none;
-}
-
-.login-button {
-  position: relative;
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 5px;
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  margin-top: 25px;
-  cursor: pointer;
-  overflow: hidden;
-  background: linear-gradient(45deg, #4CAF50, #8BC34A);
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-  transition: all 0.3s ease-in-out;
-  z-index: 1;
-}
-
-.login-button::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
-  transition: left 0.7s;
-  z-index: -1;
-}
-
-/* 登入按鈕懸停效果 - 確保文字可見 */
-.login-button:hover {
-  background-color: rgba(255, 255, 255, 0.2) !important;
-  color: white !important;
-  transform: scale(1.02);
-  box-shadow: 0 6px 18px rgba(76, 175, 80, 0.4);
-}
-
-.login-button:hover::before {
-  left: 100%;
-}
-
-.login-button:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-}
-
-/* 客戶端紫色主題 */
-body.customer-mode .login-button {
-  background: linear-gradient(45deg, #9c27b0, #ba68c8) !important;
-  box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3) !important;
-}
-
-body.customer-mode .login-button:hover {
-  box-shadow: 0 6px 18px rgba(156, 39, 176, 0.4) !important;
-}
-
-body.customer-mode .login-button:active {
-  box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3) !important;
-}
-
-body.customer-mode .login-button::before {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  ) !important;
-}
-
-/* 管理者和客戶模式下的標題下劃線 */
-body.admin-mode .login-box h2::after {
-  background: linear-gradient(to right, #4CAF50, #8BC34A) !important;
-}
-
-body.customer-mode .login-box h2::after {
-  background: linear-gradient(to right, #9c27b0, #ba68c8) !important;
-}
-
-/* 輸入框聚焦樣式 */
-body.admin-mode .login-form .form-group input:focus {
-  border-color: #4CAF50 !important;
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2) !important;
-}
-
-body.customer-mode .login-form .form-group input:focus {
-  border-color: #9c27b0 !important;
-  box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.2) !important;
-}
-
-/* 禁用按鈕樣式 */
-.login-button:disabled {
-  background-color: #cccccc !important;
-  cursor: not-allowed !important;
-  box-shadow: none !important;
-  transform: none !important;
-}
-
-.login-button:disabled::before {
-  display: none !important;
-}
-
-/* 網頁端樣式優化 */
-@media (min-width: 769px) {
-  .login-form .form-group {
-    width: 100%;
-  }
-  
-  .login-form .form-group input {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-  
-  .login-box {
-    width: 450px;
-    margin: 0 auto;
-  }
-
-  .login-form {
-    width: 100%;
-    display: block;
-  }
-}
-
-/* 自適應樣式 */
-@media (max-width: 768px) {
-  .login-box {
-    padding: 30px;
-    width: 85%;
-    max-width: 400px;
-  }
-  
-  .login-box h2 {
-    font-size: 24px;
-  }
-  
-  .login-form .form-group input, 
-  .login-button {
-    padding: 12px;
-    font-size: 16px;
-  }
-
-  /* 確保登入容器在移動設備上全屏顯示 */
-  body.admin-mode .container,
-  body.customer-mode .container,
-  .login-container {
-    width: 100%;
-    max-width: 100%;
-    overflow: hidden;
-  }
-
-  /* 調整移動端的背景方塊 */
-  .login-container .bg-squares li {
-    opacity: 0.7;
-  }
-}
-
-/* 確保在極小螢幕上的顯示 */
-@media (max-width: 480px) {
-  .login-box {
-    padding: 20px;
-    width: 90%;
-  }
-
-  .login-box h2 {
-    font-size: 20px;
-    margin-bottom: 20px;
-  }
-
-  .login-form .form-group {
-    margin-bottom: 15px;
-  }
-
-  .login-form .form-group label {
-    font-size: 14px;
-  }
-
-  .login-form .form-group input {
-    padding: 10px;
-    font-size: 14px;
-  }
-
-  .login-button {
-    padding: 10px;
-    font-size: 16px;
-  }
-}
-
-/* 分別為管理端和客戶端設置不同的登入頁面強調色 */
-body.admin-mode .login-box h2::after {
-  background: linear-gradient(to right, #4CAF50, #8BC34A) !important;
-}
-
-body.customer-mode .login-box h2::after {
-  background: linear-gradient(to right, #9c27b0, #ba68c8) !important;
-}
-
-body.admin-mode .login-form .form-group input:focus {
-  border-color: #4CAF50 !important;
-}
-
-body.customer-mode .login-form .form-group input:focus {
-  border-color: #9c27b0 !important;
-}
-
-/* 客戶模式登入按鈕改為紫色 - 增加高優先級 */
-body.customer-mode .login-button {
-  background: linear-gradient(45deg, #9c27b0, #ba68c8) !important;
-  box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3) !important;
-}
-
-body.customer-mode .login-button::before {
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent), 
-              linear-gradient(45deg, #ba68c8, #9c27b0) !important;
-}
-
-/* 確保禁用的按鈕樣式正確 */
-.login-button:disabled {
-  background-color: #cccccc !important;
-  cursor: not-allowed !important;
-  box-shadow: none !important;
-}
-
-.login-button:disabled::before {
-  background: #cccccc !important;
-}
-
-/* 登入頁面額外的動畫效果 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.login-box {
-  animation: fadeIn 0.8s ease forwards;
-}
-
-.login-form .form-group:nth-child(1) {
-  animation: fadeIn 0.8s ease 0.2s forwards;
-  opacity: 0;
-}
-
-.login-form .form-group:nth-child(2) {
-  animation: fadeIn 0.8s ease 0.4s forwards;
-  opacity: 0;
-}
-
-.login-button {
-  animation: fadeIn 0.8s ease 0.6s forwards;
-  opacity: 0;
-}
-
-/* 登入頁面背景效果 */
-.login-container .bg-squares {
+.bg-squares {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  z-index: 0;
+  margin: 0;
+  padding: 0;
+  z-index: 1;
 }
 
-.login-container .bg-squares li {
+.bg-squares li {
   position: absolute;
-  list-style: none;
   display: block;
+  list-style: none;
   width: 20px;
   height: 20px;
   background: rgba(255, 255, 255, 0.1);
   animation: animate 25s linear infinite;
   bottom: -150px;
-  border-radius: 2px;
+  z-index: 1;
 }
 
-.login-container .bg-squares li:nth-child(1) {
+.admin-mode .bg-squares li {
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.customer-mode .bg-squares li {
+  background: rgba(103, 58, 183, 0.1);
+}
+
+.bg-squares li:nth-child(1) {
   left: 25%;
   width: 80px;
   height: 80px;
   animation-delay: 0s;
 }
 
-.login-container .bg-squares li:nth-child(2) {
+.bg-squares li:nth-child(2) {
   left: 10%;
   width: 20px;
   height: 20px;
@@ -3801,14 +3430,14 @@ body.customer-mode .login-button::before {
   animation-duration: 12s;
 }
 
-.login-container .bg-squares li:nth-child(3) {
+.bg-squares li:nth-child(3) {
   left: 70%;
   width: 20px;
   height: 20px;
   animation-delay: 4s;
 }
 
-.login-container .bg-squares li:nth-child(4) {
+.bg-squares li:nth-child(4) {
   left: 40%;
   width: 60px;
   height: 60px;
@@ -3816,28 +3445,28 @@ body.customer-mode .login-button::before {
   animation-duration: 18s;
 }
 
-.login-container .bg-squares li:nth-child(5) {
+.bg-squares li:nth-child(5) {
   left: 65%;
   width: 20px;
   height: 20px;
   animation-delay: 0s;
 }
 
-.login-container .bg-squares li:nth-child(6) {
+.bg-squares li:nth-child(6) {
   left: 75%;
   width: 110px;
   height: 110px;
   animation-delay: 3s;
 }
 
-.login-container .bg-squares li:nth-child(7) {
+.bg-squares li:nth-child(7) {
   left: 35%;
   width: 150px;
   height: 150px;
   animation-delay: 7s;
 }
 
-.login-container .bg-squares li:nth-child(8) {
+.bg-squares li:nth-child(8) {
   left: 50%;
   width: 25px;
   height: 25px;
@@ -3845,7 +3474,7 @@ body.customer-mode .login-button::before {
   animation-duration: 45s;
 }
 
-.login-container .bg-squares li:nth-child(9) {
+.bg-squares li:nth-child(9) {
   left: 20%;
   width: 15px;
   height: 15px;
@@ -3853,7 +3482,7 @@ body.customer-mode .login-button::before {
   animation-duration: 35s;
 }
 
-.login-container .bg-squares li:nth-child(10) {
+.bg-squares li:nth-child(10) {
   left: 85%;
   width: 150px;
   height: 150px;
@@ -3874,60 +3503,119 @@ body.customer-mode .login-button::before {
   }
 }
 
-/* 確保不同模式下的登入按鈕樣式優先級 */
-/* 管理端綠色主題 */
-.admin-mode .login-button {
-  background: linear-gradient(45deg, #4CAF50, #8BC34A) !important;
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3) !important;
+.login-box {
+  width: 400px;
+  max-width: 90%;
+  background: var(--white);
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 15px 25px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 2;
 }
 
-.admin-mode .login-button:hover {
-  box-shadow: 0 6px 18px rgba(76, 175, 80, 0.4) !important;
+.admin-mode .login-box {
+  border-top: 5px solid #4CAF50;
 }
 
-.admin-mode .login-button:active {
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3) !important;
+.customer-mode .login-box {
+  border-top: 5px solid #673AB7;
 }
 
-/* 客戶端紫色主題 */
-.customer-mode .login-button {
-  background: linear-gradient(45deg, #9c27b0, #ba68c8) !important;
-  box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3) !important;
+.login-box h2 {
+  margin: 0 0 30px;
+  padding: 0;
+  color: var(--text-color);
+  text-align: center;
+  font-size: 24px;
 }
 
-.customer-mode .login-button:hover {
-  box-shadow: 0 6px 18px rgba(156, 39, 176, 0.4) !important;
+.admin-mode .login-box h2 {
+  color: #4CAF50;
 }
 
-.customer-mode .login-button:active {
-  box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3) !important;
+.customer-mode .login-box h2 {
+  color: #673AB7;
 }
 
-.customer-mode .login-button::before {
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  ) !important;
+.login-form .form-group {
+  position: relative;
+  margin-bottom: 25px;
 }
 
-/* 強化標題下劃線樣式 */
-.admin-mode .login-box h2::after {
-  background: linear-gradient(to right, #4CAF50, #8BC34A) !important;
+.login-form .form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-color);
 }
 
-.customer-mode .login-box h2::after {
-  background: linear-gradient(to right, #9c27b0, #ba68c8) !important;
+.login-form .form-group input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+  transition: border-color 0.3s;
 }
 
-/* 強化輸入框聚焦樣式 */
 .admin-mode .login-form .form-group input:focus {
-  border-color: #4CAF50 !important;
-  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2) !important;
+  border-color: #4CAF50;
+  outline: none;
 }
 
 .customer-mode .login-form .form-group input:focus {
-  border-color: #9c27b0 !important;
-  box-shadow: 0 0 0 3px rgba(156, 39, 176, 0.2) !important;
+  border-color: #673AB7;
+  outline: none;
+}
+
+.login-button {
+  width: 100%;
+  padding: 12px 0;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.admin-mode .login-button {
+  background-color: #4CAF50;
+}
+
+.admin-mode .login-button:hover {
+  background-color: #3e8e41;
+}
+
+.customer-mode .login-button {
+  background-color: #673AB7;
+}
+
+.customer-mode .login-button:hover {
+  background-color: #5e35b1;
+}
+
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 768px) {
+  .login-box {
+    width: 320px;
+    padding: 30px;
+  }
+  
+  .login-form .form-group input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .login-button {
+    padding: 10px 0;
+    font-size: 14px;
+  }
 }
