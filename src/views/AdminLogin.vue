@@ -1,33 +1,45 @@
 <!-- 管理者登入 -->
 <template>
-  <body class="admin-mode">
-  <div class="container">
-    <div class="login-container">
-      <div class="login-box">
-        <h2>管理者系統</h2>
-        <form class="login-form" @submit.prevent="handleLogin">
-          <div class="form-group">
-            <label for="account">帳號</label>
-            <input 
-              type="text" 
-              id="account"
-              v-model="loginForm.account"
-              required>
-          </div>
-          <div class="form-group">
-            <label for="password">密碼</label>
-            <input 
-              type="password" 
-              id="password"
-              v-model="loginForm.password"
-              required>
-          </div>
-          <button type="submit" class="login-button">登入</button>
-        </form>
+  <div class="admin-mode login-page">
+    <div class="container">
+      <div class="login-container">
+        <ul class="bg-squares">
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+        </ul>
+        <div class="login-box">
+          <h2>管理者系統</h2>
+          <form class="login-form" @submit.prevent="handleLogin">
+            <div class="form-group">
+              <label for="account">帳號</label>
+              <input 
+                type="text" 
+                id="account"
+                v-model="loginForm.account"
+                required>
+            </div>
+            <div class="form-group">
+              <label for="password">密碼</label>
+              <input 
+                type="password" 
+                id="password"
+                v-model="loginForm.password"
+                required>
+            </div>
+            <button type="submit" class="login-button">登入</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>
-  </body>
 </template>
 
 <script>
@@ -115,5 +127,14 @@ export default {
 <style scoped>
 @import '../assets/styles/unified-base.css';
 
-/* 所有其他樣式已移至 unified-base */
+.login-page {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin: 0;
+  padding: 0;
+}
 </style>
