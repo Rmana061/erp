@@ -4,7 +4,6 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Admin from '../views/Admin.vue';
 import AllOrders from '../views/AllOrders.vue';
 import CustomerManagement from '../views/CustomerManagement.vue';
-import NotificationSetting from '../views/NotificationSetting.vue';
 import ProductManagement from '../views/ProductManagement.vue';
 import TodayOrders from '../views/TodayOrders.vue';
 import AccountSettings from '../views/2AccountSettings.vue';    
@@ -60,12 +59,6 @@ const router = createRouter({
       path: '/admin',
       name: 'Admin',
       component: Admin,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/notification-setting',
-      name: 'NotificationSetting',
-      component: NotificationSetting,
       meta: { requiresAuth: true }
     },
     {

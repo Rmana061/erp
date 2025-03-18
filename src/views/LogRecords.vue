@@ -53,21 +53,17 @@
                     <option value="">全部</option>
                     <option value="products">產品</option>
                     <option value="orders">訂單</option>
-                    <option value="inventory">庫存</option>
                     <option value="customers">客戶</option>
-                    <option value="suppliers">供應商</option>
-                    <option value="users">用戶</option>
+                    <option value="administrators">管理員</option>
                   </select>
                 </div>
                 <div class="search-form-item">
                   <label>操作類型</label>
                   <select v-model="searchParams.operation_type" class="search-field">
                     <option value="">全部</option>
-                    <option value="insert">新增</option>
-                    <option value="update">更新</option>
-                    <option value="delete">刪除</option>
-                    <option value="login">登入</option>
-                    <option value="logout">登出</option>
+                    <option value="新增">新增</option>
+                    <option value="修改">修改</option>
+                    <option value="刪除">刪除</option>
                   </select>
                 </div>
                 <div class="search-form-item">
@@ -103,8 +99,8 @@
                     <th>時間</th>
                     <th>用戶類型</th>
                     <th>操作者</th>
-                    <th>表名</th>
-                    <th>操作對象</th>
+                    <th style="width: 8%;">表名</th>
+                    <th style="width: 30%;">操作對象</th>
                     <th>操作類型</th>
                     <th>詳細資訊</th>
                   </tr>
@@ -154,7 +150,12 @@
                   <p><strong>操作類型：</strong>{{ selectedLog?.operation_type }}</p>
                   <p><strong>操作者：</strong>{{ selectedLog?.performer_name }}</p>
                   <p><strong>用戶類型：</strong>{{ selectedLog?.user_type }}</p>
-                  <p><strong>操作對象：</strong>{{ selectedLog?.record_detail || selectedLog?.record_id }}</p>
+                  <p v-if="selectedLog?.operation_type === '鎖定日期' || selectedLog?.operation_type === '解鎖日期'">
+                    <strong>操作對象：</strong>{{ selectedLog?.record_detail }}
+                  </p>
+                  <p v-else>
+                    <strong>操作對象：</strong>{{ selectedLog?.record_detail || selectedLog?.record_id }}
+                  </p>
                   <div class="changes-container">
                     <strong>變更內容：</strong>
                     <div v-html="formatChanges(selectedLog?.operation_detail)"></div>
@@ -283,7 +284,9 @@ export default {
 
         try {
         const response = await axiosInstance.post('/api/log/logs', {
-            ...this.searchParams
+          ...this.searchParams,
+            // 添加一個標記，告訴後端只搜索操作對象
+            record_only_search: true
           });
 
           console.log('收到API响应:', response.status);
@@ -433,7 +436,32 @@ export default {
       });
     },
     showLogDetail(log) {
+      // 如果是鎖定日期或解鎖日期操作，確保操作對象顯示為日期
+      if (log.operation_type === '鎖定日期' || log.operation_type === '解鎖日期' || 
+          (log.table_name === 'products' && (log.operation_type === '新增' || log.operation_type === '刪除'))) {
+        
+        try {
+          // 複製log對象以避免修改原始數據
+          this.selectedLog = JSON.parse(JSON.stringify(log));
+          
+          // 提取日期作為操作對象
+          const detailStr = typeof log.operation_detail === 'string' ? 
+            log.operation_detail : JSON.stringify(log.operation_detail);
+          
+          // 查找日期格式
+          const dateMatch = detailStr.match(/\d{4}-\d{2}-\d{2}/);
+          if (dateMatch) {
+            // 設置操作對象為日期
+            this.selectedLog.record_detail = dateMatch[0];
+          }
+        } catch (e) {
+          console.error('Error processing locked date for detail view:', e);
       this.selectedLog = log;
+        }
+      } else {
+        this.selectedLog = log;
+      }
+      
       this.showModal = true;
     },
     formatDateTime(dateStr) {
@@ -449,6 +477,55 @@ export default {
       let html = '';
       try {
         const detailObj = typeof detail === 'string' ? JSON.parse(detail) : detail;
+
+        // 優先處理鎖定日期和解鎖日期操作
+        if (detailObj.operation_type === '鎖定日期' || detailObj.operation_type === '解鎖日期') {
+          // 构建显示内容
+          html = '<div class="log-detail-line">';
+          html += `<strong>${detailObj.operation_type}操作</strong>`;
+          html += '</div>';
+          
+          // 查找日期值
+          let dateValue = '';
+          
+          // 檢查多種可能的數據結構
+          if (detailObj?.message?.locked_date?.date) {
+            dateValue = detailObj.message.locked_date.date;
+          } else {
+            // 遍歷message尋找日期格式
+            const findDateInObject = (obj) => {
+              if (!obj || typeof obj !== 'object') return null;
+              
+              for (const key in obj) {
+                const value = obj[key];
+                // 如果值是字符串且匹配日期格式
+                if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+                  return value;
+                }
+                // 如果值是對象且包含date屬性
+                else if (typeof value === 'object' && value !== null) {
+                  if (value.date && typeof value.date === 'string') {
+                    return value.date;
+                  }
+                  // 遞歸檢查
+                  const dateInNested = findDateInObject(value);
+                  if (dateInNested) {
+                    return dateInNested;
+                  }
+                }
+              }
+              return null;
+            };
+            
+            dateValue = findDateInObject(detailObj.message) || '無法獲取日期';
+          }
+          
+          html += '<div class="log-detail-line">';
+          html += `<span class="detail-label">鎖定日期：</span> <span class="detail-value">${dateValue}</span>`;
+          html += '</div>';
+          
+          return html;
+        }
 
         // 处理客户信息变更
         if (detailObj.message && 
@@ -471,6 +548,10 @@ export default {
         // 处理产品信息变更
         else if (detailObj.message && detailObj.message.product) {
           html += this.formatProductDetailChanges(detailObj);
+        }
+        // 处理锁定日期操作
+        else if (detailObj.message && detailObj.message.locked_date) {
+          html += this.formatLockedDateChanges(detailObj);
         }
         // 处理订单审核操作
         else if (detailObj.message && detailObj.message.order_number && detailObj.operation_type === '審核') {
@@ -630,17 +711,71 @@ export default {
     // 處理客戶相關日誌的輔助方法
     formatCustomerChanges(detailObj) {
       // 處理客戶數據的顯示
-      const customerData = detailObj.operation_type === '修改' ? 
-        { old: detailObj.message.old_data, new: detailObj.message.new_data } : 
-        (detailObj.operation_type === '新增' ? { new: detailObj.message.customer || detailObj.message.new_data } : 
-        { old: detailObj.message.customer || detailObj.message.old_data });
+      let customerData = null;
+      let changes = null;
+
+      // 根据不同数据结构确定如何获取数据
+      if (detailObj.message.customer && detailObj.message.customer.changes) {
+        // 新结构：customer对象中包含changes子对象
+        customerData = detailObj.message.customer;
+        changes = customerData.changes;
+      } else if (detailObj.operation_type === '修改') {
+        // 旧结构：客户数据分散在old_data和new_data中
+        customerData = { 
+          old: detailObj.message.old_data, 
+          new: detailObj.message.new_data 
+        };
+      } else if (detailObj.operation_type === '新增') {
+        // 旧结构：新增时使用customer或new_data
+        customerData = { 
+          new: detailObj.message.customer || detailObj.message.new_data 
+        };
+      } else {
+        // 旧结构：删除时使用customer或old_data
+        customerData = { 
+          old: detailObj.message.customer || detailObj.message.old_data 
+        };
+      }
       
       let html = this.startChangeItem('customer-info');
       html += this.generateSectionHeader('客戶資訊', 'customer-header');
       html += this.startChangeDetails('customer-details');
       
-      // 對於新增和刪除操作，顯示完整資訊
-      if (detailObj.operation_type === '新增' || detailObj.operation_type === '刪除') {
+      // 如果有直接的changes对象(新结构)，优先使用它
+      if (changes) {
+        // 按照定義的顺序检查并显示变更字段
+        Object.keys(this.customerFields).forEach(field => {
+          // 特殊處理密碼欄位
+          if (field === 'password' && (changes.__password_changed__ || customerData.password_changed)) {
+            html += this.generatePasswordChangeRow(this.customerFields[field]);
+            return; // 繼續下一個字段
+          }
+          
+          // 跳過特殊標記字段
+          if (field === '__password_changed__') return;
+          
+          const change = changes[field];
+          const label = this.customerFields[field];
+          
+          // 只处理存在且有before和after的变更
+          if (change && typeof change === 'object' && 'before' in change && 'after' in change) {
+            html += this.generateChangeRow(label, change.before || '-', change.after || '-');
+          }
+        });
+        
+        // 处理新旧可见产品列表
+        if (customerData.old_viewable_products !== undefined && 
+            customerData.new_viewable_products !== undefined &&
+            customerData.old_viewable_products !== customerData.new_viewable_products) {
+          html += this.generateChangeRow(
+            '可購產品', 
+            customerData.old_viewable_products || '-', 
+            customerData.new_viewable_products || '-'
+          );
+        }
+      }
+      // 对于新增和删除操作(旧结构)，显示完整信息
+      else if (detailObj.operation_type === '新增' || detailObj.operation_type === '刪除') {
         const data = detailObj.operation_type === '新增' ? customerData.new : customerData.old;
         
         // 按照定義的顺序显示字段，而不是直接遍历原始数据
@@ -658,9 +793,9 @@ export default {
           }
         });
       } 
-      // 對於修改操作，優先使用changes字段顯示變更詳情
+      // 对于旧结构的修改操作，使用old_data和new_data比较
       else if (detailObj.operation_type === '修改' || detailObj.operation_type.includes('修改')) {
-        // 如果有changes字段，優先使用它
+        // 如果有message.changes字段，优先使用它
         if (detailObj.message.changes) {
           // 按照定義的顺序检查并显示变更字段
           Object.keys(this.customerFields).forEach(field => {
@@ -1150,6 +1285,70 @@ export default {
     },
     
     getRecordDetail(log) {
+      // 鎖定日期和解鎖日期的處理 - 直接提取日期
+      if (log.operation_type === '鎖定日期' || log.operation_type === '解鎖日期' || 
+          log.table_name === 'products' && (log.operation_type === '新增' || log.operation_type === '刪除')) {
+        try {
+          // 先轉換成字符串便於處理
+          const detailStr = typeof log.operation_detail === 'string' ? 
+            log.operation_detail : JSON.stringify(log.operation_detail);
+          
+          // 檢查是否包含鎖定日期關鍵詞
+          if (detailStr.includes('鎖定日期') || detailStr.includes('解鎖日期') || 
+              detailStr.includes('锁定日期') || detailStr.includes('locked_date')) {
+            
+            console.log("找到鎖定日期相關操作:", log.operation_type, detailStr);
+            
+            // 方法1: 從JSON物件中直接提取date字段
+            try {
+              const detail = typeof log.operation_detail === 'string' ? 
+                JSON.parse(log.operation_detail) : log.operation_detail;
+              
+              // 检查operation_detail本身的结构
+              if (detail.date) {
+                return detail.date;
+              }
+              
+              // 检查message中直接包含locked_date对象的情况
+              if (detail?.message?.locked_date?.date) {
+                return detail.message.locked_date.date;
+              }
+              
+              // 处理message字段中date值的情况
+              if (detail?.message?.date) {
+                return detail.message.date;
+              }
+              
+              // 特殊处理action和date并排的情况
+              if (detail?.action === '鎖定日期' || detail?.action === '解鎖日期') {
+                return detail.date;
+              }
+              
+              // 从locked_date字段提取日期
+              if (detail.locked_date && typeof detail.locked_date === 'string') {
+                return detail.locked_date;
+              }
+            } catch (parseError) {
+              console.log("JSON解析失敗，使用正則表達式提取:", parseError);
+            }
+            
+            // 方法2: 使用正則表達式提取日期值
+            const dateMatch = detailStr.match(/\d{4}-\d{2}-\d{2}/);
+            if (dateMatch && dateMatch[0]) {
+              return dateMatch[0];
+            }
+            
+            // 方法3: 更一般的日期格式匹配
+            const generalDateMatch = detailStr.match(/\d{4}-\d{2}-\d{2}/);
+            if (generalDateMatch) {
+              return generalDateMatch[0];
+            }
+          }
+        } catch (e) {
+          console.error('Error extracting date from operation detail:', e);
+        }
+      }
+      
       // 對於所有訂單操作（包括新增、修改、刪除、審核）
       if (log.table_name === 'orders') {
         try {
@@ -1295,7 +1494,7 @@ export default {
         startPage = Math.max(endPage - totalVisible + 1, 1);
       }
       
-      // 生成最终的页码范围
+      // 生成最终的页
       const range = [];
       for (let i = startPage; i <= endPage; i++) {
         range.push(i);
@@ -1316,6 +1515,31 @@ export default {
       };
       this.currentPage = 1;
       this.searchLogs();
+    },
+    // 新增方法：格式化锁定日期变更日志
+    formatLockedDateChanges(detailObj) {
+      try {
+        if (!detailObj || !detailObj.message || !detailObj.message.locked_date) {
+          return '<div class="error-message">無效的鎖定日期記錄</div>';
+        }
+        
+        const { locked_date } = detailObj.message;
+        const { date, action } = locked_date;
+        
+        // 构建显示内容
+        let html = '<div class="log-detail-line">';
+        html += `<strong>${action}操作</strong>`;
+        html += '</div>';
+        
+        html += '<div class="log-detail-line">';
+        html += `<span class="detail-label">鎖定日期：</span> <span class="detail-value">${date}</span>`;
+        html += '</div>';
+        
+        return html;
+      } catch (e) {
+        console.error('Error formatting locked date changes:', e);
+        return `<div class="error-message">格式化鎖定日期記錄時發生錯誤: ${e.message}</div>`;
+      }
     }
   },
   mounted() {
@@ -1358,4 +1582,13 @@ export default {
 
 <style>
 /* 所有CSS已移至unified-base.css */
+</style>
+
+<style scoped>
+.search-tip {
+  display: block;
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
 </style> 

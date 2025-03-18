@@ -7,7 +7,7 @@ export const logoutMixin = {
       // 根据当前路由路径判断用户类型
       const isAdmin = this.$route.path.indexOf('admin') !== -1 || 
                       !this.$route.path.startsWith('/') ||
-                      ['/today-orders', '/all-orders', '/customer-management', '/product-management', '/notification-setting'].includes(this.$route.path);
+                      ['/today-orders', '/all-orders', '/customer-management', '/product-management'].includes(this.$route.path);
       
       // 确认是否登出
       if (!confirm('確定要登出嗎？')) {

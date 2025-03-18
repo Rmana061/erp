@@ -70,6 +70,7 @@
                         required
                         @update:model-value="validateShippingDate(index)"
                         text-input
+                        inline-menu
                       />
                     </div>
                     <div class="shipping-hint" v-if="product.product_id && selectedProduct(product.product_id)">
@@ -225,23 +226,46 @@ export default {
     },
     async handleProductChange(index) {
       const product = this.orderProducts[index];
+      // 确保product_id是整数类型
+      if (!product.product_id) return;
+      
       const selectedProduct = this.selectedProduct(product.product_id);
       
       if (selectedProduct) {
+        console.log('选择了产品:', selectedProduct.name, '产品ID:', product.product_id);
+        
         // 检查是否最近订购过
-        const checkResult = await this.checkRecentOrder(product.product_id);
-        if (!checkResult.canOrder) {
-          alert(`重複下單提醒：您在最近${checkResult.limitDays}天內已經訂購過"${selectedProduct.name}"，請聯繫公司。`);
-          product.product_id = ''; // 清空选择
-          return;
+        try {
+          const checkResult = await this.checkRecentOrder(product.product_id);
+          console.log('重复下单检查结果:', checkResult);
+          
+          if (checkResult && checkResult.canOrder === false) {
+            // 使用==false进行明确的比较，避免隐式转换
+            const message = `重複下單提醒：您在最近${checkResult.limitDays}天內已經訂購過"${selectedProduct.name}"，請聯繫公司。`;
+            console.warn(message);
+            alert(message);
+            
+            // 清空选择
+            this.$nextTick(() => {
+              product.product_id = '';
+            });
+            return;
+          }
+          
+          console.log('可以下单此产品');
+          
+          // 设置最小订购量
+          product.quantity = selectedProduct.min_order_qty;
+          
+          // 设置最早可选日期
+          const minShippingDate = this.getMinShippingDate(product.product_id);
+          product.shipping_date = minShippingDate;
+        } catch (error) {
+          console.error('处理产品选择时出错:', error);
+          // 错误处理 - 出错时清空选择
+          product.product_id = '';
+          alert('無法檢查重複訂單，請稍後再試');
         }
-        
-        // 设置最小订购量
-        product.quantity = selectedProduct.min_order_qty;
-        
-        // 设置最早可选日期
-        const minShippingDate = this.getMinShippingDate(product.product_id);
-        product.shipping_date = minShippingDate;
       }
     },
     validateQuantity(index) {
@@ -287,15 +311,32 @@ export default {
         }
         
         // 在提交前再次验证所有产品
+        let hasRepeatedProduct = false;
         for (const product of this.orderProducts) {
           if (product.product_id) {
-            const checkResult = await this.checkRecentOrder(product.product_id);
-            if (!checkResult.canOrder) {
-              const selectedProduct = this.selectedProduct(product.product_id);
-              alert(`重複下單提醒：您在最近${checkResult.limitDays}天內已經訂購過"${selectedProduct.name}"，請聯繫公司。`);
+            try {
+              const checkResult = await this.checkRecentOrder(product.product_id);
+              console.log('提交前检查产品:', product.product_id, '结果:', checkResult);
+              
+              if (checkResult && checkResult.canOrder === false) {
+                const selectedProduct = this.selectedProduct(product.product_id);
+                if (selectedProduct) {
+                  const message = `重複下單提醒：您在最近${checkResult.limitDays}天內已經訂購過"${selectedProduct.name}"，請聯繫公司。`;
+                  alert(message);
+                  hasRepeatedProduct = true;
+                  break;
+                }
+              }
+            } catch (error) {
+              console.error('提交前检查产品出错:', error);
+              alert('检查重复订单时出错，请稍后再试');
               return;
             }
           }
+        }
+        
+        if (hasRepeatedProduct) {
+          return; // 如果有重复产品，停止提交
         }
 
         const orderData = this.prepareOrderData();
@@ -507,10 +548,22 @@ export default {
     },
     isDateLocked(date) {
       if (!date) return false;
+      if (!this.lockedDates || this.lockedDates.length === 0) return false;
+      
       const dateStr = typeof date === 'string' ? date : this.formatDate(date);
-      return this.lockedDates.some(lockedDate => 
-        this.formatDate(new Date(lockedDate.locked_date)) === dateStr
-      );
+      console.log('检查日期是否锁定:', dateStr);
+      
+      return this.lockedDates.some(lockedDate => {
+        let lockedDateStr = '';
+        
+        if (typeof lockedDate === 'string') {
+          lockedDateStr = this.formatDate(new Date(lockedDate));
+        } else if (lockedDate && lockedDate.locked_date) {
+          lockedDateStr = this.formatDate(new Date(lockedDate.locked_date));
+        }
+        
+        return lockedDateStr === dateStr;
+      });
     },
     async fetchLockedDates() {
       try {
@@ -521,6 +574,7 @@ export default {
           return;
         }
         
+        console.log('开始获取锁定日期...');
         const response = await axios.post(getApiUrl(API_PATHS.LOCKED_DATES), {}, {
           withCredentials: true,
           headers: {
@@ -529,16 +583,44 @@ export default {
           }
         });
         
+        console.log('锁定日期API响应:', response.data);
+        
         if (response.data.status === 'success') {
-          this.lockedDates = response.data.data.map(item => item.locked_date);
+          // 处理API返回的数据格式
+          if (Array.isArray(response.data.data)) {
+            this.lockedDates = response.data.data;
+            console.log('成功获取锁定日期:', this.lockedDates);
+          } else {
+            console.error('锁定日期数据格式不正确:', response.data.data);
+            this.lockedDates = [];
+          }
+        } else {
+          console.error('获取锁定日期失败:', response.data.message);
+          this.lockedDates = [];
         }
       } catch (error) {
         console.error('Error fetching locked dates:', error);
+        if (error.response) {
+          console.error('Error response:', error.response.data);
+        }
         this.lockedDates = [];
       }
     },
     getDisabledDatesArray() {
-      return this.lockedDates.map(date => new Date(date.locked_date));
+      console.log('锁定日期数组:', this.lockedDates);
+      if (!this.lockedDates || this.lockedDates.length === 0) {
+        return [];
+      }
+      
+      // 处理可能的不同数据格式
+      return this.lockedDates.map(date => {
+        if (typeof date === 'string') {
+          return new Date(date);
+        } else if (date && date.locked_date) {
+          return new Date(date.locked_date);
+        }
+        return null;
+      }).filter(date => date !== null);
     },
     validateOrder() {
       if (!this.isFormValid) {
@@ -589,9 +671,12 @@ export default {
           return { canOrder: true, limitDays: 0 };
         }
         
+        console.log('检查重复订单 - 产品ID:', productId, '客户ID:', customerId);
+        
+        // 修改请求，确保数据格式正确
         const response = await axios.post(getApiUrl(API_PATHS.CHECK_RECENT_ORDER), {
-          customer_id: customerId,
-          product_id: productId
+          customer_id: parseInt(customerId),
+          product_id: parseInt(productId)
         }, {
           withCredentials: true,
           headers: {
@@ -600,16 +685,28 @@ export default {
           }
         });
         
-        if (response.data.status === 'success') {
+        console.log('重复订单检查响应:', response.data);
+        
+        if (response.data.status === 'success' && response.data.data) {
           return {
             canOrder: response.data.data.can_order,
             limitDays: response.data.data.limit_days || 0
           };
+        } else if (response.data.status === 'warning') {
+          // 处理旧格式兼容
+          return {
+            canOrder: response.data.canOrder || false,
+            limitDays: response.data.limitDays || 0
+          };
+        } else {
+          console.warn('重复订单检查API返回格式不正确:', response.data);
+          return { canOrder: true, limitDays: 0 };
         }
-        
-        return { canOrder: true, limitDays: 0 };
       } catch (error) {
-        console.error('Error checking recent orders:', error);
+        console.error('检查重复订单时出错:', error);
+        if (error.response) {
+          console.error('错误详情:', error.response.data);
+        }
         return { canOrder: true, limitDays: 0 };
       }
     }
@@ -669,4 +766,30 @@ export default {
 <style>
 @import '../assets/styles/unified-base.css';
 
+/* 日期选择器样式覆盖 */
+.dp__main {
+  width: 100%;
+  max-width: 100%;
+}
+
+.dp__menu {
+  z-index: 1000 !important;
+}
+
+.dp__outer_menu {
+  position: absolute !important;
+}
+
+.dp__input {
+  padding: 8px !important;
+  border: 1px solid #ccc !important;
+  border-radius: 4px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.datepicker-container {
+  position: relative;
+  width: 100%;
+}
 </style>

@@ -484,9 +484,13 @@ export default {
       }
 
       try {
+        // 获取管理员ID
+        const adminId = localStorage.getItem('admin_id');
+        
         const response = await axios.post(getApiUrl(API_PATHS.LOCK_DATE), {
           type: 'admin',
-          date: this.newLockDate
+          date: this.newLockDate,
+          admin_id: adminId // 添加管理员ID
         }, {
           withCredentials: true
         });
@@ -509,9 +513,13 @@ export default {
       }
 
       try {
+        // 获取管理员ID
+        const adminId = localStorage.getItem('admin_id');
+        
         const response = await axios.post(getApiUrl(API_PATHS.UNLOCK_DATE), {
           type: 'admin',
-          date_id: dateId
+          date_id: dateId,
+          admin_id: adminId // 添加管理员ID
         }, {
           withCredentials: true
         });

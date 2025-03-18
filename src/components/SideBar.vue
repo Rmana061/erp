@@ -46,7 +46,6 @@ export default {
         { path: '/customer-management', name: '客戶管理' },
         { path: '/product-management', name: '產品管理' },
         { path: '/admin', name: '管理員' },
-        { path: '/notification-setting', name: '通知設定' }
       ]
     }
   },
