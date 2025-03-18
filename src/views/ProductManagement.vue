@@ -100,7 +100,10 @@
                   <td>{{ product.min_order_qty }}</td>
                   <td>{{ product.max_order_qty }}</td>
                   <td>{{ product.product_unit }}</td>
-                  <td>{{ product.shipping_time }}天</td>
+                  <td>
+                    <template v-if="product.special_date">特殊日期</template>
+                    <template v-else>{{ product.shipping_time }}天</template>
+                  </td>
                   <td>
                     <div class="table-button-group">
                       <button 
@@ -294,6 +297,7 @@ export default {
         "最大訂購量",
         "單位",
         "出貨時間",
+        "特殊日期",
         "產品圖片",
         "產品DM",
         "建立時間",
@@ -317,7 +321,8 @@ export default {
           product.min_order_qty,
           product.max_order_qty,
           product.product_unit,
-          product.shipping_time,
+          product.special_date ? '特殊日期' : (product.shipping_time + '天'),
+          product.special_date ? '是' : '否',
           product.image_url ? '點擊查看圖片' : '',
           product.dm_url ? '點擊查看DM' : '',
           product.created_at,
@@ -327,7 +332,7 @@ export default {
 
         // 添加图片链接
         if (product.image_url) {
-          const imageCell = XLSX.utils.encode_cell({r: rowIndex, c: 7});
+          const imageCell = XLSX.utils.encode_cell({r: rowIndex, c: 8});
           hyperlinks[imageCell] = {
             l: {
               Target: baseUrl + product.image_url,
@@ -344,7 +349,7 @@ export default {
 
         // 添加DM链接
         if (product.dm_url) {
-          const dmCell = XLSX.utils.encode_cell({r: rowIndex, c: 8});
+          const dmCell = XLSX.utils.encode_cell({r: rowIndex, c: 9});
           hyperlinks[dmCell] = {
             l: {
               Target: baseUrl + product.dm_url,
@@ -380,6 +385,7 @@ export default {
         { wch: 15 }, // 最大訂購量
         { wch: 10 }, // 單位
         { wch: 15 }, // 出貨時間
+        { wch: 15 }, // 特殊日期
         { wch: 20 }, // 產品圖片
         { wch: 20 }, // 產品DM
         { wch: 20 }, // 建立時間

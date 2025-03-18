@@ -184,10 +184,17 @@ export default {
              this.orderProducts.every(p => {
                if (!p.product_id) return true;
                const product = this.selectedProduct(p.product_id);
+               
+               // 对于特殊日期产品，不检查shipping_date
+               if (product && product.special_date) {
+                 return p.quantity >= product.min_order_qty && 
+                        p.quantity <= product.max_order_qty;
+               }
+               
                return product && 
                       p.quantity >= product.min_order_qty && 
                       p.quantity <= product.max_order_qty &&
-                      (!p.shipping_date || !this.isDateLocked(p.shipping_date));
+                      (p.shipping_date && !this.isDateLocked(p.shipping_date));
              });
     },
     minDate() {
@@ -219,10 +226,28 @@ export default {
         return this.minDate;
       }
 
+      // 如果是特殊日期产品，返回空值
+      if (product.special_date) {
+        return '';
+      }
+
       const today = new Date();
-      const minDate = new Date(today);
+      let minDate = new Date(today);
       minDate.setDate(today.getDate() + (parseInt(product.shipping_time) || 0));
-      return minDate.toISOString().split('T')[0];
+      
+      // 检查日期是否被锁定，如果被锁定则延后
+      let dateStr = minDate.toISOString().split('T')[0];
+      let attempts = 0;
+      const maxAttempts = 60; // 防止无限循环，最多尝试60天
+      
+      // 如果日期被锁定，向后推一天，直到找到未锁定的日期
+      while (this.isDateLocked(dateStr) && attempts < maxAttempts) {
+        minDate.setDate(minDate.getDate() + 1);
+        dateStr = minDate.toISOString().split('T')[0];
+        attempts++;
+      }
+      
+      return dateStr;
     },
     async handleProductChange(index) {
       const product = this.orderProducts[index];
@@ -241,7 +266,7 @@ export default {
           
           if (checkResult && checkResult.canOrder === false) {
             // 使用==false进行明确的比较，避免隐式转换
-            const message = `重複下單提醒：您在最近${checkResult.limitDays}天內已經訂購過"${selectedProduct.name}"，請聯繫公司。`;
+            const message = `重複下單提醒：您在最近${checkResult.limitDays}天內已經訂購過"${selectedProduct.name}"，請聯繫供應商。`;
             console.warn(message);
             alert(message);
             

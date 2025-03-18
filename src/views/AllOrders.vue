@@ -198,7 +198,7 @@
             <tbody>
               <tr v-for="(item, index) in selectedOrder?.items" :key="index">
                 <td>{{ item.item }}</td>
-                <td>
+                <td class="quantity-cell">
                   <input 
                     type="number"
                     v-model.number="item.tempQuantity"
