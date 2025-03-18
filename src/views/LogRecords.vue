@@ -456,7 +456,75 @@ export default {
           }
         } catch (e) {
           console.error('Error processing locked date for detail view:', e);
-      this.selectedLog = log;
+          this.selectedLog = log;
+        }
+      } else if (log.table_name === 'customers') {
+        // 對於客戶相關操作，確保顯示公司名稱
+        try {
+          // 複製log對象以避免修改原始數據
+          this.selectedLog = JSON.parse(JSON.stringify(log));
+          
+          // 從操作詳情中提取公司名稱
+          const detail = typeof log.operation_detail === 'string' ? 
+            JSON.parse(log.operation_detail) : log.operation_detail;
+          
+          // 根據不同的操作類型和數據結構找到公司名稱
+          let companyName = null;
+          
+          // 新版數據結構
+          if (detail?.message?.customer?.company_name) {
+            companyName = detail.message.customer.company_name;
+          } 
+          // 舊版數據結構 - 新增操作
+          else if (detail?.message?.new_data?.company_name) {
+            companyName = detail.message.new_data.company_name;
+          } 
+          // 舊版數據結構 - 刪除操作
+          else if (detail?.message?.old_data?.company_name) {
+            companyName = detail.message.old_data.company_name;
+          }
+          
+          // 如果找到公司名稱，設置為操作對象
+          if (companyName) {
+            this.selectedLog.record_detail = companyName;
+          }
+        } catch (e) {
+          console.error('Error processing customer detail for view:', e);
+          this.selectedLog = log;
+        }
+      } else if (log.table_name === 'administrators') {
+        // 對於管理員相關操作，確保顯示被操作的管理員工號
+        try {
+          // 複製log對象以避免修改原始數據
+          this.selectedLog = JSON.parse(JSON.stringify(log));
+          
+          // 從操作詳情中提取管理員工號
+          const detail = typeof log.operation_detail === 'string' ? 
+            JSON.parse(log.operation_detail) : log.operation_detail;
+          
+          // 根據不同的操作類型和數據結構找到被操作的管理員工號
+          let staffNo = null;
+          
+          // 新版數據結構 - 從admin對象中獲取
+          if (detail?.message?.admin?.staff_no) {
+            staffNo = detail.message.admin.staff_no;
+          } 
+          // 舊版數據結構 - 新增操作
+          else if (detail?.message?.new_data?.staff_no) {
+            staffNo = detail.message.new_data.staff_no;
+          } 
+          // 舊版數據結構 - 刪除操作
+          else if (detail?.message?.old_data?.staff_no) {
+            staffNo = detail.message.old_data.staff_no;
+          }
+          
+          // 如果找到管理員工號，設置為操作對象
+          if (staffNo) {
+            this.selectedLog.record_detail = staffNo;
+          }
+        } catch (e) {
+          console.error('Error processing admin detail for view:', e);
+          this.selectedLog = log;
         }
       } else {
         this.selectedLog = log;
