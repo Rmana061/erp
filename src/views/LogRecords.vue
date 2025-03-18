@@ -1611,7 +1611,7 @@ export default {
     }
   },
   mounted() {
-    document.title = '操作紀錄查詢';
+    document.title = '合揚訂單後台系統';
     this.searchLogs();
     console.log('组件已挂载');
   },

@@ -42,7 +42,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(customer, index) in filteredCustomers" :key="customer.id">
+                <tr v-for="(customer, index) in paginatedCustomers" :key="customer.id">
                   <td>{{ customer.company_name }}</td>
                   <td>{{ customer.contact_person }}</td>
                   <td>{{ customer.phone }}</td>
@@ -69,6 +69,11 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="pagination">
+            <button @click="previousPage" :disabled="currentPage === 1">上一頁</button>
+            <span>第 {{ currentPage }} 頁，共 {{ totalPages }} 頁</span>
+            <button @click="nextPage" :disabled="currentPage === totalPages">下一頁</button>
           </div>
         </div>
       </div>
@@ -97,7 +102,9 @@ export default {
       currentTime: '',
       isMenuOpen: false,
       customers: [],
-      searchQuery: ''
+      searchQuery: '',
+      currentPage: 1,
+      itemsPerPage: 20
     };
   },
   computed: {
@@ -110,6 +117,14 @@ export default {
                (customer.email || '').toLowerCase().includes(searchLower) || 
                (customer.address || '').toLowerCase().includes(searchLower);
       });
+    },
+    totalPages() {
+      return Math.ceil(this.filteredCustomers.length / this.itemsPerPage);
+    },
+    paginatedCustomers() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.filteredCustomers.slice(start, end);
     }
   },
   methods: {
@@ -200,55 +215,140 @@ export default {
         alert('刪除客戶失敗：' + (error.response?.data?.message || error.message));
       }
     },
-    exportCustomers() {
-      const headers = [
-        '客戶編號',
-        '公司名稱',
-        '帳號',
-        '聯絡人',
-        '電話',
-        'Email',
-        '地址',
-        '重複下單限制天數',
-        '建立時間',
-        '更新時間'
-      ];
-      
-      const data = [
-        headers,
-        ...this.customers.map(customer => [
-          customer.id,
-          customer.company_name,
-          customer.username,
-          customer.contact_person,
-          customer.phone,
-          customer.email,
-          customer.address,
-          customer.reorder_limit_days || 0,
-          customer.created_at,
-          customer.updated_at
-        ])
-      ];
+    async exportCustomers() {
+      try {
+        // 1. 先獲取所有產品數據
+        const productsResponse = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
+          type: 'admin'
+        }, {
+          withCredentials: true
+        });
 
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      
-      const wscols = [
-        { wch: 10 },
-        { wch: 25 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 25 },
-        { wch: 40 },
-        { wch: 15 },
-        { wch: 20 },
-        { wch: 20 }
-      ];
-      ws['!cols'] = wscols;
+        if (productsResponse.data.status !== 'success') {
+          throw new Error('獲取產品列表失敗');
+        }
 
-      XLSX.utils.book_append_sheet(wb, ws, '客戶清單');
-      XLSX.writeFile(wb, '客戶資料.xlsx');
+        // 建立產品 ID 到產品名稱的映射
+        const productMap = {};
+        productsResponse.data.data.forEach(product => {
+          productMap[product.id] = product.name;
+        });
+
+        const headers = [
+          '客戶編號',
+          '公司名稱',
+          '帳號',
+          '聯絡人',
+          '電話',
+          'Email',
+          '地址',
+          '可購產品',
+          'LINE帳號',
+          '備註',
+          '重複下單限制天數',
+          '建立時間',
+          '更新時間'
+        ];
+        
+        const data = [
+          headers,
+          ...this.customers.map(customer => {
+            // 處理可購產品，將 ID 轉換為產品名稱
+            let viewableProductNames = '';
+            if (customer.viewable_products) {
+              try {
+                // 嘗試多種方式解析產品 ID
+                let productIds = [];
+                
+                // 情況1: viewable_products 已經是數組
+                if (Array.isArray(customer.viewable_products)) {
+                  productIds = customer.viewable_products;
+                } 
+                // 情況2: viewable_products 是JSON字符串 "[1,2,3]"
+                else if (typeof customer.viewable_products === 'string') {
+                  const trimmed = customer.viewable_products.trim();
+                  
+                  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                    try {
+                      productIds = JSON.parse(trimmed);
+                    } catch (e) {
+                      console.warn('無法解析JSON格式的產品ID列表:', trimmed);
+                    }
+                  } 
+                  // 情況3: 逗號分隔的數字 "1,2,3" 或空格分隔 "1 2 3"
+                  else if (trimmed.includes(',') || trimmed.includes(' ')) {
+                    // 先用逗號分隔，再用空格分隔，確保各種格式都能處理
+                    productIds = trimmed
+                      .split(/[,\s]+/)  // 用逗號或空格分隔
+                      .filter(id => id.trim() !== '') // 過濾空項
+                      .map(id => parseInt(id.trim())) // 轉換為數字
+                      .filter(id => !isNaN(id));      // 過濾非數字
+                  }
+                  // 情況4: 單個數字 "1"
+                  else if (/^\d+$/.test(trimmed)) {
+                    productIds = [parseInt(trimmed)];
+                  }
+                }
+                
+                // 將產品ID轉換為產品名稱
+                if (productIds.length > 0) {
+                  viewableProductNames = productIds
+                    .filter(id => productMap[id]) // 過濾掉不存在的產品 ID
+                    .map(id => productMap[id])    // 將 ID 轉換為產品名稱
+                    .join(', ');                  // 使用逗號分隔
+                } else {
+                  console.log('未找到有效的產品ID列表:', customer.viewable_products);
+                }
+              } catch (error) {
+                console.error('解析可購產品時發生錯誤:', error, '原始值:', customer.viewable_products);
+                viewableProductNames = '解析錯誤';
+              }
+            }
+
+            return [
+              customer.id,
+              customer.company_name,
+              customer.username,
+              customer.contact_person,
+              customer.phone,
+              customer.email,
+              customer.address,
+              viewableProductNames,
+              customer.line_account || '',
+              customer.remark || '',
+              customer.reorder_limit_days || 0,
+              customer.created_at,
+              customer.updated_at
+            ];
+          })
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        
+        const wscols = [
+          { wch: 10 },  // 客戶編號
+          { wch: 25 },  // 公司名稱
+          { wch: 15 },  // 帳號
+          { wch: 15 },  // 聯絡人
+          { wch: 15 },  // 電話
+          { wch: 25 },  // Email
+          { wch: 40 },  // 地址
+          { wch: 60 },  // 可購產品（增加寬度因為現在是產品名稱）
+          { wch: 20 },  // LINE帳號
+          { wch: 40 },  // 備註
+          { wch: 15 },  // 重複下單限制天數
+          { wch: 20 },  // 建立時間
+          { wch: 20 }   // 更新時間
+        ];
+        ws['!cols'] = wscols;
+
+        XLSX.utils.book_append_sheet(wb, ws, '客戶清單');
+        XLSX.writeFile(wb, '客戶資料.xlsx');
+      } catch (error) {
+        console.error('匯出客戶資料時發生錯誤：', error);
+        alert('匯出客戶資料失敗：' + (error.message || '未知錯誤'));
+      }
     },
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
@@ -264,12 +364,22 @@ export default {
     },
     deleteCustomer(customerId) {
       this.deleteCustomerRow(customerId);
+    },
+    previousPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
     }
   },
   mounted() {
     this.updateCurrentTime();
     setInterval(this.updateCurrentTime, 60000);
-    document.title = '管理者系統';
+    document.title = '合揚訂單後台系統';
     this.fetchCustomers();
   },
   watch: {

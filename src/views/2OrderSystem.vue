@@ -206,7 +206,7 @@ export default {
     this.fetchOrders();
   },
   mounted() {
-    document.title = '訂貨系統';
+    document.title = '合揚訂單系統';
   }
 };
 </script>

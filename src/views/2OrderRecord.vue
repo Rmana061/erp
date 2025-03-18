@@ -241,7 +241,7 @@ export default {
     this.fetchOrders();
   },
   mounted() {
-    document.title = '訂貨紀錄';
+    document.title = '合揚訂單系統';
   }
 };
 </script>

@@ -132,13 +132,13 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   // 根據路由設置標題
   if (to.matched.some(record => record.meta.requiresAuth)) {
-    document.title = '管理者系統';
+    document.title = '合揚訂單後台系統';
   } else if (to.matched.some(record => record.meta.requiresCustomerAuth)) {
-    document.title = '客戶系統';
+    document.title = '合揚訂單系統';
   } else if (to.path === '/admin-login') {
-    document.title = '管理者系統';
+    document.title = '合揚訂單後台系統';
   } else if (to.path === '/customer-login') {
-    document.title = '客戶系統';
+    document.title = '合揚訂單系統';
   } else {
     document.title = 'ERP系統';
   }

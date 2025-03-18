@@ -35,10 +35,9 @@
               <label>人員權限：</label>
               <select v-model="personnelPermission">
                 <option disabled value="">（選擇）</option>
-                <option>最高權限</option>
-                <option>審核權限</option>
-                <option>基本權限</option>
-                <option>檢視權限</option>
+                <option v-for="permission in availablePermissions" :key="permission.id" :value="permission.name">
+                  {{ permission.name }}
+                </option>
               </select>
             </div>
 
@@ -50,12 +49,24 @@
 
           <div class="permission-info">
             <h3>權限說明如下：</h3>
-            <ul>
-              <li>最高權限：可以檢視訂單、新增客戶、新增產品、新增操作人員、查看所有管理員操作紀錄</li>
-              <li>審核權限：可以檢視訂單、新增客戶、新增產品</li>
-              <li>基本權限：可以新增客戶、新增產品</li>
-              <li>檢視權限：僅供檢視</li>
-            </ul>
+            <div class="permission-table">
+              <div class="permission-row">
+                <div class="permission-type">最高權限：</div>
+                <div class="permission-desc">可以審核訂單、新增客戶、新增產品、新增操作人員、查看所有管理員操作紀錄</div>
+              </div>
+              <div class="permission-row">
+                <div class="permission-type">審核權限：</div>
+                <div class="permission-desc">可以審核訂單、新增客戶、新增產品、新增操作人員</div>
+              </div>
+              <div class="permission-row">
+                <div class="permission-type">基本權限：</div>
+                <div class="permission-desc">可以新增客戶、新增產品</div>
+              </div>
+              <div class="permission-row">
+                <div class="permission-type">檢視權限：</div>
+                <div class="permission-desc">僅供檢視</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -87,13 +98,56 @@ export default {
       personnelStaffNo: '',
       personnelPermission: '',
       isEditMode: false,
-      editId: null
+      editId: null,
+      currentAdminPermissionId: 1 // 默認為最高權限，將在created中更新
     };
   },
+  computed: {
+    // 根據當前管理員權限過濾可用的權限選項
+    availablePermissions() {
+      const allPermissions = [
+        { id: 1, name: '最高權限' },
+        { id: 2, name: '審核權限' },
+        { id: 3, name: '基本權限' },
+        { id: 4, name: '檢視權限' }
+      ];
+      
+      // 只返回當前管理員權限級別及以下的權限
+      return allPermissions.filter(permission => permission.id >= this.currentAdminPermissionId);
+    }
+  },
   async created() {
+    await this.getCurrentAdminPermission();
     await this.fetchAdminDetails();
   },
   methods: {
+    // 獲取當前登錄管理員的權限級別
+    async getCurrentAdminPermission() {
+      try {
+        const adminId = localStorage.getItem('admin_id');
+        if (!adminId) {
+          this.$router.push('/admin-login');
+          return;
+        }
+        
+        const adminInfoStr = sessionStorage.getItem('adminInfo');
+        if (adminInfoStr) {
+          const adminInfo = JSON.parse(adminInfoStr);
+          this.currentAdminPermissionId = adminInfo.permission_level_id;
+        } else {
+          // 如果無法從sessionStorage獲取，則嘗試從API獲取
+          const response = await axiosInstance.post(API_PATHS.ADMIN_INFO, {
+            admin_id: adminId
+          });
+          
+          if (response.data.status === 'success') {
+            this.currentAdminPermissionId = response.data.data.permission_level_id;
+          }
+        }
+      } catch (error) {
+        console.error('Error getting current admin permission:', error);
+      }
+    },
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
     },
@@ -234,6 +288,14 @@ export default {
           return false;
         }
       }
+
+      // 檢查權限是否合法（防止手動修改DOM繞過權限限制）
+      const permissionId = this.getPermissionId(this.personnelPermission);
+      if (permissionId < this.currentAdminPermissionId) {
+        alert('您無權新增比自己權限更高的管理員');
+        return false;
+      }
+      
       return true;
     }
   }
@@ -244,4 +306,36 @@ export default {
 @import '../assets/styles/unified-base.css';
 
 /* 所有其他樣式已移至 unified-base */
+
+.permission-info {
+  max-width: 800px;
+  margin: 40px auto;
+  text-align: center;
+}
+
+.permission-info h3 {
+  margin-bottom: 20px;
+}
+
+.permission-table {
+  display: inline-block;
+  text-align: left;
+  margin: 0 auto;
+}
+
+.permission-row {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.permission-type {
+  width: 100px;
+  text-align: right;
+  padding-right: 10px;
+}
+
+.permission-desc {
+  flex: 1;
+  text-align: left;
+}
 </style>

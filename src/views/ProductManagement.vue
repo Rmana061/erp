@@ -28,7 +28,8 @@
               - 批量刪除
             </button>
             <button 
-              class="export-btn product-export-btn" 
+              class="export-btn product-export-btn"
+              v-permission="'can_add_product'" 
               @click="exportReport">
               ↓ 產品匯出
             </button>
@@ -170,7 +171,7 @@ export default {
       showModal: false,
       selectedImage: '',
       currentPage: 1,
-      itemsPerPage: 10,
+      itemsPerPage: 20,
       allSelected: false,
       isSidebarActive: false,
       showLockDateModal: false,
@@ -554,7 +555,7 @@ export default {
     },
   },
   mounted() {
-    document.title = '管理者系統';
+    document.title = '合揚訂單後台系統';
     this.fetchProducts();
   },
 };

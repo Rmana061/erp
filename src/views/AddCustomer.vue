@@ -314,7 +314,7 @@ export default {
   async mounted() {
     this.updateCurrentTime();
     setInterval(this.updateCurrentTime, 60000);
-    document.title = '管理者系統';
+    document.title = '合揚訂單後端系統';
     await this.fetchAdminInfo();
     await this.fetchProducts();
   },

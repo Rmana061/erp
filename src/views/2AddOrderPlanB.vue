@@ -753,7 +753,7 @@ export default {
         this.fetchLockedDates()
       ]);
       
-      document.title = '新增訂單';
+      document.title = '合揚訂單系統';
     } catch (error) {
       console.error('Session verification failed:', error);
       localStorage.setItem('redirect_after_login', '/add-order');

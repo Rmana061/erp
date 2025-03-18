@@ -344,7 +344,7 @@ export default {
     }
   },
   mounted() {
-    document.title = '客戶系統';
+    document.title = '合揚訂單系統';
   }
 };
 </script>

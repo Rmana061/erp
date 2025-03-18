@@ -284,7 +284,7 @@ export default {
       showCompleteModal: false,
       selectedOrder: null,
       currentPage: 1,
-      itemsPerPage: 10,
+      itemsPerPage: 20,
       searchFilters: {
         startDate: '',
         endDate: '',

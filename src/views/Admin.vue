@@ -42,7 +42,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(admin, index) in admins" :key="admin.id">
+                <tr v-for="(admin, index) in paginatedAdmins" :key="admin.id">
                   <td>{{ admin.account }}</td>
                   <td>{{ admin.name }}</td>
                   <td>{{ admin.staff_no }}</td>
@@ -66,6 +66,20 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="pagination" v-if="totalPages > 1">
+            <button 
+              @click="previousPage" 
+              :disabled="currentPage === 1">
+              上一頁
+            </button>
+            <span>{{ currentPage }} / {{ totalPages }}</span>
+            <button 
+              @click="nextPage" 
+              :disabled="currentPage === totalPages">
+              下一頁
+            </button>
           </div>
         </div>
       </div>
@@ -92,8 +106,22 @@ export default {
   data() {
     return {
       admins: [],
-      isSidebarActive: false
+      isSidebarActive: false,
+      currentPage: 1,
+      itemsPerPage: 20
     };
+  },
+  computed: {
+    // 計算總頁數
+    totalPages() {
+      return Math.ceil(this.admins.length / this.itemsPerPage);
+    },
+    // 計算當前頁顯示的管理員
+    paginatedAdmins() {
+      const start = (this.currentPage - 1) * this.itemsPerPage;
+      const end = start + this.itemsPerPage;
+      return this.admins.slice(start, end);
+    }
   },
   methods: {
     toggleSidebar() {
@@ -104,6 +132,17 @@ export default {
     },
     navigateTo(routeName) {
       this.$router.push({ name: routeName });
+    },
+    
+    previousPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
     },
  
     async deletePersonnel(adminId) {
@@ -187,7 +226,7 @@ export default {
     }
   },
   mounted() {
-    document.title = '管理者系統';
+    document.title = '合揚訂單後台系統';
     this.fetchAdmins();
   }
 };
