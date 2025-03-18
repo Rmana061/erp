@@ -16,7 +16,7 @@
           <li></li>
         </ul>
         <div class="login-box">
-          <h2>客戶登入</h2>
+          <h2>合揚訂單系統</h2>
           <form class="login-form" @submit.prevent="handleLogin">
             <div class="form-group">
               <label for="account">帳號</label>
