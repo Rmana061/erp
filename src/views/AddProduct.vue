@@ -35,8 +35,8 @@
                 </div>
                 <div v-if="selectedImageFile || product.image_url" class="preview-container">
                   <img 
-                    v-if="product.image_url"
-                    :src="product.image_url" 
+                    v-if="imagePreviewUrl || product.image_url"
+                    :src="imagePreviewUrl || product.image_url" 
                     class="image-preview" 
                     alt="產品圖片預覽"
                   >
@@ -64,8 +64,7 @@
                     目前文件: {{ selectedDmFile ? selectedDmFile.name : getFileName(product.dm_url) }}
                     <a 
                       v-if="product.dm_url && !selectedDmFile" 
-                      :href="getFullUrl(product.dm_url)" 
-                      target="_blank" 
+                      @click.prevent="openDM(product.dm_url)" 
                       class="view-file"
                     >
                       查看文件
@@ -144,7 +143,11 @@ export default {
       selectedImageFile: null,
       selectedDmFile: null,
       isEditing: false,
-      editingId: null
+      editingId: null,
+      imageFileToUpload: null,
+      dmFileToUpload: null,
+      imagePreviewUrl: '',
+      dmPreviewUrl: ''
     };
   },
   created() {
@@ -241,6 +244,74 @@ export default {
       try {
         console.log('保存产品前的数据:', this.product);
         
+        // 如果有需要上傳的圖片文件
+        if (this.imageFileToUpload) {
+          const imageFormData = new FormData();
+          imageFormData.append('file', this.imageFileToUpload);
+          imageFormData.append('productName', this.product.name);
+          
+          try {
+            console.log('正在上传图片...');
+            const imageResponse = await axios.post(getApiUrl(API_PATHS.UPLOAD_IMAGE), imageFormData, {
+              withCredentials: true,
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            });
+            
+            if (imageResponse.data.status === 'success') {
+              this.product.image_url = imageResponse.data.data.file_path;
+              if (imageResponse.data.data.original_filename) {
+                this.product.image_original_filename = imageResponse.data.data.original_filename;
+                this.product.original_image_filename = imageResponse.data.data.original_filename;
+              } else if (this.imageFileToUpload.name) {
+                this.product.image_original_filename = this.imageFileToUpload.name;
+                this.product.original_image_filename = this.imageFileToUpload.name;
+              }
+            } else {
+              throw new Error(imageResponse.data.message || '上傳圖片失敗');
+            }
+          } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('上傳圖片失敗：' + (error.response?.data?.message || error.message));
+            return;
+          }
+        }
+        
+        // 如果有需要上傳的文件
+        if (this.dmFileToUpload) {
+          const dmFormData = new FormData();
+          dmFormData.append('file', this.dmFileToUpload);
+          dmFormData.append('productName', this.product.name);
+          
+          try {
+            console.log('正在上传文档...');
+            const dmResponse = await axios.post(getApiUrl(API_PATHS.UPLOAD_DOCUMENT), dmFormData, {
+              withCredentials: true,
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            });
+            
+            if (dmResponse.data.status === 'success') {
+              this.product.dm_url = dmResponse.data.data.file_path;
+              if (dmResponse.data.data.original_filename) {
+                this.product.dm_original_filename = dmResponse.data.data.original_filename;
+                this.product.original_dm_filename = dmResponse.data.data.original_filename;
+              } else if (this.dmFileToUpload.name) {
+                this.product.dm_original_filename = this.dmFileToUpload.name;
+                this.product.original_dm_filename = this.dmFileToUpload.name;
+              }
+            } else {
+              throw new Error(dmResponse.data.message || '上傳文件失敗');
+            }
+          } catch (error) {
+            console.error('Error uploading document:', error);
+            alert('上傳文件失敗：' + (error.response?.data?.message || error.message));
+            return;
+          }
+        }
+
         const productData = {
           type: 'admin',
           name: this.product.name.trim(),
@@ -252,22 +323,14 @@ export default {
           product_unit: this.product.unit.trim(),
           shipping_time: parseInt(this.product.shipping_time) || 0,
           special_date: this.product.special_date || false,
-          // 确保字段名与数据库完全一致
           image_original_filename: this.product.image_original_filename || '',
           dm_original_filename: this.product.dm_original_filename || ''
         };
 
-        // 如果是新增产品，添加额外的必要字段
         if (!this.isEditing) {
           productData.status = 'active';
           productData.stock_quantity = 0;
         }
-
-        console.log('发送到后端的产品数据:', productData);
-        console.log('特别注意原始文件名字段:', {
-          image_original_filename: productData.image_original_filename,
-          dm_original_filename: productData.dm_original_filename
-        });
 
         const response = await axios.post(
           getApiUrl(this.isEditing ? API_PATHS.PRODUCT_UPDATE(this.editingId) : API_PATHS.PRODUCT_ADD),
@@ -280,14 +343,10 @@ export default {
           }
         );
 
-        console.log('服务器响应:', response.data);
-
         if (response.data.status === 'success' || 
             (response.data.message && response.data.message.includes('successfully'))) {
           alert(this.isEditing ? '產品更新成功！' : '產品新增成功！');
-          // 清除选择的文件状态
-          this.selectedImageFile = null;
-          this.selectedDmFile = null;
+          this.clearFileSelections();
           this.$router.push('/product-management');
           return;
         }
@@ -301,13 +360,29 @@ export default {
         alert(errorMessage);
       }
     },
-    cancel() {
+    clearFileSelections() {
       this.selectedImageFile = null;
       this.selectedDmFile = null;
+      this.imageFileToUpload = null;
+      this.dmFileToUpload = null;
+      if (this.imagePreviewUrl) {
+        URL.revokeObjectURL(this.imagePreviewUrl);
+        this.imagePreviewUrl = '';
+      }
+      if (this.dmPreviewUrl) {
+        URL.revokeObjectURL(this.dmPreviewUrl);
+        this.dmPreviewUrl = '';
+      }
+      if (this.$refs.imageInput) this.$refs.imageInput.value = '';
+      if (this.$refs.dmInput) this.$refs.dmInput.value = '';
+    },
+    cancel() {
+      this.clearFileSelections();
       this.$router.push('/product-management');
     },
     getFullUrl(path) {
       if (!path) return '';
+      // 如果路徑是完整的URL（以http或https開頭），則直接返回
       return path.startsWith('http') ? path : getApiUrl(path);
     },
     getFileName(path) {
@@ -330,119 +405,53 @@ export default {
       // 如果没有原始文件名，则使用路径中的文件名
       return path.split('/').pop();
     },
-    async handleImageUpload(event) {
+    handleImageUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
       
-      // 立即显示选择的文件名
+      // 創建本地預覽URL
+      if (this.imagePreviewUrl) {
+        URL.revokeObjectURL(this.imagePreviewUrl);
+      }
+      this.imagePreviewUrl = URL.createObjectURL(file);
+      
+      // 立即顯示選擇的文件名
       this.selectedImageFile = file;
-      console.log(`选择的图片文件: ${file.name}`);
+      
+      // 保存文件以便之後上傳
+      this.imageFileToUpload = file;
       
       if (!this.product.name) {
         alert('請先輸入產品名稱');
-        this.$refs.imageInput.value = '';
-        this.selectedImageFile = null;
+        this.clearFileSelections();
         return;
       }
       
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('productName', this.product.name);
-      
-      try {
-        console.log('正在上传图片...');
-        const response = await axios.post(getApiUrl(API_PATHS.UPLOAD_IMAGE), formData, {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-        
-        console.log('图片上传响应:', response.data);
-        
-        if (response.data.status === 'success') {
-          this.product.image_url = response.data.data.file_path;
-          // 保存原始文件名到两个字段以确保兼容性
-          if (response.data.data.original_filename) {
-            this.product.image_original_filename = response.data.data.original_filename;
-            this.product.original_image_filename = response.data.data.original_filename;
-            console.log(`保存图片原始文件名(从API): ${response.data.data.original_filename}`);
-          } else if (file.name) {
-            // 如果API没有返回原始文件名，使用本地文件名
-            this.product.image_original_filename = file.name;
-            this.product.original_image_filename = file.name;
-            console.log(`保存图片原始文件名(本地): ${file.name}`);
-          }
-          console.log('当前产品对象中的图片原始文件名:', {
-            image_original_filename: this.product.image_original_filename,
-            original_image_filename: this.product.original_image_filename
-          });
-          this.$refs.imageInput.value = '';
-        } else {
-          throw new Error(response.data.message || '上傳圖片失敗');
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        alert('上傳圖片失敗：' + (error.response?.data?.message || error.message));
-        this.selectedImageFile = null;
-      }
+      console.log(`選擇的圖片文件: ${file.name} (將在保存時上傳)`);
     },
-    async handleDmUpload(event) {
+    handleDmUpload(event) {
       const file = event.target.files[0];
       if (!file) return;
       
-      // 立即显示选择的文件名
+      // 創建本地預覽URL (雖然DM不會直接顯示在頁面上)
+      if (this.dmPreviewUrl) {
+        URL.revokeObjectURL(this.dmPreviewUrl);
+      }
+      this.dmPreviewUrl = URL.createObjectURL(file);
+      
+      // 立即顯示選擇的文件名
       this.selectedDmFile = file;
-      console.log(`选择的文档文件: ${file.name}`);
+      
+      // 保存文件以便之後上傳
+      this.dmFileToUpload = file;
       
       if (!this.product.name) {
         alert('請先輸入產品名稱');
-        this.$refs.dmInput.value = '';
-        this.selectedDmFile = null;
+        this.clearFileSelections();
         return;
       }
       
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('productName', this.product.name);
-      
-      try {
-        console.log('正在上传文档...');
-        const response = await axios.post(getApiUrl(API_PATHS.UPLOAD_DOCUMENT), formData, {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-        
-        console.log('文档上传响应:', response.data);
-        
-        if (response.data.status === 'success') {
-          this.product.dm_url = response.data.data.file_path;
-          // 保存原始文件名到两个字段以确保兼容性
-          if (response.data.data.original_filename) {
-            this.product.dm_original_filename = response.data.data.original_filename;
-            this.product.original_dm_filename = response.data.data.original_filename;
-            console.log(`保存文档原始文件名(从API): ${response.data.data.original_filename}`);
-          } else if (file.name) {
-            // 如果API没有返回原始文件名，使用本地文件名
-            this.product.dm_original_filename = file.name;
-            this.product.original_dm_filename = file.name;
-            console.log(`保存文档原始文件名(本地): ${file.name}`);
-          }
-          console.log('当前产品对象中的文档原始文件名:', {
-            dm_original_filename: this.product.dm_original_filename,
-            original_dm_filename: this.product.original_dm_filename
-          });
-          this.$refs.dmInput.value = '';
-        } else {
-          throw new Error(response.data.message || '上傳文件失敗');
-        }
-      } catch (error) {
-        console.error('Error uploading document:', error);
-        alert('上傳文件失敗：' + (error.response?.data?.message || error.message));
-        this.selectedDmFile = null;
-      }
+      console.log(`選擇的文檔文件: ${file.name} (將在保存時上傳)`);
     },
     handleShippingTimeChange() {
       if (this.product.shipping_time) {
@@ -507,6 +516,45 @@ export default {
     // 触发文档文件输入点击
     triggerDmFileInput() {
       this.$refs.dmInput.click();
+    },
+    // 這個方法沒有在模板中使用，但需要新增以供文件視圖組件使用
+    openDM(url) {
+      if (!url) return;
+      
+      // 如果是本地預覽URL
+      if (this.dmPreviewUrl && this.selectedDmFile) {
+        // 直接開啟本地預覽URL
+        window.open(this.dmPreviewUrl, '_blank');
+        return;
+      }
+      
+      // 如果是已保存的URL，維持原有邏輯
+      let originalFilename = this.product.original_dm_filename || 
+                           this.product.dm_original_filename || 
+                           '';
+                           
+      console.log('打開DM，URL:', url);
+      console.log('原始文件名:', originalFilename);
+      
+      // 檢查文件類型
+      const isPdf = originalFilename.toLowerCase().endsWith('.pdf');
+      
+      if (url.startsWith('http') && originalFilename) {
+        // 創建下載/預覽URL
+        const downloadUrl = getApiUrl(`/api/azure-blob/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(originalFilename)}`);
+        
+        // 針對PDF文件，使用新視窗打開以便預覽
+        // 針對其他文件，使用下載方式
+        window.open(downloadUrl, '_blank');
+      } else if (url.startsWith('http')) {
+        // 如果是Azure URL但沒有原始文件名，直接打開
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        // 本地文件，添加域名
+        const baseUrl = window.location.origin;
+        const fullUrl = `${baseUrl}${url}`;
+        window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      }
     },
   },
   watch: {

@@ -59,12 +59,13 @@
               </div>
             </div>
             <div class="product-actions">
-                <a v-if="product.dm_url" 
-                   @click.prevent="openDM(product.dm_url)" 
-                     class="btn btn-primary">
+                <button 
+                  v-if="product.dm_url"
+                  class="table-button" 
+                  @click="openDM(product.dm_url)">
                   查看 DM
-                </a>
-                </div>
+                </button>
+              </div>
               </div>
             </div>
           </div>
@@ -254,20 +255,37 @@ export default {
       
       // 从产品列表中查找对应的产品
       const product = this.products.find(p => p.dm_url === url);
-      const originalFilename = product?.dm_original_filename || '';
+      let originalFilename = '';
       
-      console.log('打开DM，URL:', url);
-      console.log('原始文件名:', originalFilename);
-      
-      // 设置完整URL
-      let fullUrl = url;
-      if (!url.startsWith('http')) {
-        const baseUrl = window.location.origin;
-        fullUrl = `${baseUrl}${url}`;
+      // 依次嘗試獲取原始檔名
+      if (product) {
+        originalFilename = product.dm_original_filename || 
+                          product.original_dm_filename || 
+                          '';
       }
       
-      // 直接打开文件链接
-      window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      console.log('打開DM，URL:', url);
+      console.log('原始文件名:', originalFilename);
+      
+      // 檢查文件類型
+      const isPdf = originalFilename.toLowerCase().endsWith('.pdf');
+      
+      if (url.startsWith('http') && originalFilename) {
+        // 創建下載/預覽URL
+        const downloadUrl = getApiUrl(`/api/azure-blob/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(originalFilename)}`);
+        
+        // 針對PDF文件，使用新視窗打開以便預覽
+        // 針對其他文件，使用下載方式
+        window.open(downloadUrl, '_blank');
+      } else if (url.startsWith('http')) {
+        // 如果是Azure URL但沒有原始文件名，直接打開
+        window.open(url, '_blank', 'noopener,noreferrer');
+      } else {
+        // 本地文件，添加域名
+        const baseUrl = window.location.origin;
+        const fullUrl = `${baseUrl}${url}`;
+        window.open(fullUrl, '_blank', 'noopener,noreferrer');
+      }
     }
   },
   created() {

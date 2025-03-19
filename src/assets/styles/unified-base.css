@@ -3619,3 +3619,42 @@ table.product-table td:nth-child(2) {
     font-size: 14px;
   }
 }
+
+/* 在 unified-base.css 中添加以下樣式，限制大圖預覽的尺寸 */
+.large-image {
+  max-width: 100%;         /* 從90%增加到95% */
+  max-height: 100vh;       /* 從80vh增加到90vh */
+  object-fit: contain;
+  margin: 0 auto;
+  display: block;
+  border-radius: 5px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 適當調整模態框內容區域，使其能夠適應不同大小的圖片 */
+.modal-content {
+  padding: 15px;          /* 減少內邊距，增加可用空間 */
+  max-width: 95%;         /* 從90%增加到95% */
+  max-height: 95vh;       /* 從90vh增加到95vh */
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 確保關閉按鈕仍然在右上角且可見 */
+.modal-content .close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
