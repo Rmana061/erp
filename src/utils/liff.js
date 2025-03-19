@@ -35,7 +35,9 @@ export const initializeLiff = async () => {
     // 如果未登录，进行登录
     if (!liff.isLoggedIn()) {
       console.log('User not logged in, starting login process...')
-      const redirectUri = window.location.href
+      // 保存当前URL参数，以便登录后重新使用
+      const currentUrl = new URL(window.location.href)
+      const redirectUri = currentUrl.toString()
       console.log('Login redirect URI:', redirectUri)
       liff.login({
         redirectUri: redirectUri

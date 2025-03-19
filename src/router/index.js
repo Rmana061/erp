@@ -24,7 +24,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/admin-login'
+      redirect: '/customer-login'
     },
     {
       path: '/admin-login',
@@ -117,7 +117,8 @@ const router = createRouter({
     {
       path: '/line-binding',
       name: 'LineBinding',
-      component: LineBinding
+      component: LineBinding,
+      meta: { noAuthRequired: true }
     },
     {
       path: '/admin/log-records',
@@ -141,6 +142,11 @@ router.beforeEach((to, from, next) => {
     document.title = '合揚訂單系統';
   } else {
     document.title = 'ERP系統';
+  }
+
+  // 如果路由明確標記為不需要認證，直接放行
+  if (to.matched.some(record => record.meta.noAuthRequired)) {
+    return next();
   }
 
   // 檢查登入狀態

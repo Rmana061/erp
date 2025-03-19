@@ -2,11 +2,9 @@
 <template>
   <body class="customer-mode">
   <div class="container">
-    <SideBar menu-type="customer" />
     <div class="main-content">
       <div class="header">
-        <span>Hi {{ adminName || companyName || '用戶' }}您好,<button class="logout-button" @click="logout">登出</button></span>
-        <span>{{ currentTime }}</span>
+        <span>LINE帳號綁定</span>
       </div>
       
       <div class="content-wrapper">
@@ -26,11 +24,7 @@
 
 <script>
 import { initializeLiff } from '../utils/liff'
-import { adminMixin } from '../mixins/adminMixin';
-import { companyMixin } from '../mixins/companyMixin';
-import { timeMixin } from '../mixins/timeMixin';
-import { logoutMixin } from '../mixins/logoutMixin';
-import SideBar from '../components/SideBar.vue';
+import liff from '@line/liff'
 
 export default {
   name: 'LineBinding',
@@ -50,10 +44,15 @@ export default {
       this.loading = false
     }
   },
-  components: {
-    SideBar
-  },
-  mixins: [adminMixin, companyMixin, timeMixin, logoutMixin]
+  methods: {
+    closeWindow() {
+      if (liff && liff.isInClient()) {
+        liff.closeWindow()
+      } else {
+        window.close()
+      }
+    }
+  }
 }
 </script>
 
@@ -76,5 +75,55 @@ export default {
   color: #ff4444;
   font-size: 16px;
   margin-top: 10px;
+}
+
+.success-message {
+  color: #007700;
+  font-size: 16px;
+  margin-top: 20px;
+  text-align: center;
+}
+
+.close-button {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background-color: #06c755;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.close-button:hover {
+  background-color: #059b43;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  background-color: #f5f5f5;
+  margin-bottom: 20px;
+}
+
+.content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 </style> 
