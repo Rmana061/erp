@@ -97,25 +97,51 @@
         <div class="card line-settings-section">
           <h3 class="card-title">LINE帳號綁定</h3>
           <div class="line-settings">
-            <div class="line-status-display">
-              <div class="status-row">
-                <span class="status-label">LINE帳號狀態：</span>
-                <span class="status-value" :class="{'line-bound': customerInfo.line_account}">
-                  {{ customerInfo.line_account ? '已綁定' : '未綁定' }}
-                </span>
-              </div>
-              <div v-if="customerInfo.line_account" class="status-row">
-                <span class="status-label">已綁定帳號：</span>
-                <span class="line-account-id">{{ customerInfo.line_account }}</span>
+            <!-- LINE個人帳號部分 -->
+            <div class="line-section">
+              <button @click="showBindQRCode('user')" class="bind-button top-button">
+                <span>綁定個人帳號</span>
+              </button>
+              <h4>個人帳號綁定</h4>
+              <div class="line-content-container">
+                <div v-if="lineUsers.length === 0" class="empty-status">
+                  尚未綁定個人帳號
+                </div>
+                <div v-else class="line-accounts-list">
+                  <div v-for="(user, index) in lineUsers" :key="'user-'+index" class="line-account-item">
+                    <div class="account-info">
+                      <span class="account-name">{{ user.user_name || '未知用戶' }}</span>
+                    </div>
+                    <button @click="unbindUser(user.id)" class="unbind-button mini">
+                      解除綁定
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="line-buttons">
-              <button @click="showBindQRCode" :disabled="!!customerInfo.line_account" class="bind-button">
-                <span>綁定帳號</span>
-              </button>
-              <button @click="unbindAccount" :disabled="!customerInfo.line_account" class="unbind-button">
-                <span>解除綁定</span>
-              </button>
+            
+            <!-- LINE群組部分 -->
+            <div class="line-section">
+              <div class="group-instructions">
+                <p>將LINE官方帳號加入您的群組後，在群組中發送「綁定帳號 您的帳號名稱」即可完成綁定。</p>
+                <p>例如：綁定帳號 3333</p>
+              </div>
+              <h4>群組綁定</h4>
+              <div class="line-content-container">
+                <div v-if="lineGroups.length === 0" class="empty-status">
+                  尚未綁定群組
+                </div>
+                <div v-else class="line-accounts-list">
+                  <div v-for="(group, index) in lineGroups" :key="'group-'+index" class="line-account-item">
+                    <div class="account-info">
+                      <span class="account-name">{{ group.group_name || '未命名群組' }}</span>
+                    </div>
+                    <button @click="unbindGroup(group.id)" class="unbind-button mini">
+                      解除綁定
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -170,7 +196,11 @@ export default {
         phone: '',
         email: '',
         address: ''
-      }
+      },
+      lineUsers: [],
+      lineGroups: [],
+      currentBindType: 'user', // 'user' 或 'group'
+      previousUserCount: 0 // 添加记录之前用户数量的变量
     };
   },
   methods: {
@@ -245,11 +275,26 @@ export default {
 
         if (response.data.status === 'success') {
           this.customerInfo = response.data.data;
-          // 如果檢測到 line_account 有變化，關閉 QR code 視窗
-          if (this.customerInfo.line_account && this.showQRModal) {
-            this.closeQRModal();
-            // 顯示成功消息
-            alert('LINE帳號綁定成功！');
+          
+          // 獲取LINE用戶和群組資料
+          this.lineUsers = response.data.data.line_users || [];
+          this.lineGroups = response.data.data.line_groups || [];
+          
+          // 檢查是否剛剛完成綁定
+          if (this.showQRModal) {
+            // 檢查是否有新增的帳號或群組
+            let bindSuccess = false;
+            
+            if (this.currentBindType === 'user' && this.lineUsers.length > this.previousUserCount) {
+              bindSuccess = true;
+            } else if (this.currentBindType === 'group' && this.lineGroups.length > 0) {
+              bindSuccess = true;
+            }
+            
+            if (bindSuccess) {
+              this.closeQRModal();
+              alert('LINE綁定成功！');
+            }
           }
         } else {
           throw new Error(response.data.message || '獲取客戶資料失敗');
@@ -263,16 +308,41 @@ export default {
         }
       }
     },
-    async showBindQRCode() {
+    async showBindQRCode(type) {
+      this.currentBindType = type;
       try {
+        this.previousUserCount = this.lineUsers.length;
+        
         const customerId = localStorage.getItem('customer_id');
-        const response = await axios.post(getApiUrl(API_PATHS.GENERATE_BIND_URL), {
-          customer_id: customerId
+        
+        // 創建一個新的axios實例，避免共用cookie和session
+        const tempAxios = axios.create({
+          withCredentials: false  // 禁用credentials以避免傳送session cookie
         });
+        
+        const response = await tempAxios.post(getApiUrl(API_PATHS.GENERATE_BIND_URL), 
+          {
+            customer_id: customerId,
+            bind_type: 'user'
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          }
+        );
 
         if (response.data.status === 'success') {
-          // 生成 QR Code
-          this.qrCodeUrl = await QRCode.toDataURL(response.data.data.url, {
+          // 嘗試使用兩種可能的字段名
+          const bindUrl = response.data.data.bind_url || response.data.data.url;
+          
+          if (!bindUrl) {
+            throw new Error('回應中缺少綁定URL');
+          }
+          
+          // 生成QR Code
+          this.qrCodeUrl = await QRCode.toDataURL(bindUrl, {
             width: 300,
             margin: 2,
             color: {
@@ -307,13 +377,23 @@ export default {
         this.checkBindingInterval = null;
       }
     },
-    async unbindAccount() {
+    async unbindUser(userId) {
       if (!confirm('確定要解除LINE帳號綁定嗎？')) return;
 
       try {
         const customerId = localStorage.getItem('customer_id');
-        const response = await axios.post(getApiUrl(API_PATHS.UNBIND_LINE), 
-          { customer_id: customerId },
+        // 存儲操作前的LINE用戶列表，用於後端比較變更
+        const previousLineUsers = [...this.lineUsers];
+        
+        const response = await axios.post(getApiUrl(API_PATHS.UNBIND_LINE_USER), 
+          { 
+            customer_id: customerId, 
+            user_id: userId,
+            user_type: 'customer', // 指明操作者類型為客戶
+            action_type: 'unbind_line_user', // 指明操作類型
+            // 傳遞操作前的用戶資訊，幫助日誌記錄更詳細
+            line_user_info: this.lineUsers.find(user => user.id === userId)
+          },
           {
             headers: {
               'Content-Type': 'application/json',
@@ -329,8 +409,44 @@ export default {
           throw new Error(response.data.message || '解除LINE帳號綁定失敗');
         }
       } catch (error) {
-        console.error('Error unbinding LINE account:', error);
+        console.error('Error unbinding LINE user:', error);
         alert('解除LINE帳號綁定失敗：' + (error.response?.data?.message || error.message));
+      }
+    },
+    async unbindGroup(groupId) {
+      if (!confirm('確定要解除LINE群組綁定嗎？')) return;
+
+      try {
+        const customerId = localStorage.getItem('customer_id');
+        // 存儲操作前的LINE群組列表，用於後端比較變更
+        const previousLineGroups = [...this.lineGroups];
+        
+        const response = await axios.post(getApiUrl(API_PATHS.UNBIND_LINE_GROUP), 
+          { 
+            customer_id: customerId, 
+            group_id: groupId,
+            user_type: 'customer', // 指明操作者類型為客戶
+            action_type: 'unbind_line_group', // 指明操作類型
+            // 傳遞操作前的群組資訊，幫助日誌記錄更詳細
+            line_group_info: this.lineGroups.find(group => group.id === groupId)
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            }
+          }
+        );
+
+        if (response.data.status === 'success') {
+          alert('LINE群組解除綁定成功');
+          await this.fetchCustomerInfo();  // 重新獲取客戶資料
+        } else {
+          throw new Error(response.data.message || '解除LINE群組綁定失敗');
+        }
+      } catch (error) {
+        console.error('Error unbinding LINE group:', error);
+        alert('解除LINE群組綁定失敗：' + (error.response?.data?.message || error.message));
       }
     }
   },
@@ -353,8 +469,56 @@ export default {
 @import '../assets/styles/unified-base.css';
 
 /* 整體頁面佈局 */
+html, body {
+  overflow-y: auto;
+  height: 100%;
+}
+
+body.customer-mode {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+  position: relative;
+}
+
+.container {
+  min-height: 100vh;
+  position: relative;
+  overflow-y: auto;
+  display: flex;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  height: 100vh;
+  position: relative;
+}
+
 .content-wrapper {
   padding: 20px;
+  overflow-y: auto;
+  height: auto;
+}
+
+.top-button {
+  display: block;
+  margin-bottom: 12px;
+  background-color: #06C755;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: none;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  transition: all 0.2s;
+}
+
+.top-button:hover {
+  background-color: #05a648;
+  transform: translateY(-2px);
 }
 
 .page-title-container {
@@ -488,86 +652,107 @@ export default {
 .line-settings {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
-.line-status-display {
+.line-section {
   flex: 1;
-  min-width: 0;
+  min-width: 250px;
+  margin-bottom: 20px;
+  background-color: #f5f5f5;
+  padding: 15px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  min-height: 200px;
 }
 
-.status-row {
+.line-content-container {
+  flex-grow: 1;
   display: flex;
-  margin-bottom: 10px;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.line-section h4 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  color: #444;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 6px;
+}
+
+.empty-status {
+  color: #888;
+  font-style: italic;
+  padding: 10px 0;
+  flex-grow: 1;
+  display: flex;
   align-items: center;
 }
 
-.status-label {
-  width: 120px;
-  text-align: right;
-  padding-right: 10px;
-  color: #666;
-  font-weight: 500;
-  flex-shrink: 0;
+.line-accounts-list {
+  margin-bottom: 10px;
+  overflow-y: auto;
+  max-height: 300px;
+  -webkit-overflow-scrolling: touch;
 }
 
-.status-value {
+.line-account-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.account-info {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-name {
   font-weight: 600;
+  display: block;
+  color: #333;
 }
 
-.line-account-id {
-  color: #4CAF50;
-  word-break: break-all;
+.unbind-button.mini {
+  padding: 5px 10px;
+  font-size: 0.85rem;
+  background-color: #f5f5f5;
+  color: #f44336;
+  border: 1px solid #f44336;
 }
 
-.line-bound {
-  color: #4CAF50;
-  font-weight: 600;
+.unbind-button.mini:hover {
+  background-color: #ffebee;
 }
 
 .line-buttons {
-  display: flex;
-  gap: 12px;
+  display: none;
 }
 
-.line-buttons button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.bind-button {
+.bind-button.section-button {
   background-color: #06C755;
   color: white;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  max-width: 150px;
+  height: auto;
 }
 
-.unbind-button {
-  background-color: #f44336;
-  color: white;
-}
-
-.bind-button:hover:not(:disabled) {
+.bind-button.section-button:hover:not(:disabled) {
   background-color: #05a648;
   transform: translateY(-2px);
-}
-
-.unbind-button:hover:not(:disabled) {
-  background-color: #e53935;
-  transform: translateY(-2px);
-}
-
-.line-buttons button:disabled {
-  background-color: #e0e0e0;
-  color: #999;
-  cursor: not-allowed;
-  transform: none;
 }
 
 /* QR 模態視窗 */
@@ -642,6 +827,33 @@ export default {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
+  body, html {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    height: auto !important;
+  }
+
+  body.customer-mode {
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+
+  .container {
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  .main-content {
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+
+  .content-wrapper {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .form-row {
     flex-direction: column;
     gap: 20px;
@@ -662,18 +874,37 @@ export default {
   .line-settings {
     flex-direction: column;
     gap: 20px;
-    align-items: flex-start;
+    align-items: stretch;
+    overflow-y: visible;
   }
   
-  .status-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .status-label {
+  .line-section {
     width: 100%;
-    text-align: left;
-    margin-bottom: 5px;
+    min-height: auto;
+    padding-bottom: 15px;
+  }
+  
+  .line-content-container {
+    min-height: 80px;
+    max-height: none;
+    overflow-y: visible;
+  }
+  
+  .line-accounts-list {
+    max-height: none;
+    overflow-y: visible;
+  }
+  
+  .top-button {
+    margin-bottom: 15px;
+    padding: 10px;
+    font-size: 1rem;
+  }
+  
+  .group-instructions {
+    padding: 12px;
+    margin-bottom: 15px;
+    font-size: 1rem;
   }
   
   .page-title-container {
@@ -681,5 +912,24 @@ export default {
     align-items: flex-start;
     gap: 15px;
   }
+}
+
+.group-instructions {
+  background-color: #eaf7ff;
+  border-left: 3px solid #1e88e5;
+  padding: 10px 12px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.group-instructions p {
+  margin: 5px 0;
+}
+
+.group-instructions p:last-child {
+  font-weight: 500;
+  color: #333;
 }
 </style>

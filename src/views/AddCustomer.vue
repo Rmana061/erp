@@ -54,8 +54,31 @@
               </div>
             </div>
             <div class="form-group">
-              <label>LINE帳號綁定：</label>
-              <input type="text" v-model="newCustomer.lineAccount" placeholder="">
+              <label>LINE帳號設置：</label>
+              <div class="line-setup-container">
+                <div class="line-note">
+                  注意：客戶需要透過掃描QR碼自行綁定LINE帳號。<br>
+                  此欄位僅供顯示已綁定帳號。請在建立客戶後指導客戶如何進行綁定。
+                </div>
+                <div v-if="isEditing && (lineUsers.length > 0 || lineGroups.length > 0)" class="line-accounts-summary">
+                  <div v-if="lineUsers.length > 0" class="line-summary-section">
+                    <h4>已綁定個人帳號 ({{ lineUsers.length }})</h4>
+                    <ul class="line-account-list">
+                      <li v-for="(user, index) in lineUsers" :key="'user-'+index">
+                        {{ user.user_name || '未知用戶' }} ({{ user.line_user_id }})
+                      </li>
+                    </ul>
+                  </div>
+                  <div v-if="lineGroups.length > 0" class="line-summary-section">
+                    <h4>已綁定群組 ({{ lineGroups.length }})</h4>
+                    <ul class="line-account-list">
+                      <li v-for="(group, index) in lineGroups" :key="'group-'+index">
+                        {{ group.group_name || '未命名群組' }} ({{ group.line_group_id }})
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label>聯絡人：</label>
@@ -120,7 +143,6 @@ export default {
         account: '',
         password: '',
         selectedProducts: [],
-        lineAccount: '',
         contactPerson: '',
         phone: '',
         email: '',
@@ -129,7 +151,9 @@ export default {
         notes: ''
       },
       products: [],
-      editingId: null
+      editingId: null,
+      lineUsers: [],
+      lineGroups: []
     };
   },
   computed: {
@@ -177,7 +201,6 @@ export default {
             account: customerData.username || '',
             password: '', // 密码不回填
             selectedProducts: customerData.viewable_products ? customerData.viewable_products.split(',').map(p => p.trim()).filter(p => p !== '') : [],
-            lineAccount: customerData.line_account || '',
             contactPerson: customerData.contact_person || '',
             phone: customerData.phone || '',
             email: customerData.email || '',
@@ -185,6 +208,10 @@ export default {
             reorderLimitDays: customerData.reorder_limit_days || 2,
             notes: customerData.remark || ''
           };
+          
+          // 獲取LINE用戶和群組資料
+          this.lineUsers = customerData.line_users || [];
+          this.lineGroups = customerData.line_groups || [];
         } else {
           throw new Error(response.data.message || '獲取客戶資料失敗');
         }
@@ -229,7 +256,6 @@ export default {
           phone: this.newCustomer.phone,
           email: this.newCustomer.email,
           address: this.newCustomer.address,
-          line_account: this.newCustomer.lineAccount,
           viewable_products: this.newCustomer.selectedProducts.join(','),
           reorder_limit_days: this.newCustomer.reorderLimitDays,
           remark: this.newCustomer.notes || ''
@@ -242,8 +268,20 @@ export default {
 
         let response;
         if (this.isEditing) {
-          // 编辑现有客户
+          // 编辑现有客户时，获取原始数据与当前数据的对比
           customerData.id = this.editingId;
+          
+          // 获取原始客户数据
+          const originalDataResponse = await axiosInstance.post(
+            API_PATHS.CUSTOMER_DETAIL(this.editingId)
+          );
+          
+          if (originalDataResponse.data.status === 'success') {
+            // 将原始数据添加到请求中，以便后端可以比较变更
+            customerData.original_data = originalDataResponse.data.data;
+          }
+          
+          // 发送更新请求
           response = await axiosInstance.put(API_PATHS.CUSTOMER_UPDATE, customerData);
         } else {
           // 新增客户
@@ -339,6 +377,52 @@ export default {
   font-size: 0.85em;
   color: #666;
   margin-left: 5px;
+}
+
+/* LINE帳號設置相關樣式 */
+.line-setup-container {
+  width: 100%;
+  padding: 15px;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.line-note {
+  color: #666;
+  font-size: 0.9em;
+  margin-bottom: 15px;
+  line-height: 1.6;
+}
+
+.line-accounts-summary {
+  margin-top: 15px;
+}
+
+.line-summary-section {
+  margin-bottom: 15px;
+}
+
+.line-summary-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 1em;
+  color: #333;
+}
+
+.line-account-list {
+  list-style-type: none;
+  padding-left: 10px;
+  margin: 0;
+}
+
+.line-account-list li {
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9em;
+}
+
+.line-account-list li:last-child {
+  border-bottom: none;
 }
 
 /* 產品選擇區域樣式 */

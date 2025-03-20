@@ -47,6 +47,8 @@ export const API_PATHS = {
     GENERATE_BIND_URL: '/api/line/generate-bind-url',
     BIND_LINE: '/api/line/bind',
     UNBIND_LINE: '/api/line/unbind',
+    UNBIND_LINE_USER: '/api/line/unbind-user',
+    UNBIND_LINE_GROUP: '/api/line/unbind-group',
     LINE_CALLBACK: '/api/line/line-binding',
     
     // 管理员相关

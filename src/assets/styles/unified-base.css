@@ -36,10 +36,11 @@ body.customer-mode {
 html, body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-y: auto; /* 修改為auto允許垂直滾動 */
   height: 100%;
   width: 100%;
   box-sizing: border-box;
+  -webkit-overflow-scrolling: touch; /* 增加iOS滾動體驗 */
 }
 
 /* 登入頁面特殊樣式 */
@@ -48,22 +49,24 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
+  overflow-y: auto; /* 修改為auto允許垂直滾動 */
+  -webkit-overflow-scrolling: touch; /* 增加iOS滾動體驗 */
 }
 
 .container {
   display: flex;
-  height: 100vh;
+  min-height: 100vh; /* 更改為min-height */
   width: 99%;
-  overflow: hidden;
-  position: fixed;
+  overflow-y: auto; /* 修改為auto允許垂直滾動 */
+  position: relative; /* 更改為relative */
 }
 
 .main-content {
   flex: 1;
   margin-left: 200px;
-  height: 100vh;
-  overflow: hidden;
+  height: auto; /* 更改為auto */
+  min-height: 100vh; /* 添加最小高度 */
+  overflow-y: auto; /* 允許垂直滾動 */
   display: flex;
   flex-direction: column;
 }
@@ -99,7 +102,8 @@ body.customer-mode .header {
   display: flex;
   flex-direction: column;
   padding: 20px;
-  overflow: hidden;
+  overflow-y: auto; /* 修改為auto允許垂直滾動 */
+  -webkit-overflow-scrolling: touch; /* 增加iOS滾動體驗 */
 }
 
 .scrollable-content {
@@ -377,10 +381,28 @@ tr.shipped {
   .main-content {
     margin-left: 0;
     padding-right: 10px;
+    height: auto !important;
+    overflow-y: auto !important;
   }
 
   .content-wrapper {
     padding: 10px;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    height: auto !important;
+  }
+
+  body, html {
+    overflow-y: auto !important;
+    height: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .container {
+    min-height: 100vh;
+    height: auto !important;
+    overflow-y: auto !important;
+    position: relative;
   }
 
   .form-group {

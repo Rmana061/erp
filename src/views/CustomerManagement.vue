@@ -172,7 +172,8 @@ export default {
             return {
               ...customer,
               viewable_products: customer.viewable_products || '',
-              line_account: customer.line_account || '',
+              line_users: customer.line_users || [],
+              line_groups: customer.line_groups || [],
               remark: customer.remark || '',
               repeat_order_limit: customer.reorder_limit_days > 0 ? `${customer.reorder_limit_days}天` : '無限制'
             };
@@ -243,7 +244,8 @@ export default {
           'Email',
           '地址',
           '可購產品',
-          'LINE帳號',
+          'LINE個人帳號',
+          'LINE群組',
           '備註',
           '重複下單限制天數',
           '建立時間',
@@ -314,7 +316,8 @@ export default {
               customer.email,
               customer.address,
               viewableProductNames,
-              customer.line_account || '',
+              customer.line_users ? customer.line_users.map(user => user.user_name).join(', ') : '',
+              customer.line_groups ? customer.line_groups.map(group => group.group_name).join(', ') : '',
               customer.remark || '',
               customer.reorder_limit_days || 0,
               customer.created_at,
@@ -335,7 +338,8 @@ export default {
           { wch: 25 },  // Email
           { wch: 40 },  // 地址
           { wch: 60 },  // 可購產品（增加寬度因為現在是產品名稱）
-          { wch: 20 },  // LINE帳號
+          { wch: 20 },  // LINE個人帳號
+          { wch: 40 },  // LINE群組
           { wch: 40 },  // 備註
           { wch: 15 },  // 重複下單限制天數
           { wch: 20 },  // 建立時間

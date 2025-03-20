@@ -6,44 +6,31 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const LIFF_ID = import.meta.env.VITE_LIFF_ID
 
 export const initializeLiff = async () => {
+  console.log('Initializing LIFF...')
+  
   try {
-    console.log('Starting LIFF initialization...')
+    await liff.init({ liffId: LIFF_ID })
+    console.log('LIFF initialized')
     
-    // 检查 LIFF 是否可用
-    if (!liff) {
-      throw new Error('LIFF SDK not loaded')
-    }
-    
-    // 基础LIFF初始化
-    await liff.init({
-      liffId: LIFF_ID,
-      withLoginOnExternalBrowser: true
-    }).catch(err => {
-      console.error('LIFF initialization error:', err)
-      throw new Error(`LIFF initialization failed: ${err.message}`)
-    })
-    
-    console.log('LIFF initialized successfully')
-    console.log('LIFF isInClient:', liff.isInClient())
-    console.log('LIFF isLoggedIn:', liff.isLoggedIn())
-    
-    // 获取URL参数
-    const urlParams = new URLSearchParams(window.location.search)
-    const customerId = urlParams.get('customer_id')
-    console.log('Customer ID from URL:', customerId)
-    
-    // 如果未登录，进行登录
     if (!liff.isLoggedIn()) {
-      console.log('User not logged in, starting login process...')
-      // 保存当前URL参数，以便登录后重新使用
-      const currentUrl = new URL(window.location.href)
-      const redirectUri = currentUrl.toString()
-      console.log('Login redirect URI:', redirectUri)
-      liff.login({
-        redirectUri: redirectUri
-      })
+      console.log('Not logged in, redirecting to LINE login...')
+      liff.login()
       return
     }
+    
+    console.log('Already logged in')
+    
+    // 解析URL参数
+    const urlParams = new URLSearchParams(window.location.search)
+    const customerId = urlParams.get('customer_id')
+    const bindType = urlParams.get('type') || 'user'  // 默认为用户绑定
+    
+    if (!customerId) {
+      console.error('No customer_id found in URL params')
+      throw new Error('缺少客戶ID參數')
+    }
+    
+    console.log(`Customer ID: ${customerId}, Bind Type: ${bindType}`)
     
     // 如果已登录且有customer_id，获取用户信息并进行绑定
     if (customerId) {
@@ -51,6 +38,31 @@ export const initializeLiff = async () => {
         console.log('Getting user profile...')
         const profile = await liff.getProfile()
         console.log('Got user profile:', profile)
+        
+        let bindData = {
+          customer_id: customerId
+        }
+        
+        // 根据绑定类型设置不同的参数
+        if (bindType === 'user') {
+          // 个人账号绑定
+          bindData.line_user_id = profile.userId
+          bindData.user_name = profile.displayName
+        } else if (bindType === 'group') {
+          // 群组绑定 - 需要获取群组信息
+          if (liff.isInGroup()) {
+            const context = liff.getContext()
+            if (context.type === 'group') {
+              bindData.line_group_id = context.groupId
+              // 群组名称可能无法获取，后端可能需要额外处理
+              bindData.group_name = '群組'
+            } else {
+              throw new Error('請在LINE群組中使用此功能')
+            }
+          } else {
+            throw new Error('請在LINE群組中使用此功能')
+          }
+        }
         
         // 调用绑定API
         const response = await fetch(`${API_BASE_URL}/api/line/bind`, {
@@ -60,10 +72,7 @@ export const initializeLiff = async () => {
           },
           credentials: 'include',
           mode: 'cors',
-          body: JSON.stringify({
-            customer_id: customerId,
-            line_user_id: profile.userId
-          })
+          body: JSON.stringify(bindData)
         })
         
         if (!response.ok) {
@@ -101,17 +110,10 @@ export const initializeLiff = async () => {
           liff.closeWindow()
         }
       }
-    } else {
-      console.error('No customer_id provided')
-      alert('缺少必要參數')
-      if (liff.isInClient()) {
-        liff.closeWindow()
-      }
     }
-    
   } catch (error) {
-    console.error('LIFF initialization error:', error)
-    alert('LINE 初始化失敗：' + (error.message || '未知錯誤'))
+    console.error('Error initializing LIFF:', error)
+    throw error
   }
 }
 
