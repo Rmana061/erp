@@ -65,7 +65,7 @@
                     <h4>已綁定個人帳號 ({{ lineUsers.length }})</h4>
                     <ul class="line-account-list">
                       <li v-for="(user, index) in lineUsers" :key="'user-'+index">
-                        {{ user.user_name || '未知用戶' }} ({{ user.line_user_id }})
+                        {{ user.user_name || '未知用戶' }}
                       </li>
                     </ul>
                   </div>
@@ -73,7 +73,7 @@
                     <h4>已綁定群組 ({{ lineGroups.length }})</h4>
                     <ul class="line-account-list">
                       <li v-for="(group, index) in lineGroups" :key="'group-'+index">
-                        {{ group.group_name || '未命名群組' }} ({{ group.line_group_id }})
+                        {{ group.group_name || '未命名群組' }}
                       </li>
                     </ul>
                   </div>
