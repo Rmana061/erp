@@ -150,7 +150,10 @@ export default {
       dmPreviewUrl: ''
     };
   },
-  created() {
+  async created() {
+    // 检查权限
+    await this.checkPermission();
+  
     // 檢查是否是編輯模式
     const mode = this.$route.query.mode;
     const id = this.$route.query.id;
@@ -166,6 +169,38 @@ export default {
     setInterval(this.updateCurrentTime, 60000);
   },
   methods: {
+    // 添加权限检查方法
+    async checkPermission() {
+      try {
+        console.log('正在檢查添加產品權限...');
+        
+        // 從會話存儲中獲取管理員信息
+        const adminInfoStr = sessionStorage.getItem('adminInfo');
+        if (!adminInfoStr) {
+          console.log('未找到管理員信息，重定向到登錄頁');
+          alert('您的會話已過期，請重新登錄');
+          this.$router.push('/admin-login');
+          return;
+        }
+        
+        const adminInfo = JSON.parse(adminInfoStr);
+        console.log('當前管理員權限:', adminInfo.permissions);
+        
+        // 检查是否有添加产品的权限
+        if (!adminInfo.permissions || !adminInfo.permissions.can_add_product) {
+          console.log('權限不足: 無法添加產品');
+          alert('權限不足: 您沒有添加產品的權限');
+          this.$router.push('/admin-login');
+          return;
+        }
+        
+        console.log('權限檢查通過');
+      } catch (error) {
+        console.error('權限檢查錯誤:', error);
+        alert('驗證權限時出錯，請重新登錄');
+        this.$router.push('/admin-login');
+      }
+    },
     toggleMenu() {
       this.isMenuOpen = !this.isMenuOpen;
       document.body.style.overflow = this.isMenuOpen ? 'hidden' : '';

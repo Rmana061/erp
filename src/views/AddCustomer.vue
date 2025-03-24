@@ -169,6 +169,9 @@ export default {
     }
   },
   async created() {
+    // 检查权限
+    await this.checkPermission();
+    
     // 检查是否是编辑模式
     const customerId = this.$route.query.id;
     if (customerId) {
@@ -180,6 +183,38 @@ export default {
     await this.fetchProducts();
   },
   methods: {
+    // 添加权限检查方法
+    async checkPermission() {
+      try {
+        console.log('正在檢查添加客戶權限...');
+        
+        // 从会话存储中获取管理员信息
+        const adminInfoStr = sessionStorage.getItem('adminInfo');
+        if (!adminInfoStr) {
+          console.log('未找到管理員信息，重定向到登錄頁');
+          alert('您的會話已過期，請重新登錄');
+          this.$router.push('/admin-login');
+          return;
+        }
+        
+        const adminInfo = JSON.parse(adminInfoStr);
+        console.log('當前管理員權限:', adminInfo.permissions);
+        
+        // 检查是否有添加客户的权限
+        if (!adminInfo.permissions || !adminInfo.permissions.can_add_customer) {
+          console.log('權限不足: 無法添加客戶');
+          alert('權限不足: 您沒有添加客戶的權限');
+          this.$router.push('/admin-login');
+          return;
+        }
+        
+        console.log('權限檢查通過');
+      } catch (error) {
+        console.error('權限檢查錯誤:', error);
+        alert('驗證權限時出錯，請重新登錄');
+        this.$router.push('/admin-login');
+      }
+    },
     toggleMenu() {
       this.isMenuOpen = !this.isMenuOpen;
       document.body.style.overflow = this.isMenuOpen ? 'hidden' : '';
@@ -300,7 +335,14 @@ export default {
           this.$router.push('/admin-login');
           return;
         }
-        alert(error.response?.data?.message || '操作失敗，請稍後再試');
+        
+        // 檢查是否為重複帳號錯誤
+        const errorMessage = error.response?.data?.message || error.message;
+        if (errorMessage.includes('duplicate key') && errorMessage.includes('username_key')) {
+          alert('此客戶帳號已存在（可能為已停用的帳號）。請使用其他帳號名稱，或聯繫系統管理員將該帳號完全刪除。');
+        } else {
+          alert(errorMessage || '操作失敗，請稍後再試');
+        }
       }
     },
     updateCurrentTime() {

@@ -250,7 +250,8 @@ export default {
         '4': '檢視權限'
       },
       goToPage: 1,
-      isLoading: false
+      isLoading: false,
+      isLoadingAdmin: false // 新增狀態標記，防止重複請求
     };
   },
   methods: {
@@ -261,10 +262,20 @@ export default {
       this.isSidebarActive = false;
     },
     async searchLogs(resetPage = false) {
+      // 避免重複請求
+      if (this.isLoadingAdmin) {
+        console.log('已有請求在進行中，取消本次操作');
+        return;
+      }
+      
+      this.isLoadingAdmin = true;
+      
       try {
+        console.log('開始執行 searchLogs，檢查 admin_id: ', localStorage.getItem('admin_id'));
         const adminId = localStorage.getItem('admin_id');
         if (!adminId) {
-          this.$router.push('/admin-login');
+          console.log('未找到 admin_id，取消查詢');
+          this.isLoadingAdmin = false;
           return;
         }
 
@@ -280,28 +291,30 @@ export default {
         this.searchParams.page = Number(this.currentPage) || 1;
         this.searchParams.per_page = 50;  // 设置每页显示50条数据
 
-        console.log('发送查询请求，参数:', JSON.stringify(this.searchParams));
+        console.log('發送查詢請求，參數:', JSON.stringify(this.searchParams));
 
         try {
-        const response = await axiosInstance.post('/api/log/logs', {
-          ...this.searchParams,
+          console.log('發送 API 請求前的參數:', this.searchParams);
+          
+          const response = await axiosInstance.post('/api/log/logs', {
+            ...this.searchParams,
             // 添加一個標記，告訴後端只搜索操作對象
             record_only_search: true
           });
 
-          console.log('收到API响应:', response.status);
+          console.log('收到API響應:', response.status);
           // 直接显示完整响应内容进行检查
-          console.log('完整响应对象:', response);
-          console.log('完整API响应JSON:', JSON.stringify(response.data));
-          console.log('API响应数据结构:', Object.keys(response.data));
-          console.log('API响应是否包含total_count:', 'total_count' in response.data);
+          console.log('完整響應對象:', response);
+          console.log('完整API響應JSON:', JSON.stringify(response.data));
+          console.log('API響應數據結構:', Object.keys(response.data));
+          console.log('API響應是否包含total_count:', 'total_count' in response.data);
 
           if (response.data && response.data.status === 'success') {
-            console.log('后端返回的日誌數據:', response.data);
+            console.log('後端返回的日誌數據:', response.data);
             
             // 确保数据是数组并且有值
             this.logs = Array.isArray(response.data.data) ? [...response.data.data] : [];
-            console.log('处理后的logs数组长度:', this.logs.length);
+            console.log('處理後的logs數組長度:', this.logs.length);
             
             // 尝试从多种可能的位置获取总记录数
             let totalCount = null;
@@ -309,22 +322,22 @@ export default {
             // 方式1: 直接从response.data.total_count获取
             if ('total_count' in response.data && !isNaN(parseInt(response.data.total_count, 10))) {
               totalCount = parseInt(response.data.total_count, 10);
-              console.log('从response.data.total_count获取到总记录数:', totalCount);
+              console.log('從response.data.total_count獲取到總記錄數:', totalCount);
             } 
             // 方式2: 从response.data.meta.total获取
             else if (response.data.meta && 'total' in response.data.meta && !isNaN(parseInt(response.data.meta.total, 10))) {
               totalCount = parseInt(response.data.meta.total, 10);
-              console.log('从response.data.meta.total获取到总记录数:', totalCount);
+              console.log('從response.data.meta.total獲取到總記錄數:', totalCount);
             }
             // 方式3: 从response.headers获取
             else if (response.headers && response.headers['x-total-count'] && !isNaN(parseInt(response.headers['x-total-count'], 10))) {
               totalCount = parseInt(response.headers['x-total-count'], 10);
-              console.log('从response.headers获取到总记录数:', totalCount);
+              console.log('從response.headers獲取到總記錄數:', totalCount);
             }
             // 方式4: 从response.data.data的元数据获取(部分API可能会这样设计)
             else if (Array.isArray(response.data.data) && response.data.data.length > 0 && response.data.data[0] && response.data.data[0]._meta && response.data.data[0]._meta.total) {
               totalCount = parseInt(response.data.data[0]._meta.total, 10);
-              console.log('从response.data.data[0]._meta.total获取到总记录数:', totalCount);
+              console.log('從response.data.data[0]._meta.total獲取到總記錄數:', totalCount);
             }
             // 方式5: 根据后端日志格式解析，从后端日志中提到的位置 "总记录数: 1363"
             else if (typeof response.data === 'object') {
@@ -332,7 +345,7 @@ export default {
               for (const key in response.data) {
                 if (typeof response.data[key] === 'number' && (key.includes('total') || key.toLowerCase().includes('count'))) {
                   totalCount = response.data[key];
-                  console.log(`从response.data.${key}获取到总记录数:`, totalCount);
+                  console.log(`從response.data.${key}獲取到總記錄數:`, totalCount);
                   break;
                 }
               }
@@ -341,30 +354,30 @@ export default {
             // 方式6: 尝试从响应的字符串表示中提取总记录数
             if (totalCount === null) {
               const responseStr = JSON.stringify(response.data);
-              const matches = responseStr.match(/总记录数[：:]\s*(\d+)/i) || 
-                             responseStr.match(/total[\s_-]*count[：:]\s*(\d+)/i) ||
-                             responseStr.match(/"total_count"\s*:\s*(\d+)/i);
+              const matches = responseStr.match(/总记录 数[：:]\s*(\d+)/i) || 
+                              responseStr.match(/total[\s_-]*count[：:]\s*(\d+)/i) ||
+                              responseStr.match(/"total_count"\s*:\s*(\d+)/i);
               
               if (matches && matches[1]) {
                 totalCount = parseInt(matches[1], 10);
-                console.log('从响应字符串中提取到总记录数:', totalCount);
+                console.log('從響應字符串中提取到總記錄數:', totalCount);
               }
             }
             
             if (totalCount === null) {
-              console.warn('未找到有效的总记录数，使用当前页记录数或默认值');
+              console.warn('未找到有效的總記錄數，使用當前頁記錄數或默認值');
               
-              // 回退策略1：使用1363作为总记录数（从后端日志中看到的总记录数）
+              // 回退策略1：使用1363作為總記錄數（從後端日誌中看到的總記錄數）
               totalCount = 1363;
-              console.log('使用硬编码的总记录数(后端日志中看到的):', totalCount);
+              console.log('使用硬編碼的總記錄數(後端日誌中看到的):', totalCount);
             }
             
             this.totalCount = totalCount;
-            console.log('最终设置的总记录数:', this.totalCount);
+            console.log('最終設置的總記錄數:', this.totalCount);
             
             // 计算总页数并确保至少为1页
             this.totalPages = Math.max(1, Math.ceil(this.totalCount / this.searchParams.per_page));
-            console.log('计算的总页数:', this.totalPages);
+            console.log('計算的總頁數:', this.totalPages);
             
             // 如果当前页超出了总页数，则跳转到第一页
             if (this.totalPages > 0 && this.currentPage > this.totalPages) {
@@ -376,63 +389,70 @@ export default {
 
             // 强制更新视图
             this.$forceUpdate();
-        } else {
-            throw new Error(response.data?.message || '获取日志失败');
+          } else {
+            throw new Error(response.data?.message || '獲取日誌失敗');
           }
         } catch (apiError) {
-          console.error('API错误:', apiError);
+          console.error('API錯誤:', apiError);
+          console.error('錯誤狀態碼:', apiError.response?.status);
+          console.error('錯誤響應數據:', apiError.response?.data);
           throw apiError;
         }
       } catch (error) {
-        console.error('Error fetching logs:', error);
-        if (error.response?.status === 401) {
-          localStorage.removeItem('admin_id');
-          this.$router.push('/admin-login');
-        } else {
-          alert('获取日志失败：' + (error.response?.data?.message || error.message));
-        }
+        console.error('獲取日誌錯誤:', error);
+        console.error('錯誤類型:', error.name);
+        console.error('錯誤消息:', error.message);
+        
+        // 注释掉这里的401处理，交给全局拦截器处理
+        // if (error.response?.status === 401) {
+        //   localStorage.removeItem('admin_id');
+        //   this.$router.push('/admin-login');
+        // } else {
+          alert('獲取日誌失敗：' + (error.response?.data?.message || error.message));
+        // }
       } finally {
         // 无论成功失败，都关闭加载状态
         this.isLoading = false;
+        this.isLoadingAdmin = false;
       }
     },
     async changePage(page) {
-      console.log('切换页面请求:', page);
+      console.log('切換頁面請求:', page);
       
-      // 预处理页码
+      // 預處理頁碼
       if (isNaN(page) || page < 1) {
-        console.warn('无效的页码，重置为第1页');
+        console.warn('無效的頁碼，重置為第1頁');
         page = 1;
       }
       
       if (this.totalPages > 0 && page > this.totalPages) {
-        console.warn(`页码(${page})超出总页数(${this.totalPages})，设置为最后一页`);
+        console.warn(`頁碼(${page})超出總頁數(${this.totalPages})，設置為最後一頁`);
         page = this.totalPages;
       }
 
       // 如果页码没有变化，不执行操作
       if (page === this.currentPage) {
-        console.log('页码未改变，不执行操作');
+        console.log('頁碼未改變，不執行操作');
         return;
       }
 
       // 记录当前状态
-      console.log('页面切换前状态:', {
-        当前页: this.currentPage,
-        目标页: page,
-        总页数: this.totalPages,
-        总记录数: this.totalCount,
-        日志记录数: this.logs.length
+      console.log('頁面切換前狀態:', {
+        當前頁: this.currentPage,
+        目標頁: page,
+        總頁數: this.totalPages,
+        總記錄數: this.totalCount,
+        日誌記錄數: this.logs.length
       });
 
       this.currentPage = page;
       await this.searchLogs();
       
-      console.log('页面切换后状态:', {
-        当前页: this.currentPage,
-        总页数: this.totalPages,
-        总记录数: this.totalCount,
-        日志记录数: this.logs.length
+      console.log('頁面切換後狀態:', {
+        當前頁: this.currentPage,
+        總頁數: this.totalPages,
+        總記錄數: this.totalCount,
+        日誌記錄數: this.logs.length
       });
     },
     showLogDetail(log) {
@@ -663,7 +683,7 @@ export default {
             html += this.generateSectionHeader('變更記錄', 'product-header');
             html += this.startChangeDetails('product-details');
             
-            // 首先处理name字段（产品名称），确保它在最前面
+            // 首先處理name字段（產品名稱），確保它在最前面
             if (productData.changes.name) {
               const change = productData.changes.name;
               const before = this.formatValue('name', change.before);
@@ -672,9 +692,9 @@ export default {
               html += this.generateChangeRow(this.getProductFieldLabel('name'), before, after);
             }
             
-            // 然后处理其他字段
+            // 然後處理其他字段
             Object.keys(productData.changes).forEach(field => {
-              // 跳过已处理的name字段
+              // 跳過已處理的name字段
               if (field === 'name') return;
               
               const change = productData.changes[field];
@@ -689,7 +709,7 @@ export default {
             html += this.endChangeItem();
           }
         } else {
-          // 新增或删除操作显示完整产品信息
+          // 新增或刪除操作顯示完整產品信息
           html = this.startChangeItem('product-info');
           html += this.generateSectionHeader('產品資訊', 'product-header');
           html += this.startChangeDetails('product-details');
@@ -1612,8 +1632,20 @@ export default {
   },
   mounted() {
     document.title = '合揚訂單後台系統';
-    this.searchLogs();
-    console.log('组件已挂载');
+    console.log('LogRecords 组件已挂载');
+    
+    // 延迟调用 searchLogs 以确保认证已完成
+    setTimeout(() => {
+      const adminId = localStorage.getItem('admin_id');
+      console.log('延迟检查 admin_id:', adminId);
+      
+      if (adminId) {
+        console.log('开始执行 searchLogs');
+        this.searchLogs();
+      } else {
+        console.log('未找到 admin_id，不执行查询');
+      }
+    }, 500);
   },
   updated() {
     console.log('组件已更新, 当前分页状态:', {

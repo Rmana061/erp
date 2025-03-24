@@ -112,15 +112,60 @@ export default {
         { id: 4, name: '檢視權限' }
       ];
       
-      // 只返回當前管理員權限級別及以下的權限
-      return allPermissions.filter(permission => permission.id >= this.currentAdminPermissionId);
+      // 如果是最高權限(id=1)，可以新增所有權限
+      if (this.currentAdminPermissionId === 1) {
+        return allPermissions;
+      }
+      // 如果是審核權限(id=2)，只能新增基本權限和檢視權限(id=3和id=4)
+      else if (this.currentAdminPermissionId === 2) {
+        return allPermissions.filter(permission => permission.id > 2);
+      }
+      // 其他權限按原邏輯處理（但基本權限和檢視權限本來就無法訪問此頁面）
+      else {
+        return allPermissions.filter(permission => permission.id >= this.currentAdminPermissionId);
+      }
     }
   },
   async created() {
+    // 检查权限
+    await this.checkPermission();
+    
     await this.getCurrentAdminPermission();
     await this.fetchAdminDetails();
   },
   methods: {
+    // 添加权限检查方法
+    async checkPermission() {
+      try {
+        console.log('正在檢查添加管理員權限...');
+        
+        // 从会话存储中获取管理员信息
+        const adminInfoStr = sessionStorage.getItem('adminInfo');
+        if (!adminInfoStr) {
+          console.log('未找到管理員信息，重定向到登錄頁');
+          alert('您的會話已過期，請重新登錄');
+          this.$router.push('/admin-login');
+          return;
+        }
+        
+        const adminInfo = JSON.parse(adminInfoStr);
+        console.log('當前管理員權限:', adminInfo.permissions);
+        
+        // 检查是否有添加管理员的权限
+        if (!adminInfo.permissions || !adminInfo.permissions.can_add_personnel) {
+          console.log('權限不足: 無法添加管理員');
+          alert('權限不足: 您沒有添加管理員的權限');
+          this.$router.push('/admin-login');
+          return;
+        }
+        
+        console.log('權限檢查通過');
+      } catch (error) {
+        console.error('權限檢查錯誤:', error);
+        alert('驗證權限時出錯，請重新登錄');
+        this.$router.push('/admin-login');
+      }
+    },
     // 獲取當前登錄管理員的權限級別
     async getCurrentAdminPermission() {
       try {
@@ -271,7 +316,13 @@ export default {
           return;
         }
         
-        alert('操作失敗：' + (error.response?.data?.message || error.message));
+        // 檢查是否為重複帳號錯誤
+        const errorMessage = error.response?.data?.message || error.message;
+        if (errorMessage.includes('duplicate key') && errorMessage.includes('admin_account_key')) {
+          alert('此帳號已存在（可能為已停用的帳號）。請使用其他帳號名稱，或聯繫系統管理員將該帳號完全刪除。');
+        } else {
+          alert('操作失敗：' + errorMessage);
+        }
       }
     },
     validateForm() {

@@ -120,8 +120,7 @@
                       </button>
                       <button 
                         class="table-button" 
-                        @click="openDM(product.dm_url)"
-                        v-permission="'can_decide_product_view'">
+                        @click="openDM(product.dm_url)">
                         DM
                       </button>
                     </div>

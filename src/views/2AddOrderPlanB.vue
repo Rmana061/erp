@@ -264,8 +264,8 @@ export default {
           const checkResult = await this.checkRecentOrder(product.product_id);
           console.log('重复下单检查结果:', checkResult);
           
+          // 使用严格比较，确保布尔值比较正确
           if (checkResult && checkResult.canOrder === false) {
-            // 使用==false进行明确的比较，避免隐式转换
             const message = `重複下單提醒：您在最近${checkResult.limitDays}天內已經訂購過"${selectedProduct.name}"，請聯繫供應商。`;
             console.warn(message);
             alert(message);
@@ -712,26 +712,41 @@ export default {
         
         console.log('重复订单检查响应:', response.data);
         
-        if (response.data.status === 'success' && response.data.data) {
-          return {
-            canOrder: response.data.data.can_order,
-            limitDays: response.data.data.limit_days || 0
-          };
-        } else if (response.data.status === 'warning') {
-          // 处理旧格式兼容
-          return {
-            canOrder: response.data.canOrder || false,
-            limitDays: response.data.limitDays || 0
-          };
+        if (response.data.status === 'success') {
+          if (response.data.data) {
+            // 正確解析新的API格式
+            return {
+              canOrder: response.data.data.can_order,
+              limitDays: response.data.data.limit_days || 0
+            };
+          } else {
+            // 處理可能的空數據情況
+            console.warn('API返回成功但無數據');
+            return { canOrder: true, limitDays: 0 };
+          }
         } else {
           console.warn('重复订单检查API返回格式不正确:', response.data);
           return { canOrder: true, limitDays: 0 };
         }
       } catch (error) {
         console.error('检查重复订单时出错:', error);
+        
         if (error.response) {
           console.error('错误详情:', error.response.data);
+          
+          // 特別處理枚舉值錯誤 - 訂單狀態問題
+          if (error.response.status === 500 && error.response.data?.message && 
+              (error.response.data.message.includes('invalid input value for enum order_status') || 
+               error.response.data.message.includes('已出貨'))) {
+            console.warn('訂單狀態枚舉錯誤，繼續處理');
+            // 當數據庫枚舉值出錯時，預設允許下單
+            return { canOrder: true, limitDays: 0 };
+          }
         }
+        
+        // 其他錯誤情況，默認允許下單但在控制台提示錯誤
+        // 這樣即使API有問題，用戶也能繼續使用系統
+        console.warn('重複下單檢查失敗，默認允許下單');
         return { canOrder: true, limitDays: 0 };
       }
     }
