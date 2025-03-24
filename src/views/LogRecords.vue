@@ -70,8 +70,8 @@
                   <label>用戶類型</label>
                   <select v-model="searchParams.user_type" class="search-field">
                     <option value="">全部</option>
-                    <option value="admin">管理員</option>
-                    <option value="customer">客戶</option>
+                    <option value="管理員">管理員</option>
+                    <option value="客戶">客戶</option>
                   </select>
                 </div>
               </div>

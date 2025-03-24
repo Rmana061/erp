@@ -53,14 +53,14 @@
                         class="table-button edit" 
                         @click="editPersonnel(admin.id)"
                         v-permission="'can_add_personnel'"
-                        v-if="canEditAdmin(admin)">
+                        v-if="canEdit(admin)">
                         編輯
                       </button>
                       <button 
                         class="table-button delete" 
                         @click="deletePersonnel(admin.id)"
                         v-permission="'can_add_personnel'"
-                        v-if="canEditAdmin(admin)">
+                        v-if="canDelete(admin)">
                         刪除
                       </button>
                     </div>
@@ -127,8 +127,8 @@ export default {
     }
   },
   methods: {
-    // 添加判断是否可以编辑/删除管理员的方法
-    canEditAdmin(admin) {
+    // 判断是否可以编辑管理员的方法
+    canEdit(admin) {
       // 获取当前管理员权限
       const adminInfoStr = sessionStorage.getItem('adminInfo');
       if (!adminInfoStr) return false;
@@ -139,9 +139,9 @@ export default {
       // 获取当前管理员ID
       const currentAdminId = localStorage.getItem('admin_id');
       
-      // 如果是要删除自己，不允许
+      // 如果是自己的账号，允许编辑
       if (admin.id.toString() === currentAdminId) {
-        return false;
+        return true; // 自己可以编辑自己
       }
       
       // 获取目标管理员的权限ID
@@ -155,18 +155,58 @@ export default {
       }
       
       // 权限规则：
-      // 1. 最高權限(1)可以编辑除自己外的任何人
+      // 1. 最高權限(1)可以编辑任何人
       // 2. 審核權限(2)只能编辑基本權限(3)和檢視權限(4)
       // 3. 基本權限(3)和檢視權限(4)不能编辑任何人
       
       if (currentPermissionId === 1) {
-        // 最高权限可以编辑任何人(除了自己)
+        // 最高权限可以编辑任何人
         return true;
       } else if (currentPermissionId === 2) {
         // 审核权限只能编辑基本权限和检视权限
         return targetPermissionId > 2;
       } else {
         // 基本权限和检视权限不能编辑任何人
+        return false;
+      }
+    },
+    
+    // 判断是否可以删除管理员的方法
+    canDelete(admin) {
+      // 获取当前管理员权限
+      const adminInfoStr = sessionStorage.getItem('adminInfo');
+      if (!adminInfoStr) return false;
+      
+      const adminInfo = JSON.parse(adminInfoStr);
+      const currentPermissionId = parseInt(adminInfo.permission_level_id);
+      
+      // 获取当前管理员ID
+      const currentAdminId = localStorage.getItem('admin_id');
+      
+      // 如果是自己的账号，不允许删除
+      if (admin.id.toString() === currentAdminId) {
+        return false; // 不能删除自己
+      }
+      
+      // 获取目标管理员的权限ID
+      let targetPermissionId;
+      switch(admin.permission_level) {
+        case '最高權限': targetPermissionId = 1; break;
+        case '審核權限': targetPermissionId = 2; break;
+        case '基本權限': targetPermissionId = 3; break;
+        case '檢視權限': targetPermissionId = 4; break;
+        default: targetPermissionId = 0;
+      }
+      
+      // 权限规则同编辑
+      if (currentPermissionId === 1) {
+        // 最高权限可以删除任何人(除了自己)
+        return true;
+      } else if (currentPermissionId === 2) {
+        // 审核权限只能删除基本权限和检视权限
+        return targetPermissionId > 2;
+      } else {
+        // 基本权限和检视权限不能删除任何人
         return false;
       }
     },
@@ -196,17 +236,14 @@ export default {
       const adminToDelete = this.admins.find(a => a.id === adminId);
       if (!adminToDelete) return;
       
-      const currentAdminId = localStorage.getItem('admin_id');
-      
-      // 特别检查是否在删除自己
-      if (adminId.toString() === currentAdminId) {
-        alert('無法刪除自己的帳號');
-        return;
-      }
-      
-      // 其他权限检查
-      if (!this.canEditAdmin(adminToDelete)) {
-        alert('您無權刪除該管理員');
+      // 检查删除权限
+      if (!this.canDelete(adminToDelete)) {
+        const currentAdminId = localStorage.getItem('admin_id');
+        if (adminId.toString() === currentAdminId) {
+          alert('無法刪除自己的帳號');
+        } else {
+          alert('您無權刪除該管理員');
+        }
         return;
       }
       
@@ -237,7 +274,9 @@ export default {
     editPersonnel(adminId) {
       // 检查是否可以编辑此管理员
       const adminToEdit = this.admins.find(a => a.id === adminId);
-      if (adminToEdit && !this.canEditAdmin(adminToEdit)) {
+      if (!adminToEdit) return;
+      
+      if (!this.canEdit(adminToEdit)) {
         alert('您無權編輯該管理員');
         return;
       }
