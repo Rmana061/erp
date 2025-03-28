@@ -39,6 +39,7 @@
                     :src="imagePreviewUrl || product.image_url" 
                     class="image-preview" 
                     alt="產品圖片預覽"
+                    @error="handleImageError"
                   >
                   <span class="file-name">
                     {{ selectedImageFile ? selectedImageFile.name : getFileName(product.image_url) }}
@@ -147,7 +148,8 @@ export default {
       imageFileToUpload: null,
       dmFileToUpload: null,
       imagePreviewUrl: '',
-      dmPreviewUrl: ''
+      dmPreviewUrl: '',
+      defaultImage: '/no-image.png'
     };
   },
   async created() {
@@ -241,7 +243,7 @@ export default {
           this.product = {
             name: productData.name,
             description: productData.description,
-            image_url: productData.image_url,
+            image_url: productData.image_url || this.defaultImage,
             dm_url: productData.dm_url,
             min_order: productData.min_order_qty,
             max_order: productData.max_order_qty,
@@ -286,7 +288,7 @@ export default {
           imageFormData.append('productName', this.product.name);
           
           try {
-            console.log('正在上传图片...');
+            console.log('正在上傳圖片...');
             const imageResponse = await axios.post(getApiUrl(API_PATHS.UPLOAD_IMAGE), imageFormData, {
               withCredentials: true,
               headers: {
@@ -320,7 +322,7 @@ export default {
           dmFormData.append('productName', this.product.name);
           
           try {
-            console.log('正在上传文档...');
+            console.log('正在上傳文件...');
             const dmResponse = await axios.post(getApiUrl(API_PATHS.UPLOAD_DOCUMENT), dmFormData, {
               withCredentials: true,
               headers: {
@@ -590,6 +592,10 @@ export default {
         const fullUrl = `${baseUrl}${url}`;
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }
+    },
+    handleImageError(event) {
+      // 當圖片載入失敗時，使用預設圖片
+      event.target.src = this.defaultImage;
     },
   },
   watch: {

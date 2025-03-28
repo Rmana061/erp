@@ -42,7 +42,8 @@
                       v-model.number="product.quantity"
                       :min="selectedProduct(product.product_id)?.min_order_qty || 1"
                       :max="selectedProduct(product.product_id)?.max_order_qty || 9999"
-                      @input="validateQuantity(index)">
+                      @blur="validateQuantity(index)"
+                    >
                     <span class="unit">{{ selectedProduct(product.product_id)?.unit || 'kg' }}</span>
                   </div>
                   <div class="quantity-hint" v-if="selectedProduct(product.product_id)">
@@ -298,10 +299,15 @@ export default {
       const selectedProduct = this.selectedProduct(product.product_id);
       if (!selectedProduct) return;
       
-      if (product.quantity < selectedProduct.min_order_qty) {
-        product.quantity = selectedProduct.min_order_qty;
-      } else if (product.quantity > selectedProduct.max_order_qty) {
-        product.quantity = selectedProduct.max_order_qty;
+      // 只在有效的數字輸入時進行驗證
+      if (product.quantity !== null && product.quantity !== undefined && !isNaN(product.quantity)) {
+        if (product.quantity < selectedProduct.min_order_qty) {
+          alert(`數量不能小於最小訂購量 ${selectedProduct.min_order_qty}`);
+          product.quantity = selectedProduct.min_order_qty;
+        } else if (product.quantity > selectedProduct.max_order_qty) {
+          alert(`數量不能大於最大訂購量 ${selectedProduct.max_order_qty}`);
+          product.quantity = selectedProduct.max_order_qty;
+        }
       }
     },
     validateShippingDate(index) {
@@ -513,21 +519,44 @@ export default {
         
         if (!customerId || !companyName) {
           console.log('Missing customer information');
-          localStorage.setItem('redirect_after_login', '/add-order');
+          localStorage.setItem('redirect_after_login', '/add-order-plan-b');
           this.$router.push('/customer-login');
           return;
         }
+
+        // 首先获取客户信息以获取可见产品列表
+        const customerResponse = await axios.post(getApiUrl(API_PATHS.CUSTOMER_DETAIL(customerId)), {}, {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Customer-ID': customerId,
+            'X-Company-Name': encodeURIComponent(companyName)
+          }
+        });
+
+        if (customerResponse.data.status !== 'success') {
+          throw new Error('無法獲取客戶資料');
+        }
+
+        const viewableProducts = customerResponse.data.data.viewable_products
+          ? customerResponse.data.data.viewable_products.split(',').map(id => parseInt(id.trim()))
+          : [];
+
+        console.log('客戶可見產品ID列表:', viewableProducts);
+
+        // 對公司名稱進行編碼
+        const encodedCompanyName = encodeURIComponent(companyName);
 
         console.log('Fetching products for customer:', customerId);
         const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
           type: 'customer',
           customer_id: customerId,
-          company_name: companyName
+          company_name: companyName  // 請求體中保持原始名稱
         }, {
           withCredentials: true,
           headers: {
             'X-Customer-ID': customerId,
-            'X-Company-Name': companyName
+            'X-Company-Name': encodedCompanyName  // 使用編碼後的公司名稱
           }
         });
 
@@ -535,15 +564,18 @@ export default {
 
         if (response.data.status === 'success') {
           console.log('Raw product data:', response.data.data);
-          this.availableProducts = response.data.data.map(product => ({
-            id: product.id,
-            name: product.name,
-            min_order_qty: product.min_order_qty || 1,
-            max_order_qty: product.max_order_qty || 9999,
-            unit: product.product_unit || 'kg',
-            shipping_time: product.shipping_time || 0,
-            special_date: product.special_date || false
-          }));
+          // 过滤只显示可见的产品
+          this.availableProducts = response.data.data
+            .filter(product => viewableProducts.includes(product.id))
+            .map(product => ({
+              id: product.id,
+              name: product.name,
+              min_order_qty: product.min_order_qty || 1,
+              max_order_qty: product.max_order_qty || 9999,
+              unit: product.product_unit || 'kg',
+              shipping_time: product.shipping_time || 0,
+              special_date: product.special_date || false
+            }));
           console.log('Processed available products:', this.availableProducts);
         } else {
           throw new Error(response.data.message || '獲取產品列表失敗');
@@ -599,12 +631,15 @@ export default {
           return;
         }
         
+        // 對公司名稱進行編碼
+        const encodedCompanyName = encodeURIComponent(companyName);
+        
         console.log('开始获取锁定日期...');
         const response = await axios.post(getApiUrl(API_PATHS.LOCKED_DATES), {}, {
           withCredentials: true,
           headers: {
             'X-Customer-ID': customerId,
-            'X-Company-Name': companyName
+            'X-Company-Name': encodedCompanyName  // 使用編碼後的公司名稱
           }
         });
         
@@ -698,6 +733,9 @@ export default {
         
         console.log('检查重复订单 - 产品ID:', productId, '客户ID:', customerId);
         
+        // 對公司名稱進行編碼
+        const encodedCompanyName = encodeURIComponent(companyName);
+        
         // 修改请求，确保数据格式正确
         const response = await axios.post(getApiUrl(API_PATHS.CHECK_RECENT_ORDER), {
           customer_id: parseInt(customerId),
@@ -706,7 +744,7 @@ export default {
           withCredentials: true,
           headers: {
             'X-Customer-ID': customerId,
-            'X-Company-Name': companyName
+            'X-Company-Name': encodedCompanyName  // 使用編碼後的公司名稱
           }
         });
         
@@ -766,12 +804,15 @@ export default {
     
     if (!customerId || !companyName) {
       console.log('Not logged in, redirecting to login page');
-      localStorage.setItem('redirect_after_login', '/add-order');
+      localStorage.setItem('redirect_after_login', '/add-order-plan-b');
       this.$router.push('/customer-login');
       return;
     }
     
     try {
+      // 對公司名稱進行編碼
+      const encodedCompanyName = encodeURIComponent(companyName);
+      
       // 验证会话是否有效
       const sessionCheck = await axios.post(getApiUrl(API_PATHS.CUSTOMER_INFO), {
         customer_id: customerId
@@ -779,7 +820,7 @@ export default {
         withCredentials: true,
         headers: {
           'X-Customer-ID': customerId,
-          'X-Company-Name': companyName
+          'X-Company-Name': encodedCompanyName  // 使用編碼後的公司名稱
         }
       });
       
@@ -796,7 +837,7 @@ export default {
       document.title = '合揚訂單系統';
     } catch (error) {
       console.error('Session verification failed:', error);
-      localStorage.setItem('redirect_after_login', '/add-order');
+      localStorage.setItem('redirect_after_login', '/add-order-plan-b');
       this.$router.push('/customer-login');
     }
   }

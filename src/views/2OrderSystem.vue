@@ -189,16 +189,33 @@ export default {
         });
 
         if (response.data.status === 'success') {
-          const allOrders = response.data.data;
+          // 確保 response.data.data 是陣列
+          const allOrders = Array.isArray(response.data.data) ? response.data.data : [];
+          console.log('獲取到的訂單數據:', allOrders);
+          
           const twoWeeksAgo = new Date();
           twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-          this.orders = allOrders.filter(order => new Date(order.created_at) >= twoWeeksAgo);
+          
+          // 確保每個訂單都有 created_at 屬性
+          this.orders = allOrders.filter(order => {
+            if (!order || !order.created_at) {
+              console.warn('發現無效訂單數據:', order);
+              return false;
+            }
+            return new Date(order.created_at) >= twoWeeksAgo;
+          });
+          
+          console.log('過濾後的訂單數據:', this.orders);
+        } else {
+          console.warn('獲取訂單失敗:', response.data.message);
+          this.orders = [];
         }
       } catch (error) {
         console.error('Error fetching orders:', error);
         if (error.response?.status === 401) {
           this.$router.push('/customer-login');
         }
+        this.orders = [];
       }
     }
   },

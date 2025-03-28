@@ -304,10 +304,10 @@ export default {
 
           console.log('收到API響應:', response.status);
           // 直接显示完整响应内容进行检查
-          console.log('完整響應對象:', response);
-          console.log('完整API響應JSON:', JSON.stringify(response.data));
-          console.log('API響應數據結構:', Object.keys(response.data));
-          console.log('API響應是否包含total_count:', 'total_count' in response.data);
+          // console.log('完整響應對象:', response);
+          // console.log('完整API響應JSON:', JSON.stringify(response.data));
+          // console.log('API響應數據結構:', Object.keys(response.data));
+          // console.log('API響應是否包含total_count:', 'total_count' in response.data);
 
           if (response.data && response.data.status === 'success') {
             console.log('後端返回的日誌數據:', response.data);

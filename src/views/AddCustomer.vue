@@ -19,11 +19,19 @@
             </div>
             <div class="form-group">
               <label>帳號：</label>
-              <input type="text" v-model="newCustomer.account" placeholder="（管理員自填）">
+              <input 
+                type="text" 
+                v-model="newCustomer.account" 
+                placeholder="（管理員自填）"
+                @input="validateAccount">
             </div>
             <div class="form-group">
               <label>密碼：</label>
-              <input type="password" v-model="newCustomer.password" placeholder="（管理員自填）">
+              <input 
+                type="password" 
+                v-model="newCustomer.password" 
+                placeholder="（管理員自填）"
+                @input="validatePassword">
             </div>
             <div class="form-group">
               <label>可購產品：</label>
@@ -86,11 +94,18 @@
             </div>
             <div class="form-group">
               <label>電話：</label>
-              <input type="tel" v-model="newCustomer.phone" placeholder="請輸入聯絡電話">
+              <input type="tel" 
+                v-model="newCustomer.phone" 
+                placeholder="請輸入聯絡電話"
+                @input="validatePhone">
             </div>
             <div class="form-group">
               <label>Email：</label>
-              <input type="email" v-model="newCustomer.email" placeholder="請輸入電子郵件地址">
+              <input 
+                type="text"
+                v-model="newCustomer.email" 
+                placeholder="請輸入電子郵件地址"
+                @input="validateEmail">
             </div>
             <div class="form-group">
               <label>地址：</label>
@@ -388,6 +403,38 @@ export default {
           return;
         }
         alert('獲取產品列表失敗：' + (error.response?.data?.message || error.message));
+      }
+    },
+    validatePhone(event) {
+      // 只允許數字和特殊符號 (+、-、()、空格)
+      const value = event.target.value;
+      const filteredValue = value.replace(/[^0-9+\-() ]/g, '');
+      if (value !== filteredValue) {
+        this.newCustomer.phone = filteredValue;
+      }
+    },
+    validateAccount(event) {
+      // 只允許英文、數字和特殊符號
+      const value = event.target.value;
+      const filteredValue = value.replace(/[^a-zA-Z0-9@._\-+]/g, '');
+      if (value !== filteredValue) {
+        this.newCustomer.account = filteredValue;
+      }
+    },
+    validatePassword(event) {
+      // 只允許英文、數字和特殊符號
+      const value = event.target.value;
+      const filteredValue = value.replace(/[^a-zA-Z0-9@._\-+!#$%^&*()]/g, '');
+      if (value !== filteredValue) {
+        this.newCustomer.password = filteredValue;
+      }
+    },
+    validateEmail(event) {
+      // 只允許英文、數字和特殊符號
+      const value = event.target.value;
+      const filteredValue = value.replace(/[^a-zA-Z0-9@._\-+]/g, '');
+      if (value !== filteredValue) {
+        this.newCustomer.email = filteredValue;
       }
     }
   },

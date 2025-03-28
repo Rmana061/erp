@@ -216,10 +216,39 @@ export default {
         console.log('Raw response:', response);
 
         if (response.data.status === 'success') {
-          this.orders = response.data.data;
-          console.log('Processed orders:', this.orders);
+          // 確保 response.data.data 是陣列
+          const ordersData = Array.isArray(response.data.data) ? response.data.data : [];
+          console.log('獲取到的訂單數據:', ordersData);
+          
+          // 過濾掉無效的訂單數據
+          this.orders = ordersData.filter(order => {
+            if (!order) {
+              console.warn('發現空訂單數據');
+              return false;
+            }
+            
+            // 確保訂單有必要的屬性
+            if (!order.products || !Array.isArray(order.products)) {
+              console.warn('訂單缺少產品數據:', order);
+              return false;
+            }
+            
+            // 確保每個產品都有必要的屬性
+            order.products = order.products.filter(product => {
+              if (!product) {
+                console.warn('發現空產品數據');
+                return false;
+              }
+              return true;
+            });
+            
+            return order.products.length > 0;
+          });
+          
+          console.log('處理後的訂單數據:', this.orders);
         } else {
           console.warn('Response status is not success:', response.data);
+          this.orders = [];
         }
       } catch (error) {
         console.error('Error fetching orders:', error);
@@ -229,6 +258,7 @@ export default {
         if (error.response?.status === 401) {
           this.$router.push('/customer-login');
         }
+        this.orders = [];
       }
     },
     resetFilters() {

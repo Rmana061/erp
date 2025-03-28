@@ -10,7 +10,10 @@
       <div class="content-wrapper">
         <h2>LINE綁定</h2>
         <div v-if="loading" class="loading-indicator">載入中...</div>
-        <div v-else-if="error" class="error-message">{{ error }}</div>
+        <div v-else-if="error" class="error-message">
+          <p>{{ error }}</p>
+          <button @click="closeWindow" class="close-button">關閉視窗</button>
+        </div>
         <div v-else class="success-message">
           <p>LINE帳號綁定成功！</p>
           <p>您現在可以通過LINE接收訂單通知。</p>
@@ -40,7 +43,13 @@ export default {
       this.loading = false
     } catch (error) {
       console.error('LINE binding error:', error)
-      this.error = error.message || '綁定過程發生錯誤'
+      if (error.message === '此LINE帳號已被其他客戶綁定') {
+        this.error = '此LINE帳號已被其他客戶綁定'
+      } else if (error.message.includes('綁定失敗')) {
+        this.error = '此LINE帳號已被其他公司綁定，請使用其他LINE帳號'
+      } else {
+        this.error = '綁定過程發生錯誤，請稍後再試'
+      }
       this.loading = false
     }
   },
@@ -74,7 +83,30 @@ export default {
 .error-message {
   color: #ff4444;
   font-size: 16px;
-  margin-top: 10px;
+  margin: 20px;
+  text-align: center;
+  padding: 20px;
+  background-color: #fff0f0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.error-message p {
+  margin-bottom: 15px;
+}
+
+.error-message .close-button {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background-color: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.error-message .close-button:hover {
+  background-color: #ff3333;
 }
 
 .success-message {

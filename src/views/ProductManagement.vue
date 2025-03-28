@@ -88,11 +88,12 @@
                 <tr v-for="product in filteredProducts" :key="product.id">
                   <td><input type="checkbox" v-model="product.selected"></td>
                   <td>
-            <img 
-              :src="product.image_url" 
+                    <img 
+                      :src="product.image_url" 
                       class="product-thumbnail"
-              @click="showLargeImage(product.image_url)"
+                      @click="showLargeImage(product.image_url)"
                       alt="產品圖片"
+                      @error="handleImageError($event)"
                     >
                   </td>
                   <td>{{ product.name }}</td>
@@ -120,7 +121,7 @@
                       </button>
                       <button 
                         class="table-button" 
-                        @click="openDM(product.dm_url)">
+                        @click="openDM(product.dm_url, product.name)">
                         DM
                       </button>
                     </div>
@@ -179,6 +180,7 @@ export default {
       showLockDateModal: false,
       newLockDate: '',
       lockedDates: [],
+      defaultImage: '/no-image.png'
     };
   },
   computed: {
@@ -397,10 +399,22 @@ export default {
     async fetchProducts() {
       try {
         console.log('開始獲取產品列表...');
+        const adminId = localStorage.getItem('admin_id');
+        
+        if (!adminId) {
+          console.log('未找到管理員ID');
+          this.$router.push('/admin-login');
+          return;
+        }
+
         const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
           type: 'admin'
         }, {
-          withCredentials: true
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-ID': adminId
+          }
         });
 
         console.log('API響應:', response.data);
@@ -413,7 +427,8 @@ export default {
 
           this.products = response.data.data.map(product => ({
             ...product,
-            selected: false
+            selected: false,
+            image_url: product.image_url || this.defaultImage // 如果沒有圖片，使用預設圖片
           }));
           console.log('成功獲取產品列表:', this.products);
         } else {
@@ -541,8 +556,11 @@ export default {
         alert('解鎖日期失敗：' + (error.response?.data?.message || error.message));
       }
     },
-    openDM(url) {
-      if (!url) return;
+    openDM(url, productName) {
+      if (!url) {
+        alert(`${productName} 此產品尚無DM`);
+        return;
+      }
       
       // 从产品列表中查找对应的产品
       const product = this.products.find(p => p.dm_url === url);
@@ -578,10 +596,42 @@ export default {
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }
     },
+    handleImageError(event) {
+      event.target.src = this.defaultImage;
+    },
   },
-  mounted() {
+  async mounted() {
     document.title = '合揚訂單後台系統';
-    this.fetchProducts();
+    
+    // 验证登录状态
+    const adminId = localStorage.getItem('admin_id');
+    if (!adminId) {
+      console.log('未登入，重定向到登入頁面');
+      this.$router.push('/admin-login');
+      return;
+    }
+    
+    try {
+      // 验证会话是否有效
+      const sessionCheck = await axios.post(getApiUrl(API_PATHS.ADMIN_INFO), {
+        admin_id: adminId
+      }, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (sessionCheck.data.status !== 'success') {
+        throw new Error('Session invalid');
+      }
+      
+      // 获取数据
+      await this.fetchProducts();
+    } catch (error) {
+      console.error('會話驗證失敗:', error);
+      this.$router.push('/admin-login');
+    }
   },
 };
 </script>

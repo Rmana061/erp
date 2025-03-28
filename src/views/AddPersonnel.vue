@@ -17,11 +17,19 @@
           <div class="form-container">
             <div class="form-group">
               <label>人員帳號：</label>
-              <input type="text" v-model="personnelAccount" placeholder="（管理員自填）">
+              <input 
+                type="text" 
+                v-model="personnelAccount" 
+                placeholder="（管理員自填）"
+                @input="validateAccount">
             </div>
             <div class="form-group">
               <label>人員密碼：</label>
-              <input type="password" v-model="personnelPassword" placeholder="（管理員自填）">
+              <input 
+                type="password" 
+                v-model="personnelPassword" 
+                placeholder="（管理員自填）"
+                @input="validatePassword">
             </div>
             <div class="form-group">
               <label>人員姓名：</label>
@@ -348,6 +356,22 @@ export default {
       }
       
       return true;
+    },
+    validateAccount(event) {
+      // 只允許英文、數字和特殊符號
+      const value = event.target.value;
+      const filteredValue = value.replace(/[^a-zA-Z0-9@._\-+]/g, '');
+      if (value !== filteredValue) {
+        this.personnelAccount = filteredValue;
+      }
+    },
+    validatePassword(event) {
+      // 只允許英文、數字和特殊符號
+      const value = event.target.value;
+      const filteredValue = value.replace(/[^a-zA-Z0-9@._\-+!#$%^&*()]/g, '');
+      if (value !== filteredValue) {
+        this.personnelPassword = filteredValue;
+      }
     }
   }
 };

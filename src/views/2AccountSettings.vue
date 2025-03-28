@@ -68,7 +68,10 @@
             <div class="form-group">
               <label>電話：</label>
               <div class="input-container">
-                <input v-if="isEditing" type="tel" v-model="editedInfo.phone" />
+                <input v-if="isEditing" 
+                  type="tel" 
+                  v-model="editedInfo.phone"
+                  @input="validatePhone" />
                 <span v-else class="field-value">{{ customerInfo.phone || '未設置' }}</span>
               </div>
             </div>
@@ -76,7 +79,10 @@
             <div class="form-group">
               <label>Email：</label>
               <div class="input-container">
-                <input v-if="isEditing" type="email" v-model="editedInfo.email" />
+                <input v-if="isEditing" 
+                  type="text" 
+                  v-model="editedInfo.email"
+                  @input="validateEmail" />
                 <span v-else class="field-value">{{ customerInfo.email || '未設置' }}</span>
               </div>
             </div>
@@ -448,6 +454,37 @@ export default {
         console.error('Error unbinding LINE group:', error);
         alert('解除LINE群組綁定失敗：' + (error.response?.data?.message || error.message));
       }
+    },
+    validatePhone(event) {
+      // 只允許數字和特殊符號 (+、-、()、空格)
+      const value = event.target.value;
+      const filteredValue = value.replace(/[^0-9+\-() ]/g, '');
+      if (value !== filteredValue) {
+        this.editedInfo.phone = filteredValue;
+      }
+    },
+    validateEmail(event) {
+      // 只允許英文、數字和特定符號 (@、.、_、-、+)
+      const value = event.target.value;
+      const filteredValue = value.replace(/[^a-zA-Z0-9@._\-+]/g, '');
+      if (value !== filteredValue) {
+        this.editedInfo.email = filteredValue;
+      }
+    },
+    handleEmailPaste(event) {
+      // 阻止預設貼上行為
+      event.preventDefault();
+      
+      // 獲取剪貼簿的文本
+      const pastedText = event.clipboardData.getData('text');
+      
+      // 過濾不允許的字符
+      const filteredText = pastedText
+        .replace(/[^\x00-\x7F]/g, '')
+        .replace(/[^a-zA-Z0-9@._\-+]/g, '');
+      
+      // 將過濾後的文本插入到當前位置
+      this.editedInfo.email = filteredText;
     }
   },
   created() {

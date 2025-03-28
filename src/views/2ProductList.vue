@@ -39,6 +39,7 @@
               :src="product.image_url" 
               :alt="product.name"
               @click="showLargeImage(product.image_url)"
+              @error="handleImageError($event)"
             >
           </div>
           <div class="product-info">
@@ -60,9 +61,8 @@
             </div>
             <div class="product-actions">
                 <button 
-                  v-if="product.dm_url"
                   class="table-button" 
-                  @click="openDM(product.dm_url)">
+                  @click="openDM(product.dm_url, product.name)">
                   查看 DM
                 </button>
               </div>
@@ -105,7 +105,8 @@ export default {
       loading: true,
       error: null,
       retryCount: 0,
-      isAuthError: false
+      isAuthError: false,
+      defaultImage: '../../../no-image.png'
     };
   },
   computed: {
@@ -167,40 +168,66 @@ export default {
 
         console.log('获取客户编号为', customerId, '的产品列表');
         
-        // 创建一个带有正确凭证的请求，确保在ngrok环境下也能工作
+        // 对公司名称进行编码
+        const encodedCompanyName = encodeURIComponent(companyName);
+        
+        // 首先获取客户信息以获取可见产品列表
+        const customerResponse = await axios.post(getApiUrl(API_PATHS.CUSTOMER_DETAIL(customerId)), {}, {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Customer-ID': customerId,
+            'X-Company-Name': encodedCompanyName
+          }
+        });
+
+        if (customerResponse.data.status !== 'success') {
+          throw new Error('無法獲取客戶資料');
+        }
+
+        const viewableProducts = customerResponse.data.data.viewable_products
+          ? customerResponse.data.data.viewable_products.split(',').map(id => parseInt(id.trim()))
+          : [];
+
+        console.log('客戶可見產品ID列表:', viewableProducts);
+        
+        // 获取产品列表
         const response = await axios.post(getApiUrl(API_PATHS.PRODUCTS), {
           type: 'customer',
           customer_id: customerId,
-          company_name: companyName, // 增加额外验证信息
-          timestamp: new Date().getTime() // 防止缓存
+          company_name: companyName,
+          timestamp: new Date().getTime()
         }, {
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json',
-            'X-Customer-ID': customerId, // 添加自定义头部
-            'X-Requested-With': 'XMLHttpRequest', // 标识为AJAX请求
-            'X-Company-Name': companyName // 添加公司名称作为头部
+            'X-Customer-ID': customerId,
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-Company-Name': encodedCompanyName
           }
         });
             
         console.log('产品数据响应:', response.data);
         
         if (response.data.status === 'success') {
-          this.products = response.data.data.map(product => ({
-            id: product.id,
-            name: product.name,
-            description: product.description,
-            image_url: product.image_url,
-            dm_url: product.dm_url,
-            dm_original_filename: product.dm_original_filename || '',
-            min_order_qty: product.min_order_qty,
-            max_order_qty: product.max_order_qty,
-            unit: product.unit || product.product_unit,
-            shipping_time: product.shipping_time,
-            created_at: product.created_at,
-            updated_at: product.updated_at
-          }));
-          console.log('处理后的产品数据:', this.products);
+          // 过滤只显示可见的产品
+          this.products = response.data.data
+            .filter(product => viewableProducts.includes(product.id))
+            .map(product => ({
+              id: product.id,
+              name: product.name,
+              description: product.description,
+              image_url: product.image_url || this.defaultImage,
+              dm_url: product.dm_url,
+              dm_original_filename: product.dm_original_filename || '',
+              min_order_qty: product.min_order_qty,
+              max_order_qty: product.max_order_qty,
+              unit: product.unit || product.product_unit,
+              shipping_time: product.shipping_time,
+              created_at: product.created_at,
+              updated_at: product.updated_at
+            }));
+          console.log('處理後的產品數據:', this.products);
         } else {
           throw new Error(response.data.message || '獲取產品列表失敗');
         }
@@ -250,8 +277,11 @@ export default {
     closeModal() {
       this.showModal = false;
     },
-    openDM(url) {
-      if (!url) return;
+    openDM(url, productName) {
+      if (!url) {
+        alert(`${productName} 此產品尚無DM`);
+        return;
+      }
       
       // 从产品列表中查找对应的产品
       const product = this.products.find(p => p.dm_url === url);
@@ -286,6 +316,10 @@ export default {
         const fullUrl = `${baseUrl}${url}`;
         window.open(fullUrl, '_blank', 'noopener,noreferrer');
       }
+    },
+    handleImageError(event) {
+      // 當圖片載入失敗時，使用預設圖片
+      event.target.src = this.defaultImage;
     }
   },
   created() {

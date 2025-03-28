@@ -75,10 +75,36 @@ export const initializeLiff = async () => {
           body: JSON.stringify(bindData)
         })
         
+        let errorMessage = '綁定失敗：請稍後再試';
+        
         if (!response.ok) {
-          const errorText = await response.text()
-          console.error('Binding API error:', errorText)
-          throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`)
+          const errorText = await response.text();
+          console.error('Binding API error:', errorText);
+          
+          try {
+            // 嘗試解析錯誤訊息
+            const errorData = JSON.parse(errorText);
+            console.log('Parsed error data:', errorData);
+            
+            // 檢查完整的錯誤訊息內容
+            const fullErrorMessage = errorData.message || errorText;
+            console.log('Full error message:', fullErrorMessage);
+            
+            // 直接檢查後端返回的確切錯誤訊息
+            if (fullErrorMessage === '此LINE帳號已被其他客戶綁定') {
+              errorMessage = '此LINE帳號已被其他客戶綁定';
+            } else if (errorData.message) {
+              errorMessage = errorData.message;
+            }
+          } catch (parseError) {
+            console.error('Error parsing error message:', parseError);
+            // 檢查原始錯誤文本
+            if (errorText.includes('此LINE帳號已被其他客戶綁定')) {
+              errorMessage = '此LINE帳號已被其他客戶綁定';
+            }
+          }
+          
+          throw new Error('此LINE帳號已被其他公司綁定，請使用其他LINE帳號');
         }
         
         const result = await response.json()
@@ -104,10 +130,18 @@ export const initializeLiff = async () => {
           throw new Error(result.message || '綁定失敗')
         }
       } catch (error) {
-        console.error('Binding error:', error)
-        alert('綁定失敗：' + (error.message || '未知錯誤'))
+        console.error('Binding error:', error);
+        const errorMessage = error.message || '綁定失敗：請稍後再試';
+        
+        // 檢查確切的錯誤訊息
+        if (errorMessage === '此LINE帳號已被其他客戶綁定') {
+          alert('此LINE帳號已被其他客戶綁定');
+        } else {
+          alert(errorMessage);
+        }
+        
         if (liff.isInClient()) {
-          liff.closeWindow()
+          liff.closeWindow();
         }
       }
     }
